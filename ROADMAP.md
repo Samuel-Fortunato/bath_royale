@@ -116,14 +116,55 @@ Shared identity components and the visit-detail route are reused. Do not start b
 - [x] Update model/storage/design/reference documentation and verify automated regressions, formatting, strict analysis, Linux/Android builds and rendered phone layouts in both themes with enlarged text.
 - [ ] Owner acceptance of Session 4D on a physical phone.
 
-Local verification: 105 tests pass, including structured sequences, equivalence, custom creation, comments/drafts/cancellation, v3 upgrades and persistence, alongside all existing regressions. Both debug builds and the exact strict-analysis gate pass. Flutter-rendered 320/390dp light/dark layouts with enlarged text were inspected. Backend work has not started; classification remains exploratory and public catalogue/contribution direction is preserved.
+Local verification: 105 tests pass, including structured sequences, equivalence, custom creation, comments/drafts/cancellation, v3 upgrades and persistence, alongside all existing regressions. Both debug builds and the exact strict-analysis gate pass. Flutter-rendered 320/390dp light/dark layouts with enlarged text were inspected. This was the pre-backend baseline; classification remains exploratory and public catalogue/contribution direction is preserved. [Hosted Android CI for `e21ab7a`](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/45676274279) completed successfully. Physical-phone acceptance remains pending.
 
-## Phase 2 — Community functionality
+## Phase 2 — Community functionality (proposed implementation sequence)
 
-- [ ] Evaluate backend options, including the preferred Supabase and PostgreSQL candidates, before choosing an architecture.
-- [ ] Implement authentication and a shared bathroom database.
-- [ ] Support community reviews and cloud synchronization, including local data migration and conflict handling.
-- [ ] Add moderation and reporting.
+### Phase 2.0 — Backend architecture and portability evaluation
+
+- [x] Inspect the current Provider/SQLite boundaries and compare Supabase/PostgreSQL, PocketBase and Appwrite using current official documentation.
+- [x] Document proposed ownership, offline synchronization, idempotency, guest association, fictional-data exclusion, privacy and authorization boundaries in [architecture](docs/backend/architecture.md).
+- [x] Assess Free-plan constraints, self-hosting, account/object portability, costs and a reproducible exit/acceptance procedure in [portability](docs/backend/portability.md); record the conditional recommendation in [ADR 0001](docs/backend/decision-0001.md).
+- [x] Add and realize an optional backend Nix shell using the existing lock; inspect existing rootless Podman without changing system configuration.
+- [x] Verify a network-disabled, rootless Supabase PostgreSQL component smoke test with fictional insert/export/restore and cleanup; verify configuration checks.
+- [ ] Owner decision on the conditional backend recommendation and significant open product rules before production implementation.
+
+Phase 2.0 is an architecture assessment, not a portable production-backend acceptance. Supabase managed Free is recommended conditionally; a real managed-to-independent-self-hosted restore and same-password login are **not verified**. No cloud project, production authentication, remote synchronization or shared catalogue has been implemented. Session 4D physical-phone acceptance remains open independently.
+
+Verified locally on 2026-11-25: formatting, strict analysis (existing exact Material-import baseline), all 105 tests, Linux/Android debug builds, actionlint, Bash syntax/ShellCheck, local documentation links and `nix flake check --no-build --no-write-lock-file` pass. The optional shell realizes CLI 2.111.0, PostgreSQL client 17.12 and Podman/Compose from the existing lock. The first component restore encountered the already-existing `public` schema; the disposable script now explicitly cleans/recreates only its fictional dump scope and the rerun passes. No network/ports or test containers remain. This verifies basic SQL dump/restore within one disposable database container, not Auth/API, an independent full-stack restore or a managed exit. Full acceptance remains in Phase 2.1. No Flutter code, dependencies or SQLite schema changed.
+
+### Phase 2.1 — Fictional local proof of concept and exit rehearsal
+
+- [ ] Review/accept architecture direction and scope; approve public/private data and auth assumptions for the PoC.
+- [ ] Pin a minimal local Supabase stack and explicit loopback bindings; version SQL migrations, constraints, grants, RLS and opt-in fictional fixtures.
+- [ ] Verify database API access, Auth login/refresh and direct two-user authorization attacks, including private-history leaks and self-approval attempts.
+- [ ] Restore filtered database/Auth exports and object fixtures into an independent self-hosted target; verify unchanged-password login and repeat authorization checks.
+- [ ] Under a later explicit cloud-project task, repeat the real managed-Free exit rehearsal before admitting production users. Record actual versions, commands, checksums, timing and failures; do not infer success from SQL portability.
+- [ ] Resolve email delivery, target architecture/resources, backup/restore ownership, recovery objectives and running-cost limits without requiring paid subscriptions, domains or new hardware.
+
+### Phase 2.2 — Local repository and durable synchronization foundation
+
+- [ ] Introduce only the small repository/data-source/session/coordinator boundaries; preserve Provider and existing local UX.
+- [ ] Replace snapshot writes with incremental SQLite transactions; add provenance, account namespaces, durable outbox, revisions, tombstones and pull checkpoints with non-destructive migrations.
+- [ ] Verify offline mutations, crash/retry/idempotency, conflicts, late commits during pagination, deletion safety and fictional/unknown-data upload exclusion.
+
+### Phase 2.3 — Optional accounts and private data association
+
+- [ ] Implement the approved sign-in/session storage and logout/account-switch policy, retaining fully usable guest mode.
+- [ ] Preview and explicitly associate only eligible genuine local data; test duplicate association and account isolation.
+- [ ] Implement opt-in private history/favourites synchronization only after its privacy policy is approved and server-enforced ownership tests pass.
+
+### Phase 2.4 — Shared catalogue and reviews
+
+- [ ] Implement approved public catalogue/review projections separately from private visits; preserve bathroom/visit/review distinctions and existing score scales.
+- [ ] Add pending contribution submission, revision/conflict handling, structured tag snapshots and review comments with server-side validation.
+- [ ] Keep geography/institution, contributor origin and verification independent; leave bathroom classification exploratory and exclude private bathrooms.
+
+### Phase 2.5 — Moderation and community readiness
+
+- [ ] Approve/implement moderation, reporting, author edits/takedowns, attribution and account/data deletion rules before public content launches.
+- [ ] Preserve original contributor credit through administrative approval. Defer recognition/reward systems to a separately approved milestone; reward approval rather than submission.
+- [ ] Complete privacy/security review, recovery/cutover rehearsal, non-destructive migration tests and relevant physical-device acceptance. Recheck commercial quotas and exit feasibility before real users.
 
 ## Phase 3 — Location and discovery
 

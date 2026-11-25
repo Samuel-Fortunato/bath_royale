@@ -30,31 +30,43 @@
     androidSdk = androidComposition.androidsdk;
     androidHome = "${androidSdk}/libexec/android-sdk";
   in {
-    devShells.${system}.default = (pkgs.mkShell.override {stdenv = pkgs.clangStdenv;}) {
-      packages = with pkgs; [
-        flutter
-        cmake
-        ninja
-        pkg-config
-        actionlint
+    devShells.${system} = {
+      # Optional backend evaluation tools; this does not enable a container service.
+      backend = pkgs.mkShell {
+        packages = with pkgs; [
+          supabase-cli
+          postgresql_17
+          podman
+          podman-compose
+        ];
+      };
 
-        # Android development
-        androidSdk
-        jdk17
-      ];
+      default = (pkgs.mkShell.override {stdenv = pkgs.clangStdenv;}) {
+        packages = with pkgs; [
+          flutter
+          cmake
+          ninja
+          pkg-config
+          actionlint
 
-      buildInputs = with pkgs; [
-        gtk3
-        glib
-      ];
+          # Android development
+          androidSdk
+          jdk17
+        ];
 
-      ANDROID_HOME = androidHome;
-      ANDROID_SDK_ROOT = androidHome;
-      ANDROID_NDK_ROOT = "${androidHome}/ndk/28.2.13676358";
+        buildInputs = with pkgs; [
+          gtk3
+          glib
+        ];
 
-      JAVA_HOME = "${pkgs.jdk17}";
+        ANDROID_HOME = androidHome;
+        ANDROID_SDK_ROOT = androidHome;
+        ANDROID_NDK_ROOT = "${androidHome}/ndk/28.2.13676358";
 
-      GRADLE_OPTS = "-Dorg.gradle.project.android.aapt2FromMavenOverride=${androidHome}/build-tools/36.0.0/aapt2";
+        JAVA_HOME = "${pkgs.jdk17}";
+
+        GRADLE_OPTS = "-Dorg.gradle.project.android.aapt2FromMavenOverride=${androidHome}/build-tools/36.0.0/aapt2";
+      };
     };
   };
 }

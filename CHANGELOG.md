@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Phase 2.0: document the conditional Supabase/PostgreSQL recommendation, official PocketBase/Appwrite comparison, minimal integration boundaries and proposed offline/privacy/authorization rules.
+- Add managed/self-hosted cost and portability assessment, an unverified exit runbook, migration acceptance gates, a short decision record and a proposed Phase 2 implementation breakdown.
+- Add an optional backend tools shell using the existing Nix lock and a repeatable network-disabled Supabase PostgreSQL component smoke test with fictional SQL export/restore and cleanup. Full Auth/API and managed migration remain untested; Session 4D phone acceptance remains pending.
+- Verify 105 existing tests, formatting, strict analysis, Linux/Android debug builds, Nix configuration, script lint and local documentation links; preserve all local application behavior.
+
 - Session 4D: separate decorative fractional stars from an explicit precise overall slider, retaining unanswered/zero, keyboard access and saved ratings.
 - Add structured emoji/label tags with canonical matching, emoji suggestions/keyboard input, live preview and validation; preserve known legacy meanings through SQLite v4 conversion.
 - Add optional 500-character review comments with draft/discard/edit support, persistence and bounded community previews linking to full experiences.
