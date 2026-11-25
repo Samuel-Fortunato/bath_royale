@@ -5,9 +5,53 @@ import 'package:bath_royale/models/bathroom_entry.dart';
 import 'package:bath_royale/models/review.dart';
 import 'package:bath_royale/models/visit.dart';
 import 'sample_data.dart';
+import 'package:uuid/uuid.dart';
+import '../storage/local_store.dart';
 
 class AppState extends ChangeNotifier {
   final String currentUserId;
+  final LocalStore? store;
+  Object? storageError;
+  final _visitInteraction = Stopwatch();
+  Visit? _lastRegistered;
+  static String newEntityId() => const Uuid().v4();
+
+  LocalData get localData => LocalData(
+    bathrooms: allBathrooms,
+    visits: visits,
+    reviews: reviews,
+    favourites: _activities.values.toList(),
+    darkMode: darkMode,
+  );
+
+  static AppState restore(LocalStore store) {
+    final data = store.load();
+    final state = data == null
+        ? AppState(store: store)
+        : AppState(
+            store: store,
+            bathrooms: data.bathrooms,
+            visits: data.visits,
+            reviews: data.reviews,
+            activities: data.favourites,
+            darkMode: data.darkMode,
+          );
+    if (data == null) store.save(state.localData);
+    return state;
+  }
+
+  @override
+  void notifyListeners() {
+    try {
+      store?.save(localData);
+      storageError = null;
+    } catch (error) {
+      storageError = error;
+    }
+    super.notifyListeners();
+  }
+
+  void retryStorage() => notifyListeners();
   final List<Bathroom> _bathrooms;
 
   List<Bathroom> get allBathrooms => List.unmodifiable(_bathrooms);
@@ -17,6 +61,8 @@ class AppState extends ChangeNotifier {
 
   AppState({
     this.currentUserId = localUserId,
+    this.store,
+    this.darkMode = true,
     List<Bathroom>? bathrooms,
     List<Review>? reviews,
     List<Visit>? visits,
@@ -99,12 +145,8 @@ class AppState extends ChangeNotifier {
   Bathroom createBathroom(String name) {
     final error = validateBathroomName(name);
     if (error != null) throw ArgumentError(error);
-    var serial = _bathrooms.length + 1;
-    while (_bathrooms.any((b) => b.id == 'bathroom-$serial')) {
-      serial++;
-    }
     final bathroom = Bathroom(
-      id: 'bathroom-$serial',
+      id: newEntityId(),
       name: name.trim().replaceAll(RegExp(r'\s+'), ' '),
       createdBy: currentUserId,
     );
@@ -140,6 +182,7 @@ class AppState extends ChangeNotifier {
         bathroom: bathroom,
         activity: activityFor(bathroom.id),
         reviews: _reviews.where((r) => r.bathroomId == bathroom.id).toList(),
+        visits: _visits,
       ),
   ];
 
@@ -171,13 +214,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  String newVisitId() {
-    var id = 'visit-${DateTime.now().microsecondsSinceEpoch}';
-    while (_visits.any((v) => v.id == id)) {
-      id = '$id-1';
-    }
-    return id;
-  }
+  String newVisitId() => newEntityId();
 
   void _validateNewVisit(Visit visit) {
     _requireBathroom(visit.bathroomId);
@@ -194,6 +231,14 @@ class AppState extends ChangeNotifier {
   }
 
   Visit recordVisit(String bathroomId, {required DateTime visitedAt}) {
+    final previous = _lastRegistered;
+    if (previous != null &&
+        previous.bathroomId == bathroomId &&
+        _visitInteraction.elapsedMilliseconds < 800 &&
+        visitedAt.difference(previous.visitedAt).inMilliseconds.abs() < 800 &&
+        _visits.contains(previous)) {
+      return previous;
+    }
     final visit = Visit(
       id: newVisitId(),
       bathroomId: bathroomId,
@@ -202,6 +247,9 @@ class AppState extends ChangeNotifier {
     );
     _validateNewVisit(visit);
     _visits.add(visit);
+    _lastRegistered = visit;
+    _visitInteraction.reset();
+    _visitInteraction.start();
     notifyListeners();
     return visit;
   }
@@ -270,7 +318,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool darkMode = true;
+  bool darkMode;
   void toggleTheme() {
     darkMode = !darkMode;
     notifyListeners();

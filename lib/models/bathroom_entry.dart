@@ -1,6 +1,7 @@
 import 'bathroom.dart';
 import 'bathroom_activity.dart';
 import 'review.dart';
+import 'visit.dart';
 
 /// Derived screen data; personal ratings never stand in for community averages.
 class BathroomEntry {
@@ -14,22 +15,28 @@ class BathroomEntry {
     required this.bathroom,
     required this.activity,
     required Iterable<Review> reviews,
-  }) : personalReview = _latestPersonal(reviews, activity.userId),
+    required Iterable<Visit> visits,
+  }) : personalReview = _latestPersonal(reviews, activity.userId, visits),
        reviewCount = reviews.length,
        communityRating = reviews.isEmpty
            ? null
            : reviews.fold<double>(0, (sum, review) => sum + review.rating) /
                  reviews.length;
 
-  static Review? _latestPersonal(Iterable<Review> reviews, String userId) {
+  static Review? _latestPersonal(
+    Iterable<Review> reviews,
+    String userId,
+    Iterable<Visit> visits,
+  ) {
+    final chronology = {for (final v in visits) v.id: v.visitedAt};
     Review? latest;
     for (final review in reviews.where((r) => r.authorId == userId)) {
-      // Creation time chooses the latest experience; editing an older one
-      // does not promote it. IDs break timestamp ties deterministically.
+      final date = chronology[review.visitId]!;
+      final previousDate = latest == null ? null : chronology[latest.visitId]!;
       if (latest == null ||
-          review.createdAt.isAfter(latest.createdAt) ||
-          (review.createdAt == latest.createdAt &&
-              review.id.compareTo(latest.id) > 0)) {
+          date.isAfter(previousDate!) ||
+          (date == previousDate &&
+              review.visitId.compareTo(latest.visitId) > 0)) {
         latest = review;
       }
     }

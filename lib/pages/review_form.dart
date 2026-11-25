@@ -124,10 +124,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     final state = context.read<AppState>();
     final old = widget.review;
     final now = DateTime.now();
-    var id = 'local-${now.microsecondsSinceEpoch}';
-    while (state.reviews.any((r) => r.id == id)) {
-      id = '$id-1';
-    }
+    final id = AppState.newEntityId();
     final visit = old == null && _visitId == null
         ? Visit(
             id: state.newVisitId(),

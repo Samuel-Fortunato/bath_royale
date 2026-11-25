@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Persist local entities, favourites and theme in versioned SQLite storage; restore state and seed samples only once.
+- Use UUIDs for new records, visit chronology for personal ratings and a rapid-tap visit guard.
+- Add migration, restart, transaction rollback and storage-failure regression coverage; preserve files on startup errors.
+
 - Link each review to one visit and support optional reviews, repeat visits and derived visit counts.
 - Add visit history, a personal collection, optional review invitations, safe undo and confirmed removal.
 - Create visits atomically with direct reviews or associate reviews with existing visits.
