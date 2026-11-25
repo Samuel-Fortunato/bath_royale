@@ -83,7 +83,7 @@ void main() {
       expect(find.text(tag), findsOneWidget);
       expect(find.text('🎨 🎨 grafiti'), findsNothing);
       if (tag == 'unknown' || tag == 'misto 🧪') {
-        expect(find.byIcon(Icons.label_outline), findsOneWidget);
+        expect(find.text('🏷️'), findsOneWidget);
       }
       if (tag == 'cozy') expect(find.text('🛋️'), findsOneWidget);
     }

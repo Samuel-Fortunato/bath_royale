@@ -1,5 +1,6 @@
 import 'package:bath_royale/models/bathroom.dart';
 import 'package:bath_royale/models/review.dart';
+import '../models/tag_presentation.dart';
 
 const localUserId = 'local-user';
 
@@ -24,7 +25,7 @@ List<Review> createSampleReviews() => [
     hygiene: 4,
     comfort: 4,
     aesthetics: 1,
-    tags: ["nice", "cozy", "dark"],
+    tags: ["nice", "cozy", "dark"].map(TagPresentation.display).toList(),
   ),
   Review(
     id: "sample-1",
@@ -37,7 +38,7 @@ List<Review> createSampleReviews() => [
     hygiene: 2,
     comfort: 0,
     aesthetics: 1,
-    tags: ["grafiti", "wtf", "no like"],
+    tags: ["grafiti", "wtf", "no like"].map(TagPresentation.display).toList(),
   ),
   Review(
     id: "sample-2",
@@ -50,7 +51,7 @@ List<Review> createSampleReviews() => [
     hygiene: 3,
     comfort: 2,
     aesthetics: 4,
-    tags: ["nice", "small", "great view"],
+    tags: ["nice", "small", "great view"].map(TagPresentation.display).toList(),
   ),
   Review(
     id: "sample-3",
@@ -63,7 +64,11 @@ List<Review> createSampleReviews() => [
     hygiene: 1,
     comfort: 2,
     aesthetics: 1,
-    tags: ["cozy", "sad but true", "noisy"],
+    tags: [
+      "cozy",
+      "sad but true",
+      "noisy",
+    ].map(TagPresentation.display).toList(),
   ),
   Review(
     id: "sample-4",
@@ -76,6 +81,6 @@ List<Review> createSampleReviews() => [
     hygiene: 3,
     comfort: 2,
     aesthetics: 4,
-    tags: ["nice", "small", "great view"],
+    tags: ["nice", "small", "great view"].map(TagPresentation.display).toList(),
   ),
 ];

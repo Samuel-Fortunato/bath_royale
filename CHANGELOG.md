@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Replace wizard category cards with aligned horizontal emoji/slider scales, descriptive feedback, accessible keyboard controls and distinct unanswered/minimum states.
+- Centralize legacy tag decoration and equivalent-label matching in all chips/details; preserve stored text, avoid duplicate suggestions and prefix fresh fictional seed tags.
+- Separate default Geral rankings from remembered category tabs using compact trophy/chart tiles; retain all ranking semantics.
+- Integrate a compact person-avatar profile summary with real two-by-two statistics and adaptive tinted highlights; keep favourites and the header Settings gear.
+- Update the UI specification and interactive reference for Session 4C; verify all 100 tests, strict analysis, formatting, Linux/Android debug builds and Flutter-rendered 320/390dp light/dark layouts with enlarged text. Physical phone acceptance remains pending.
+
 - Refine collection with persistent bathroom emblems, tinted cards, exploration ring and colourful real statistics.
 - Present diary calendar groups and navigate to exact visit experiences.
 - Add responsive best-first ranking podiums using actual identities, unchanged scores and review counts.

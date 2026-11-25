@@ -92,6 +92,19 @@ Verified locally on 2026-11-25: all 92 tests pass, strict analysis accepts only 
 
 - [ ] Owner acceptance of Session 4B on a physical phone.
 
+### Session 4C — Final UI polish
+
+- [x] Replace category cards with horizontal discrete emoji scales; preserve unanswered/zero, exact selections and wizard drafts.
+- [x] Centralize tag decoration and equivalent-label matching across chips/details/search; decorate fresh fictional seeds without schema changes.
+- [x] Distinguish default Geral ranking from retained Por categoria tabs; preserve ranking calculations and navigation.
+- [x] Integrate compact profile identity/statistics and adaptive highlights; keep favourites and the canonical header Settings gear.
+- [x] Complete local verification and Flutter-rendered phone inspection.
+- [ ] Owner acceptance of Session 4C on a physical phone.
+
+Verified locally on 2026-11-25: formatting, strict analysis (unchanged exact Material-import baseline), all 100 tests and Linux/Android debug builds pass. Flutter-rendered 320/390dp screens were inspected in both themes at 1.0/1.5 text scaling, including emoji/slider alignment, tag glyphs, both ranking modes and responsive profile highlights. Regressions cover nullable/minimum and saved categories, tap/drag/keyboard/semantics, tag equivalence and validation, mode/category restoration, profile highlights/favourites and the header Settings route. The interactive HTML reference also passes JavaScript syntax and mode/unanswered/profile smoke checks. No dependencies, schema or ranking formulas changed. Physical phone acceptance remains pending owner confirmation.
+
+Session 4B baseline `d46ad71` was independently verified with 92 tests and successful hosted CI. The owner tested the phone and approved these four refinements; this does not close outstanding physical acceptance checklists.
+
 Shared identity components and the visit-detail route are reused. Do not start backend development as part of these sessions.
 
 ## Phase 2 — Community functionality

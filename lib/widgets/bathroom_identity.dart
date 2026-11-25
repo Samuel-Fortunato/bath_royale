@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/bathroom.dart';
+import '../models/tag_presentation.dart';
 
 /// A persistent bathroom emblem; colour is decorative, never a status signal.
 class BathroomIdentity extends StatelessWidget {
@@ -51,41 +52,19 @@ Color ratingGold(BuildContext context) =>
 class ReviewTag extends StatelessWidget {
   final String tag;
   const ReviewTag(this.tag, {super.key});
-  static const recognized = {
-    'nice': '✨',
-    'cozy': '🛋️',
-    'dark': '🌒',
-    'grafiti': '🎨',
-    'graffiti': '🎨',
-    'small': '🤏',
-    'great view': '🌅',
-    'noisy': '📣',
-    'silenciosa': '🤫',
-    'privacidade': '🔒',
-    'acessível': '♿',
-    'sem sabonete': '🚰',
-    'espelho gigante': '🪞',
-    'música ambiente': '🎵',
-    'vista panorâmica': '🌅',
-    'plantas': '🪴',
-    'hidden gem': '💎',
-    'gancho para mochila': '🪝',
-  };
   @override
-  Widget build(BuildContext context) {
-    final emoji = recognized[tag.trim().toLowerCase()];
-    // Existing emoji prefixes remain exactly as entered.
-    final first = tag.trimLeft().runes.firstOrNull ?? 0;
-    final prefixed = first >= 0x1f000 || (first >= 0x2600 && first <= 0x27ff);
-    return Chip(
-      avatar: prefixed
-          ? null
-          : emoji != null
-          ? Text(emoji)
-          : const Icon(Icons.label_outline, size: 18),
-      label: Text(tag),
-    );
-  }
+  Widget build(BuildContext context) => Chip(
+    avatar: TagPresentation.decoration(tag) == null
+        ? null
+        : Text(
+            TagPresentation.decoration(tag)!,
+            style: const TextStyle(fontFamilyFallback: ['Noto Color Emoji']),
+          ),
+    label: Text(
+      tag,
+      style: const TextStyle(fontFamilyFallback: ['Noto Color Emoji']),
+    ),
+  );
 }
 
 class CategoryLabel extends StatelessWidget {

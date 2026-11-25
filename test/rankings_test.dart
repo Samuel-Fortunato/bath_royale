@@ -8,6 +8,40 @@ import 'package:bath_royale/pages/rankings.dart';
 import 'package:bath_royale/theme/theme.dart';
 
 void main() {
+  testWidgets(
+    'overall is default and category survives scope and mode switches',
+    (tester) async {
+      final state = AppState();
+      addTearDown(state.dispose);
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: state,
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const Scaffold(body: RankingsPage()),
+          ),
+        ),
+      );
+      expect(find.byType(TabBar), findsNothing);
+      await tester.tap(find.text('Por categoria'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<TabBar>(find.byType(TabBar)).tabs.length, 4);
+      await tester.tap(find.text('Estética'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Geral'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TabBar), findsNothing);
+      expect(find.textContaining(' / 5'), findsWidgets);
+      await tester.tap(find.text('Pessoal'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Por categoria'));
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(TabBar));
+      expect(DefaultTabController.of(context).index, 2);
+      expect(find.textContaining(' / 4'), findsWidgets);
+    },
+  );
+
   test(
     'all ranking metrics exclude missing ratings, reverse deterministically and isolate users',
     () {
@@ -120,6 +154,12 @@ void main() {
       await tester.pumpAndSettle();
       final expected = ['2,0 / 5', '2,0 / 4', '1,0 / 4', '2,0 / 4', '1,0 / 2'];
       for (var i = 0; i < RankingMetric.values.length; i++) {
+        if (i == 0) {
+          expect(find.text(expected[i]), findsOneWidget);
+          await tester.tap(find.text('Por categoria'));
+          await tester.pumpAndSettle();
+          continue;
+        }
         await tester.ensureVisible(find.text(RankingMetric.values[i].label));
         await tester.pumpAndSettle();
         await tester.tap(find.text(RankingMetric.values[i].label));
@@ -153,6 +193,8 @@ void main() {
         ),
       );
       await tester.tap(find.text('Pessoal'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Por categoria'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Papel'));
       await tester.pumpAndSettle();

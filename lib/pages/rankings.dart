@@ -12,8 +12,40 @@ class RankingsPage extends StatefulWidget {
 }
 
 class _RankingsPageState extends State<RankingsPage> {
-  bool _personal = false, _worst = false;
-  RankingMetric _metric = RankingMetric.overall;
+  bool _personal = false, _worst = false, _byCategory = false;
+  RankingMetric _category = RankingMetric.hygiene;
+  RankingMetric get _metric => _byCategory ? _category : RankingMetric.overall;
+
+  Widget _modeTile(bool category, String label, IconData icon) {
+    final selected = _byCategory == category;
+    final scheme = Theme.of(context).colorScheme;
+    final accent = category ? scheme.primary : ratingGold(context);
+    return Semantics(
+      selected: selected,
+      child: TextButton(
+        style: TextButton.styleFrom(
+          foregroundColor: selected ? accent : scheme.onSurfaceVariant,
+          backgroundColor: selected
+              ? accent.withValues(alpha: .12)
+              : scheme.surfaceContainerLow,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          minimumSize: const Size(48, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onPressed: () => setState(() => _byCategory = category),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 22),
+            const SizedBox(width: 6),
+            Flexible(child: Text(label, textAlign: TextAlign.center)),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +58,7 @@ class _RankingsPageState extends State<RankingsPage> {
       worst: _worst,
     );
     return DefaultTabController(
-      length: RankingMetric.values.length,
+      length: 4,
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
@@ -36,6 +68,9 @@ class _RankingsPageState extends State<RankingsPage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 child: SegmentedButton<bool>(
+                  showSelectedIcon:
+                      MediaQuery.sizeOf(context).width >= 360 ||
+                      MediaQuery.textScalerOf(context).scale(14) <= 18,
                   segments: const [
                     ButtonSegment(value: false, label: Text('Comunidade')),
                     ButtonSegment(value: true, label: Text('Pessoal')),
@@ -45,16 +80,36 @@ class _RankingsPageState extends State<RankingsPage> {
                       setState(() => _personal = v.single),
                 ),
               ),
-              TabBar(
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                onTap: (index) =>
-                    setState(() => _metric = RankingMetric.values[index]),
-                tabs: [
-                  for (final metric in RankingMetric.values)
-                    Tab(text: metric.label),
-                ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _modeTile(
+                        false,
+                        'Geral',
+                        Icons.emoji_events_outlined,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _modeTile(true, 'Por categoria', Icons.bar_chart),
+                    ),
+                  ],
+                ),
               ),
+              if (_byCategory)
+                TabBar(
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  onTap: (index) => setState(
+                    () => _category = RankingMetric.values[index + 1],
+                  ),
+                  tabs: [
+                    for (final metric in RankingMetric.values.skip(1))
+                      Tab(text: metric.label),
+                  ],
+                ),
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,

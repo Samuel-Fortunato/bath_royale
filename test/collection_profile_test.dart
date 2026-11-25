@@ -237,9 +237,21 @@ void main() {
         dark: dark,
       );
       await capture(tester, 'sample-profile-$dark');
+      expect(find.text('Explorador local'), findsOneWidget);
+      expect(find.text('Definições'), findsNothing);
+      expect(find.text('🧭'), findsNothing);
       expect(find.text('O teu trono habitual'), findsOneWidget);
       expect(find.text('O teu favorito nas avaliações'), findsOneWidget);
       expect(find.textContaining('Média das tuas'), findsOneWidget);
+      for (final label in [
+        'O teu trono habitual',
+        'O teu favorito nas avaliações',
+      ]) {
+        await tap(tester, find.text(label));
+        expect(find.byType(BathroomDetailsPage), findsOneWidget);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+      }
       expect(tester.takeException(), isNull);
     }
   });
@@ -334,7 +346,11 @@ void main() {
             expect(find.byType(ChoiceChip), findsNothing);
             expect(find.byType(CircleAvatar), findsNothing);
             await capture(tester, 'rankings-$width-$dark-$scale');
+            await tap(tester, find.text('Por categoria'));
+            await capture(tester, 'ranking-category-$width-$dark-$scale');
+            await tap(tester, find.text('Geral'));
             await tap(tester, find.text('Pessoal'));
+            await tap(tester, find.text('Por categoria'));
             await tester.drag(find.byType(TabBar), const Offset(-500, 0));
             await tester.pumpAndSettle();
             await tap(tester, find.text('Papel'));

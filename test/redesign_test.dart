@@ -51,6 +51,8 @@ void main() {
       await tester.enterText(find.byType(TextField), 'DEM');
       await tap(tester, find.text('Perfil'));
       expect(find.widgetWithText(AppBar, 'Perfil'), findsOneWidget);
+      expect(find.text('Definições'), findsNothing);
+      expect(find.byTooltip('Definições'), findsOneWidget);
       await tap(tester, find.byTooltip('Definições'));
       final original = state.darkMode;
       await tap(tester, find.text('Modo escuro'));

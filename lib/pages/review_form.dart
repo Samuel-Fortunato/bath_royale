@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import '../models/review.dart';
+import '../models/tag_presentation.dart';
 import '../models/visit.dart';
 import 'bathroom_details.dart' show reviewDate;
 import '../models/bathroom_descriptions.dart';
@@ -28,6 +29,10 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   final _scroll = ScrollController();
   final _search = TextEditingController();
   final _tagFocus = FocusNode();
+  final _categoryFocus = {
+    for (final label in ['Higiene', 'Conforto', 'Estética', 'Papel'])
+      label: FocusNode(),
+  };
   double? _rating;
   String? _visitId;
   bool _visitInitialized = false;
@@ -63,6 +68,9 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     _search.dispose();
     _scroll.dispose();
     _tagFocus.dispose();
+    for (final node in _categoryFocus.values) {
+      node.dispose();
+    }
     super.dispose();
   }
 
@@ -99,7 +107,9 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         _tagError = 'Usa uma etiqueta por vez, até 30 caracteres.';
       } else if (_tags.length >= 10 && !_tags.contains(tag)) {
         _tagError = 'Podes adicionar até 10 etiquetas.';
-      } else if (_tags.any((t) => t.toLowerCase() == tag.toLowerCase())) {
+      } else if (_tags.any(
+        (t) => TagPresentation.key(t) == TagPresentation.key(tag),
+      )) {
         _tagError = 'Esta etiqueta já está selecionada.';
       } else {
         _tags.add(tag);
@@ -247,78 +257,138 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     String Function(Review) describe,
     ValueChanged<int> change,
   ) {
+    final descriptions = [for (var i = 0; i <= max; i++) describe(_example(i))];
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(label, style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: Text(label, style: theme.textTheme.titleMedium)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  value == null
+                      ? 'Por responder'
+                      : descriptions[value].split(' ').skip(1).join(' '),
+                  textAlign: TextAlign.end,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+            ),
+          ],
+        ),
         LayoutBuilder(
           builder: (context, constraints) {
-            final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-            final columns = (constraints.maxWidth / (100 * scale))
-                .floor()
-                .clamp(2, max + 1);
-            final width = (constraints.maxWidth - (columns - 1) * 6) / columns;
-            return Wrap(
-              spacing: 6,
-              runSpacing: 6,
+            final cell = constraints.maxWidth / (max + 1);
+            return Column(
               children: [
-                for (var i = 0; i <= max; i++)
-                  SizedBox(
-                    width: width,
-                    child: Semantics(
-                      selected: value == i,
-                      child: OutlinedButton(
-                        key: ValueKey('$label-$i'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 12,
-                          ),
-                          backgroundColor: value == i
-                              ? Theme.of(context).colorScheme.secondaryContainer
-                              : null,
-                          side: BorderSide(
-                            color: value == i
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.outlineVariant,
-                            width: value == i ? 2 : 1,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                Row(
+                  children: [
+                    for (var i = 0; i <= max; i++)
+                      Expanded(
+                        child: Semantics(
+                          selected: value == i,
+                          child: Tooltip(
+                            message: descriptions[i],
+                            excludeFromSemantics: true,
+                            child: TextButton(
+                              key: ValueKey('$label-$i'),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(48, 48),
+                                backgroundColor: value == i
+                                    ? theme.colorScheme.secondaryContainer
+                                    : null,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                side: value == i
+                                    ? BorderSide(
+                                        color: theme.colorScheme.primary,
+                                        width: 2,
+                                      )
+                                    : BorderSide.none,
+                              ),
+                              onPressed: () => setState(() => change(i)),
+                              child: Semantics(
+                                label: '$label: ${descriptions[i]}',
+                                child: ExcludeSemantics(
+                                  child: FittedBox(
+                                    child: Text(
+                                      descriptions[i].split(' ').first,
+                                      textScaler: TextScaler.noScaling,
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontFamilyFallback: [
+                                          'Noto Color Emoji',
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                        onPressed: () => setState(() => change(i)),
-                        child: Column(
-                          children: [
-                            Text(
-                              describe(_example(i)).split(' ').first,
-                              style: const TextStyle(fontSize: 26),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              describe(
-                                _example(i),
-                              ).split(' ').skip(1).join(' '),
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            SizedBox(
-                              height: 18,
-                              child: value == i
-                                  ? const Icon(Icons.check, size: 18)
-                                  : null,
-                            ),
-                          ],
+                      ),
+                  ],
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: cell / 2),
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      showValueIndicator: ShowValueIndicator.never,
+                      trackShape: const RectangularSliderTrackShape(),
+                      // Keep the full touch target and geometry before answering.
+                      thumbColor: value == null ? Colors.transparent : null,
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 8,
+                        elevation: 0,
+                        pressedElevation: 0,
+                      ),
+                    ),
+                    child: MergeSemantics(
+                      child: Semantics(
+                        label: label,
+                        child: CallbackShortcuts(
+                          bindings: {
+                            const SingleActivator(
+                              LogicalKeyboardKey.home,
+                            ): () =>
+                                setState(() => change(0)),
+                            const SingleActivator(LogicalKeyboardKey.end): () =>
+                                setState(() => change(max)),
+                          },
+                          child: Slider(
+                            key: ValueKey('$label-slider'),
+                            focusNode: _categoryFocus[label],
+                            onChangeStart: (_) =>
+                                _categoryFocus[label]!.requestFocus(),
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            value: (value ?? 0).toDouble(),
+                            min: 0,
+                            max: max.toDouble(),
+                            divisions: max,
+                            semanticFormatterCallback: (v) =>
+                                value == null && v == 0
+                                ? 'Por responder'
+                                : descriptions[v.round()],
+                            onChanged: (v) => setState(() => change(v.round())),
+                          ),
                         ),
                       ),
                     ),
                   ),
+                ),
               ],
             );
           },
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
       ],
     );
   }
@@ -384,13 +454,23 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   }
 
   Widget _tagStep(AppState state) {
-    final known = {
-      ..._suggestions,
-      for (final r in state.reviews) ...r.tags,
-    }.toList();
+    final known = <String, String>{
+      for (final tag in {
+        ..._suggestions,
+        for (final r in state.reviews) ...r.tags,
+      })
+        TagPresentation.key(tag): tag,
+    }.values.toList();
     final query = _search.text.trim().toLowerCase();
     final suggestions = known
-        .where((t) => !_tags.contains(t) && t.toLowerCase().contains(query))
+        .where(
+          (t) =>
+              !_tags.any(
+                (selected) =>
+                    TagPresentation.key(selected) == TagPresentation.key(t),
+              ) &&
+              TagPresentation.key(t).contains(TagPresentation.key(query)),
+        )
         .take(query.isEmpty ? 6 : 12);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -421,7 +501,20 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
             children: [
               for (final tag in _tags)
                 InputChip(
-                  label: Text(tag),
+                  avatar: TagPresentation.decoration(tag) == null
+                      ? null
+                      : Text(
+                          TagPresentation.decoration(tag)!,
+                          style: const TextStyle(
+                            fontFamilyFallback: ['Noto Color Emoji'],
+                          ),
+                        ),
+                  label: Text(
+                    tag,
+                    style: const TextStyle(
+                      fontFamilyFallback: ['Noto Color Emoji'],
+                    ),
+                  ),
                   deleteButtonTooltipMessage: 'Remover $tag',
                   onDeleted: () => setState(() {
                     _tags.remove(tag);
@@ -439,7 +532,20 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
           children: [
             for (final tag in suggestions)
               ActionChip(
-                label: Text(tag),
+                avatar: TagPresentation.decoration(tag) == null
+                    ? null
+                    : Text(
+                        TagPresentation.decoration(tag)!,
+                        style: const TextStyle(
+                          fontFamilyFallback: ['Noto Color Emoji'],
+                        ),
+                      ),
+                label: Text(
+                  tag,
+                  style: const TextStyle(
+                    fontFamilyFallback: ['Noto Color Emoji'],
+                  ),
+                ),
                 onPressed: () => setState(() {
                   if (_tags.length < 10) {
                     _tags.add(tag);

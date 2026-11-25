@@ -4,10 +4,43 @@ import '../state/app_state.dart';
 import '../widgets/wc_card.dart';
 import 'collection.dart';
 import '../models/ranking.dart';
+import '../models/bathroom.dart';
 import '../widgets/bathroom_identity.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
+
+  Widget _highlight(
+    BuildContext context,
+    AppState state,
+    Bathroom bathroom,
+    String title,
+    String detail,
+  ) => Card(
+    color: BathroomIdentity.colors(
+      context,
+      bathroom,
+    ).secondaryContainer.withValues(alpha: .3),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => openCollectedBathroom(context, state, bathroom.id),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            BathroomIdentity(bathroom: bathroom, size: 36),
+            const SizedBox(height: 8),
+            Text(title, style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 4),
+            Text(bathroom.name, style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text(detail, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -55,73 +88,76 @@ class ProfilePage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primaryContainer.withValues(alpha: .5),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Center(
-                child: CircleAvatar(
-                  radius: 32,
-                  child: Text(
-                    '🧭',
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontFamilyFallback: ['Noto Color Emoji'],
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        const CircleAvatar(
+                          radius: 30,
+                          child: Icon(Icons.person_outline, size: 30),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'O teu perfil',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const Text('Explorador local'),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                    const Divider(height: 28),
+                    const LocalStatistics(includeDiscoveries: true),
+                  ],
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            Text(
-              'O teu perfil',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headlineSmall,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final sideBySide =
+                    constraints.maxWidth >= 340 &&
+                    MediaQuery.textScalerOf(context).scale(14) <= 18;
+                final highlights = <Widget>[
+                  if (visited.isNotEmpty)
+                    _highlight(
+                      context,
+                      state,
+                      visited.first.bathroom,
+                      'O teu trono habitual',
+                      '${visited.first.activity.visitCount} visitas',
+                    ),
+                  if (rated.isNotEmpty)
+                    _highlight(
+                      context,
+                      state,
+                      rated.first.bathroom,
+                      'O teu favorito nas avaliações',
+                      '${rated.first.score.toStringAsFixed(1).replaceAll('.', ',')} / 5\nMédia das tuas ${rated.first.count} avaliações',
+                    ),
+                ];
+                return sideBySide
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (final card in highlights) Expanded(child: card),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: highlights,
+                      );
+              },
             ),
-            Text(
-              'Perfil local',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 24),
-            const LocalStatistics(includeDiscoveries: true),
-            const SizedBox(height: 24),
-            if (visited.isNotEmpty)
-              Card(
-                child: ListTile(
-                  leading: BathroomIdentity(bathroom: visited.first.bathroom),
-                  title: const Text('O teu trono habitual'),
-                  subtitle: Text(
-                    '${visited.first.bathroom.name} · ${visited.first.activity.visitCount} visitas',
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => openCollectedBathroom(
-                    context,
-                    state,
-                    visited.first.bathroom.id,
-                  ),
-                ),
-              ),
-            if (rated.isNotEmpty)
-              Card(
-                child: ListTile(
-                  leading: BathroomIdentity(bathroom: rated.first.bathroom),
-                  title: const Text('O teu favorito nas avaliações'),
-                  subtitle: Text(
-                    '${rated.first.bathroom.name} · ${rated.first.score.toStringAsFixed(1).replaceAll('.', ',')} / 5\nMédia das tuas ${rated.first.count} avaliações',
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => openCollectedBathroom(
-                    context,
-                    state,
-                    rated.first.bathroom.id,
-                  ),
-                ),
-              ),
             if (visited.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(16),
@@ -141,21 +177,6 @@ class ProfilePage extends StatelessWidget {
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => open('Os meus favoritos', const FavouritesList()),
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.settings_outlined),
-              title: const Text('Definições'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => ChangeNotifierProvider.value(
-                    value: state,
-                    child: const SettingsPage(),
-                  ),
-                ),
-              ),
             ),
             const Divider(height: 1),
             const Padding(
