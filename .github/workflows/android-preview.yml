@@ -1,0 +1,145 @@
+name: Android preview
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      publish_prerelease:
+        description: Publish a GitHub pre-release with a direct APK download
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-preview-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-and-build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      PUB_CACHE: ${{ github.workspace }}/.pub-cache
+      GRADLE_USER_HOME: ${{ github.workspace }}/.gradle
+    defaults:
+      run:
+        shell: nix develop --no-write-lock-file --command bash --noprofile --norc -e -o pipefail {0}
+    outputs:
+      build_number: ${{ steps.version.outputs.build_number }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Cache downloaded dependencies
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            .pub-cache
+            .gradle/caches
+            .gradle/wrapper
+          key: android-${{ runner.os }}-${{ hashFiles('flake.lock', 'pubspec.lock', 'android/**/*.gradle.kts', 'android/gradle.properties', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            android-${{ runner.os }}-
+      - name: Resolve locked packages and show toolchain
+        run: |
+          echo "ANDROID_USER_HOME=$RUNNER_TEMP/android-preview-signing" >> "$GITHUB_ENV"
+          flutter --version
+          java -version
+          flutter pub get --enforce-lockfile
+      - name: Check formatting
+        run: |
+          actionlint
+          dart format --output=none --set-exit-if-changed lib test tool
+      - name: Analyze (only documented Material import debt is accepted)
+        run: dart run tool/check_analysis.dart
+      - name: Test
+        run: flutter test --no-pub
+      - name: Set preview version
+        id: version
+        run: |
+          build_number=$((1000 + GITHUB_RUN_NUMBER))
+          echo "build_number=$build_number" >> "$GITHUB_OUTPUT"
+          echo "PREVIEW_BUILD_NUMBER=$build_number" >> "$GITHUB_ENV"
+      - name: Restore the existing preview signing key
+        env:
+          PREVIEW_KEYSTORE_BASE64: ${{ secrets.ANDROID_PREVIEW_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$PREVIEW_KEYSTORE_BASE64" ]; then
+            echo '::error::Configure ANDROID_PREVIEW_KEYSTORE_BASE64; refusing an incompatible temporary signing key.'
+            exit 1
+          fi
+          umask 077
+          mkdir -p "$ANDROID_USER_HOME"
+          printf '%s' "$PREVIEW_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_USER_HOME/debug.keystore"
+      - name: Build installable preview APK
+        run: flutter build apk --debug --no-pub --build-name "0.1.0-preview.${GITHUB_RUN_NUMBER}" --build-number "$PREVIEW_BUILD_NUMBER"
+      - name: Verify identity, version and signing certificate
+        run: |
+          apk=build/app/outputs/flutter-apk/app-debug.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk" | tee "$RUNNER_TEMP/signing.txt"
+          grep -Fx 'Signer #1 certificate SHA-256 digest: 4f5c38685c8304dca2708d9627e0287a82f3058c4c2293c42bb980d05bea37fc' "$RUNNER_TEMP/signing.txt"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" > "$RUNNER_TEMP/badging.txt"
+          grep "^package: name='com.example.bath_royale' versionCode='$PREVIEW_BUILD_NUMBER' versionName='0.1.0-preview.$GITHUB_RUN_NUMBER'" "$RUNNER_TEMP/badging.txt"
+          mkdir -p preview
+          cp "$apk" "preview/bath-royale-preview-$PREVIEW_BUILD_NUMBER.apk"
+          (cd preview && sha256sum ./*.apk > SHA256SUMS)
+          {
+            echo "### Android preview $PREVIEW_BUILD_NUMBER"
+            echo "Commit: $GITHUB_SHA"
+            echo 'Download the artifact below and extract the APK on your phone.'
+            echo 'Install as an update; do not uninstall the existing app.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload APK and checksum
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: bath-royale-preview-${{ steps.version.outputs.build_number }}
+          path: preview/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+      - name: Remove signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/android-preview-signing/debug.keystore"
+
+  prerelease:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_prerelease && github.ref == 'refs/heads/main'
+    needs: verify-and-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: bath-royale-preview-${{ needs.verify-and-build.outputs.build_number }}
+          path: preview
+      - name: Publish optional phone download
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BUILD_NUMBER: ${{ needs.verify-and-build.outputs.build_number }}
+        run: |
+          tag="preview-$BUILD_NUMBER"
+          # A retry must not overwrite an already published preview.
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "::error::Release $tag already exists; dispatch a new run instead."
+            exit 1
+          fi
+          cat > "$RUNNER_TEMP/preview-notes.md" <<EOF
+          Android development preview from commit $GITHUB_SHA.
+
+          Transfere o ficheiro APK abaixo e instala-o como atualização, sem desinstalar a aplicação existente, para manter os dados locais.
+
+          Compilação de desenvolvimento, assinada com a chave de teste existente. Não é uma versão de produção.
+          EOF
+          gh release create "$tag" preview/*.apk preview/SHA256SUMS \
+            --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "Bath Royale — Preview $BUILD_NUMBER" \
+            --notes-file "$RUNNER_TEMP/preview-notes.md"

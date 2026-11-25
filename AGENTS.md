@@ -17,10 +17,11 @@
 
 ## Git workflow
 
-- Automatically create local commits after logical, verified units of work; do not ask for approval for routine local commits. Use clear, concise Conventional Commit messages and separate unrelated changes.
+- Automatically commit logical, verified units of work and push the completed, successfully verified task to the existing upstream branch. Routine local commits and pushes do not require owner approval. Use clear, concise Conventional Commit messages and separate unrelated changes.
 - Stage only files relevant to each commit. Do not commit generated build artifacts or temporary files.
-- Do not push to GitHub or merge into main without explicit instruction. Never force-push, rewrite history or discard the owner's changes without explicit approval.
-- Report commits created at the end of each task.
+- Fetch and check the upstream before pushing. If the remote branch has diverged, report the situation; do not automatically merge, rebase or perform potentially destructive operations.
+- Never force-push, rewrite history, discard the owner's changes, publish secrets or push incomplete or failing work. Merging branches still requires explicit instruction.
+- Report created commits and push status concisely at the end of each task. Verify the actual GitHub Actions result after workflow changes; never infer remote compilation success from local checks.
 
 ## Changelog
 

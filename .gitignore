@@ -46,3 +46,9 @@ app.*.map.json
 
 # direnv files
 .direnv/
+
+# Local CI dependency cache and signing material
+/.gradle/
+/preview/
+*.keystore
+*.jks

@@ -36,6 +36,7 @@
         cmake
         ninja
         pkg-config
+        actionlint
 
         # Android development
         androidSdk

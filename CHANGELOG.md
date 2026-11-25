@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add Nix-locked GitHub Actions checks and Android preview APK artifacts on `main` pushes and manual runs, with dependency caching and 14-day retention.
+- Preserve Android preview signing through an approved Actions secret, verify APK identity/certificate/version, and add opt-in manual GitHub pre-releases.
+- Gate analysis with a tested, exact baseline for existing Material imports; retain all other diagnostics.
+- Document phone installation and preview versioning; authorize automatic pushes of completed, verified tasks to the existing upstream.
+
 - Complete the Phase 1 local prototype audit with 36 tests and Linux/Android debug builds; document accepted Material deprecations and deferred release work.
 - Keep custom tag validation visible when input is hidden, refresh its label, and restrict bathroom creation to Explore.
 - Add a useful local profile, accessible icon labels and explicit mean-versus-latest personal rating explanations.

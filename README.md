@@ -8,7 +8,7 @@ This is an early local Flutter prototype. It displays sample bathrooms, rating d
 
 ## Development setup
 
-The repository includes a Nix flake and direnv configuration for an `x86_64-linux` development shell. Install Nix with flakes enabled and direnv with its shell integration, then from the project directory run:
+The repository includes a Nix flake and direnv configuration for an `x86_64-linux` development shell, shared with GitHub Actions. Install Nix with flakes enabled and direnv with its shell integration, then from the project directory run:
 
 ```sh
 direnv allow
@@ -16,7 +16,7 @@ flutter --version
 flutter pub get
 ```
 
-Alternatively, enter the shell with `nix develop` and run the Flutter commands there. The flake lock pins the Nix input; `pubspec.lock` records Dart package versions. The configured environment has been used with Flutter 3.50.1 and Dart 3.14.0. Other platforms and toolchain versions may require additional setup. The flake provides Linux desktop dependencies and an Android SDK/NDK with Java 17; see the Android instructions below. Deployment and release signing are not configured.
+Alternatively, enter the shell with `nix develop` and run the Flutter commands there. The flake lock pins the Nix input; `pubspec.lock` records Dart package versions. The configured environment has been used with Flutter 3.50.1 and Dart 3.14.0. Other platforms and toolchain versions may require additional setup. The flake provides Linux desktop dependencies and an Android SDK/NDK with Java 17; see the Android instructions below. Android development previews use the existing signing key through GitHub Actions secrets. Production signing and store deployment remain open.
 
 ## Run, check and build
 
@@ -25,14 +25,21 @@ From the development shell:
 ```sh
 flutter devices
 flutter run -d linux
-dart format --output=none --set-exit-if-changed lib test
+dart format --output=none --set-exit-if-changed lib test tool
 flutter analyze
+dart run tool/check_analysis.dart
 flutter test
 flutter build linux --debug
 flutter build linux --release
 ```
 
- Linux builds require a working Linux desktop toolchain. Android and web release preparation is planned, and platform-specific prerequisites must be configured separately. Generated outputs under `build/` are not source files.
+Linux builds require a working Linux desktop toolchain. Android production and web release preparation remain planned. Generated outputs under `build/` are not source files.
+
+## Android preview downloads
+
+Pushes to `main` and manual runs execute formatting, a strict analysis policy for the documented Material debt, tests and an Android debug APK build in the locked Nix environment. Download the APK from a successful [Android preview run](https://github.com/Samuel-Fortunato/bath_royale/actions/workflows/android-preview.yml); artifacts are kept for 14 days. Manual runs can optionally publish a [GitHub pre-release](https://github.com/Samuel-Fortunato/bath_royale/releases) with a direct APK download.
+
+On your phone, extract the artifact ZIP, open the APK and choose **Update**. Keep the existing app installed to preserve its local data. See [phone installation, signing, versioning and CI details](docs/android-previews.md). These are development previews; production signing is separate. Phase 2 backend work has not started.
 
 See [AGENTS.md](AGENTS.md) for development and Git practices.
 
