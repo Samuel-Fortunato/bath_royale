@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'package:bath_royale/pages/experience_details.dart';
 import 'dart:ui' as ui;
 import 'package:bath_royale/models/bathroom.dart';
 import 'package:bath_royale/models/review.dart';
+import 'package:bath_royale/models/ranking.dart';
 import 'package:bath_royale/models/visit.dart';
 import 'package:bath_royale/pages/collection.dart';
 import 'package:bath_royale/pages/profile.dart';
@@ -79,6 +81,13 @@ void main() {
     if (fontPath.isNotEmpty) {
       final icons = await rootBundle.load('fonts/MaterialIcons-Regular.otf');
       await (FontLoader('MaterialIcons')..addFont(Future.value(icons))).load();
+      const emojiPath = String.fromEnvironment('SESSION3_EMOJI');
+      if (emojiPath.isNotEmpty) {
+        final emoji = await File(emojiPath).readAsBytes();
+        await (FontLoader(
+          'Noto Color Emoji',
+        )..addFont(Future.value(emoji.buffer.asByteData()))).load();
+      }
       final bytes = await File(fontPath).readAsBytes();
       await (FontLoader(
         'Roboto',
@@ -169,7 +178,10 @@ void main() {
       await mount(tester, state, const Scaffold(body: ProfilePage()));
       expect(find.text('101'), findsOneWidget);
       expect(find.byType(Wrap), findsOneWidget);
-      expect(find.textContaining('Trono 0'), findsNothing);
+      expect(find.textContaining('Trono 0'), findsNWidgets(2));
+      expect(find.text('Histórico de atividade'), findsNothing);
+      await tester.drag(find.byType(ListView), const Offset(0, -400));
+      await tester.pumpAndSettle();
       await tap(tester, find.text('Os meus favoritos'));
       expect(find.byType(FavouritesList), findsOneWidget);
       await tap(tester, find.textContaining('Trono 1'));
@@ -178,12 +190,101 @@ void main() {
       await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();
-      await tap(tester, find.text('Histórico de atividade'));
+      await mount(
+        tester,
+        state,
+        const Scaffold(body: CollectionPage(initialTab: 1)),
+      );
       expect(find.byType(VisitDiary), findsOneWidget);
       await tap(tester, find.textContaining('Trono 0').first);
-      expect(find.byType(BathroomDetailsPage), findsOneWidget);
+      expect(find.byType(ExperienceDetailsPage), findsOneWidget);
+      expect(
+        tester
+            .widget<ExperienceDetailsPage>(find.byType(ExperienceDetailsPage))
+            .visitId,
+        'visit-99',
+      );
     },
   );
+
+  testWidgets('sample podium and profile render with diverse identities', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final state = AppState();
+    addTearDown(state.dispose);
+    for (final dark in [false, true]) {
+      await mount(
+        tester,
+        state,
+        const Scaffold(body: RankingsPage()),
+        dark: dark,
+      );
+      expect(find.byType(RankingPodium), findsOneWidget);
+      for (var i = 1; i <= 3; i++) {
+        expect(find.byKey(ValueKey('podium-$i')), findsOneWidget);
+      }
+      await capture(tester, 'sample-podium-$dark');
+      await tap(tester, find.text('Melhores'));
+      expect(find.byType(RankingPodium), findsNothing);
+      await mount(
+        tester,
+        state,
+        const Scaffold(body: ProfilePage()),
+        dark: dark,
+      );
+      await capture(tester, 'sample-profile-$dark');
+      expect(find.text('O teu trono habitual'), findsOneWidget);
+      expect(find.text('O teu favorito nas avaliações'), findsOneWidget);
+      expect(find.textContaining('Média das tuas'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+  test('natural diary headings respect calendar boundaries', () {
+    expect(
+      diaryLabel(DateTime(2026, 1, 1), now: DateTime(2026, 1, 1, 23)),
+      'Hoje',
+    );
+    expect(
+      diaryLabel(DateTime(2025, 12, 31), now: DateTime(2026, 1, 1)),
+      'Ontem',
+    );
+  });
+  testWidgets('podium handles one, two, three and no ranked bathrooms', (
+    tester,
+  ) async {
+    for (final count in [0, 1, 2, 3]) {
+      final state = AppState();
+      final ranked = rankBathrooms(
+        state.allBathrooms,
+        state.reviews,
+        RankingMetric.overall,
+      ).take(count).toList();
+      await mount(
+        tester,
+        state,
+        Scaffold(
+          body: RankingPodium(rows: ranked, metric: RankingMetric.overall),
+        ),
+      );
+      for (var i = 1; i <= 3; i++) {
+        expect(
+          find.byKey(ValueKey('podium-$i')),
+          i <= count ? findsOneWidget : findsNothing,
+        );
+      }
+      if (count > 0) {
+        await tap(tester, find.text(ranked.first.bathroom.name));
+        expect(find.byType(BathroomDetailsPage), findsOneWidget);
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+      state.dispose();
+    }
+  });
 
   test('diary date uses the local calendar', () {
     final timestamp = DateTime.utc(2026, 7, 1, 23, 30);

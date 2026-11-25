@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Refine collection with persistent bathroom emblems, tinted cards, exploration ring and colourful real statistics.
+- Present diary calendar groups and navigate to exact visit experiences.
+- Add responsive best-first ranking podiums using actual identities, unchanged scores and review counts.
+- Add navigable most-visited and highest personal mean profile highlights, counted favourites and settings; remove duplicate activity history.
+- Update design references and regressions. Verify all 92 tests, strict analysis, formatting, Linux/Android debug builds and rendered light/dark phone layouts with enlarged text.
+
 - Add persistent bathroom emoji/accent identities, curated creation choices and an explicit randomize action; retain existing data with a simple transactional SQLite v3 migration.
 - Restore playful Explore/detail identities, golden rating stars, category accents and legacy tag decoration without changing stored tags; show active ordering and result counts only during search/filtering.
 - Prioritize reviewed experiences in visit history, keep standalone visits complete and add reusable individual experience details with ownership-aware review/edit/confirmed removal actions.

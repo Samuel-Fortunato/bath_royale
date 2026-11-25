@@ -14,12 +14,14 @@ class BathroomIdentity extends StatelessWidget {
     0xffa44878,
     0xffac593c,
   ];
+  static ColorScheme colors(BuildContext context, Bathroom bathroom) =>
+      ColorScheme.fromSeed(
+        seedColor: Color(seeds[bathroom.accent % seeds.length]),
+        brightness: Theme.of(context).brightness,
+      );
   @override
   Widget build(BuildContext context) {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: Color(seeds[bathroom.accent % seeds.length]),
-      brightness: Theme.of(context).brightness,
-    );
+    final scheme = colors(context, bathroom);
     return ExcludeSemantics(
       child: Container(
         width: size,
@@ -29,7 +31,13 @@ class BathroomIdentity extends StatelessWidget {
           color: scheme.secondaryContainer.withValues(alpha: .5),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Text(bathroom.emoji, style: TextStyle(fontSize: size * .52)),
+        child: Text(
+          bathroom.emoji,
+          style: TextStyle(
+            fontSize: size * .52,
+            fontFamilyFallback: const ['Noto Color Emoji'],
+          ),
+        ),
       ),
     );
   }

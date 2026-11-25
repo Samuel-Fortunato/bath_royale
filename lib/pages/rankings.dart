@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/ranking.dart';
 import '../state/app_state.dart';
 import 'collection.dart';
+import '../widgets/bathroom_identity.dart';
 
 class RankingsPage extends StatefulWidget {
   const RankingsPage({super.key});
@@ -103,6 +104,13 @@ class _RankingsPageState extends State<RankingsPage> {
                         separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final row = rows[index];
+                          if (!_worst && index < 3) {
+                            if (index > 0) return const SizedBox.shrink();
+                            return RankingPodium(
+                              rows: rows.take(3).toList(),
+                              metric: _metric,
+                            );
+                          }
                           return InkWell(
                             onTap: () => openCollectedBathroom(
                               context,
@@ -123,6 +131,11 @@ class _RankingsPageState extends State<RankingsPage> {
                                       ).textTheme.labelLarge,
                                     ),
                                   ),
+                                  BathroomIdentity(
+                                    bathroom: row.bathroom,
+                                    size: 36,
+                                  ),
+                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -166,6 +179,106 @@ class _RankingsPageState extends State<RankingsPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Leading positions wrap into a vertical podium when text needs more room.
+class RankingPodium extends StatelessWidget {
+  const RankingPodium({super.key, required this.rows, required this.metric});
+  final List<RankedBathroom> rows;
+  final RankingMetric metric;
+  @override
+  Widget build(BuildContext context) {
+    if (rows.isEmpty) return const SizedBox.shrink();
+    final state = context.read<AppState>();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stacked =
+            constraints.maxWidth < 350 ||
+            MediaQuery.textScalerOf(context).scale(14) > 18;
+        Widget place(int index) {
+          final row = rows[index];
+          final medal = [Colors.amber, Colors.blueGrey, Colors.brown][index];
+          final scheme = ColorScheme.fromSeed(
+            seedColor: medal,
+            brightness: Theme.of(context).brightness,
+          );
+          return Card(
+            key: ValueKey('podium-${index + 1}'),
+            color: scheme.secondaryContainer.withValues(
+              alpha: index == 0 ? .7 : .35,
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () =>
+                  openCollectedBathroom(context, state, row.bathroom.id),
+              child: Padding(
+                padding: EdgeInsets.all(index == 0 ? 16 : 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      ['🥇', '🥈', '🥉'][index],
+                      style: TextStyle(
+                        fontSize: index == 0 ? 32 : 24,
+                        fontFamilyFallback: const ['Noto Color Emoji'],
+                      ),
+                    ),
+                    Text(
+                      '${index + 1}º lugar',
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    BathroomIdentity(
+                      bathroom: row.bathroom,
+                      size: index == 0 ? 64 : 48,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      row.bathroom.name,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${row.score.toStringAsFixed(1).replaceAll('.', ',')} / ${metric.maximum}',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: ratingGold(context),
+                      ),
+                    ),
+                    Text(
+                      '${row.count} ${row.count == 1 ? 'avaliação' : 'avaliações'}',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (stacked) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [for (var i = 0; i < rows.length; i++) place(i)],
+          );
+        }
+        final order = [if (rows.length > 1) 1, 0, if (rows.length > 2) 2];
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            for (final i in order)
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(top: i == 0 ? 0 : 28),
+                  child: place(i),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

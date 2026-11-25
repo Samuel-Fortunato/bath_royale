@@ -50,6 +50,8 @@ void main() {
             )
             .first,
       );
+      await tester.ensureVisible(find.text('Os meus favoritos'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Os meus favoritos'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('DEM - 3º piso'));

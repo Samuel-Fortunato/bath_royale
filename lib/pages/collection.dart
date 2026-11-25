@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import 'bathroom_details.dart';
+import 'experience_details.dart';
+import '../widgets/bathroom_identity.dart';
 
 void openCollectedBathroom(BuildContext context, AppState state, String id) {
   Navigator.push(
@@ -39,7 +41,13 @@ class LocalStatistics extends StatelessWidget {
     ];
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = includeDiscoveries ? 2 : 3;
+        final columns =
+            includeDiscoveries ||
+                constraints.maxWidth /
+                        MediaQuery.textScalerOf(context).scale(1) <
+                    250
+            ? 2
+            : 3;
         return Wrap(
           runSpacing: 16,
           children: [
@@ -48,6 +56,19 @@ class LocalStatistics extends StatelessWidget {
                 width: constraints.maxWidth / columns,
                 child: Column(
                   children: [
+                    Icon(
+                      switch (stat.$2) {
+                        'Visitas' => Icons.explore,
+                        'Avaliações' => Icons.star_rounded,
+                        'Favoritos' => Icons.favorite,
+                        _ => Icons.auto_awesome,
+                      },
+                      color: switch (stat.$2) {
+                        'Avaliações' => ratingGold(context),
+                        'Favoritos' => Theme.of(context).colorScheme.tertiary,
+                        _ => Theme.of(context).colorScheme.primary,
+                      },
+                    ),
                     Text(
                       '${stat.$1}',
                       style: Theme.of(context).textTheme.headlineSmall,
@@ -97,9 +118,45 @@ class CollectionPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          '$discovered / ${entries.length}',
-                          style: Theme.of(context).textTheme.headlineMedium,
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 56,
+                              height: 56,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  SizedBox.expand(
+                                    child: CircularProgressIndicator(
+                                      value: entries.isEmpty
+                                          ? 0
+                                          : discovered / entries.length,
+                                      strokeWidth: 6,
+                                      backgroundColor: Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerHighest,
+                                    ),
+                                  ),
+                                  const Text(
+                                    '🧭',
+                                    style: TextStyle(
+                                      fontSize: 26,
+                                      fontFamilyFallback: ['Noto Color Emoji'],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                '$discovered / ${entries.length}',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineMedium,
+                              ),
+                            ),
+                          ],
                         ),
                         const Text('Tronos descobertos'),
                         const SizedBox(height: 12),
@@ -174,7 +231,12 @@ class CollectibleCatalogue extends StatelessWidget {
                               return Card(
                                 color: count == 0
                                     ? Theme.of(context).colorScheme.surface
-                                    : null,
+                                    : BathroomIdentity.colors(
+                                        context,
+                                        entry.bathroom,
+                                      ).secondaryContainer.withValues(
+                                        alpha: .25,
+                                      ),
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(12),
                                   onTap: () => openCollectedBathroom(
@@ -188,6 +250,25 @@ class CollectibleCatalogue extends StatelessWidget {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
+                                        Center(
+                                          child: count == 0
+                                              ? Container(
+                                                  width: 64,
+                                                  height: 64,
+                                                  alignment: Alignment.center,
+                                                  child: Text(
+                                                    '?',
+                                                    style: Theme.of(
+                                                      context,
+                                                    ).textTheme.headlineLarge,
+                                                  ),
+                                                )
+                                              : BathroomIdentity(
+                                                  bathroom: entry.bathroom,
+                                                  size: 64,
+                                                ),
+                                        ),
+                                        const SizedBox(height: 8),
                                         Text(
                                           count == 0
                                               ? '○ Por descobrir'
@@ -247,7 +328,7 @@ class VisitDiary extends StatelessWidget {
             final order = b.visitedAt.compareTo(a.visitedAt);
             return order != 0 ? order : b.id.compareTo(a.id);
           });
-    final names = {for (final b in state.allBathrooms) b.id: b.name};
+    final bathrooms = {for (final b in state.allBathrooms) b.id: b};
     final reviews = {for (final r in state.reviews) r.visitId: r};
     if (visits.isEmpty) {
       return const Center(
@@ -272,17 +353,40 @@ class VisitDiary extends StatelessWidget {
             if (index == 0 || diaryDay(visits[index - 1].visitedAt) != day)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(day, style: Theme.of(context).textTheme.titleSmall),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.today,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      diaryLabel(date),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
               ),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text(names[visit.bathroomId]!),
+              leading: BathroomIdentity(bathroom: bathrooms[visit.bathroomId]!),
+              title: Text(bathrooms[visit.bathroomId]!.name),
               subtitle: Text(
                 '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}${review == null ? '' : ' · ${review.rating.toStringAsFixed(1).replaceAll('.', ',')} / 5 ★'}',
               ),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () =>
-                  openCollectedBathroom(context, state, visit.bathroomId),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => ChangeNotifierProvider.value(
+                    value: state,
+                    child: ExperienceDetailsPage(visitId: visit.id),
+                  ),
+                ),
+              ),
             ),
             const Divider(height: 1),
           ],
@@ -290,4 +394,16 @@ class VisitDiary extends StatelessWidget {
       },
     );
   }
+}
+
+String diaryLabel(DateTime date, {DateTime? now}) {
+  final local = date.toLocal();
+  final today = (now ?? DateTime.now()).toLocal();
+  final day = DateTime(local.year, local.month, local.day);
+  final current = DateTime(today.year, today.month, today.day);
+  if (day == current) return 'Hoje';
+  if (day == DateTime(current.year, current.month, current.day - 1)) {
+    return 'Ontem';
+  }
+  return diaryDay(local);
 }

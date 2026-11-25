@@ -79,16 +79,20 @@ Local verification on 2026-11-25: all 78 tests pass, including empty catalogues,
 
 Phone feedback on Sessions 1–3: the new information architecture and three-step wizard were well received. Session 4A responds to the need for more playful personality; this is not blanket acceptance of every earlier device checklist item.
 
-Verified locally on 2026-11-25: all 89 tests pass, including v2 migration/relational/settings preservation, selected identity persistence/restoration, legacy tag text, explicit visit associations, atomic new review/cancellation/zero/duplicate handling, history navigation, ownership, editing, confirmed removal and undo. Formatting and strict analysis pass (only the exact documented Material-import baseline, now 26 files). Linux and Android debug builds pass. Layout checks cover 320/390/1200 px in both themes with enlarged text, alongside existing accessibility checks. Flutter-rendered Explore, details, experience and creation captures were inspected in light/dark themes with loaded text, icon and emoji fonts. Android system-back routing is covered through Flutter's route-pop handling; physical phone acceptance of Session 4A remains open. Hosted CI is reported after push without waiting. Session 4B and backend development have not started.
+Verified locally on 2026-11-25: all 89 tests pass, including v2 migration/relational/settings preservation, selected identity persistence/restoration, legacy tag text, explicit visit associations, atomic new review/cancellation/zero/duplicate handling, history navigation, ownership, editing, confirmed removal and undo. Formatting and strict analysis pass (only the exact documented Material-import baseline, now 26 files). Linux and Android debug builds pass. Layout checks cover 320/390/1200 px in both themes with enlarged text, alongside existing accessibility checks. Flutter-rendered Explore, details, experience and creation captures were inspected in light/dark themes with loaded text, icon and emoji fonts. Android system-back routing is covered through Flutter's route-pop handling; physical phone acceptance of Session 4A remains open. Hosted CI is reported after push without waiting. Session 4B is verified below; backend development has not started.
 
-### Session 4B — Planned, not implemented
+### Session 4B — Playful collection, diary, rankings and profile
 
-- [ ] More colourful collectible cards using shared bathroom identities and clearer collection progress.
-- [ ] Visually separated diary date groups with navigation to individual experience details.
-- [ ] Ranking podiums and stronger score hierarchy.
-- [ ] More expressive profile statistics and meaningful personal highlights; remove duplicated activity history from Profile.
+- [x] More colourful collectible cards using shared bathroom identities and clearer collection progress.
+- [x] Visually separated diary date groups with navigation to individual experience details.
+- [x] Ranking podiums and stronger score hierarchy.
+- [x] More expressive profile statistics and meaningful personal highlights; remove duplicated activity history from Profile.
 
-Shared identity components and the visit-detail route are ready for reuse. Do not start backend development as part of these sessions.
+Verified locally on 2026-11-25: all 92 tests pass, strict analysis accepts only the existing exact Material-import baseline, formatting and Linux/Android debug builds pass. Flutter-rendered collection, diary, rankings and profile were inspected in both themes at phone widths and enlarged text; sample three-place podiums were also inspected. No schema or storage changes. Physical phone acceptance remains open.
+
+- [ ] Owner acceptance of Session 4B on a physical phone.
+
+Shared identity components and the visit-detail route are reused. Do not start backend development as part of these sessions.
 
 ## Phase 2 — Community functionality
 
