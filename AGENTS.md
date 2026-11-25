@@ -37,3 +37,10 @@
 - If a utility such as Python is missing, use a temporary `nix shell` rather than installing it globally.
 - Do not modify global NixOS or Home Manager configuration.
 - Keep terminal summaries extremely concise.
+
+## Experimental storage policy
+
+- This prototype has no real users or production data. Keep SQLite and explicit schema versions; a known incompatible schema upgrade may recreate the local test database and seed deterministic fictional data. Prefer a simple migration when already available.
+- Preserve data on normal restarts and compatible updates. Never reset on each launch or delete data as recovery from unexpected errors.
+- First installation and any deliberate schema reset must provide a useful small sample: discovered/undiscovered bathrooms, reviewed/unreviewed visits, varied ratings/tags, favourites and visual identities. Identify it as fictional prototype data.
+- Reconsider this policy before admitting real users or production data, and implement proper non-destructive migrations first.

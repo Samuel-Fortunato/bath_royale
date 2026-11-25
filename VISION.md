@@ -25,6 +25,10 @@ The local prototype links each review to one visit and keeps reviews optional, a
 
 ## Catalogue and contribution direction
 
-The future catalogue should combine curated official bathrooms, public community contributions subject to validation and moderation, and private custom bathrooms for personal collections. Personal custom tags should remain personal unless explicitly proposed and accepted into the shared catalogue.
+Bath Royale is a community-oriented exploration and bathroom-sharing application. Private bathrooms are no longer part of the vision: all published catalogue entries are intended to be publicly discoverable. Personal visit history can remain private independently of catalogue visibility. User proposals require appropriate validation and moderation before publication.
 
-Gamification and reputation-based progression may unlock privileges to propose public bathrooms and community tags, and eventually help validate contributions. Privileges must work alongside moderation, duplicate prevention, contribution quality and appropriate submission limits. Recording private experiences must never require earning privileges. Exact progression rules, permission levels and moderation workflows remain undecided. Phase 1 retains unrestricted local experimentation; these visibility and permission models are not implemented.
+Approved bathroom contributions should eventually earn rewards and recognition, potentially XP, achievements and contributor recognition. Reward approval, not proposal submission. Preserve attribution to the original contributor even when administrators later validate or promote an entry. Exact mechanics and values remain undecided; no moderation, authentication, permissions or rewards are implemented in the local prototype.
+
+## Classification exploration — not a decision
+
+The owner is considering presenting bathrooms inside versus outside the University of Aveiro rather than Official/Community as primary categories. This remains exploratory. Distinguish geographic or institutional membership, catalogue origin/contributor attribution, and validation/verification status; these need not be mutually exclusive categories. A user contributing a missing bathroom inside the university should still receive contribution credit. Keep future universities, campuses and cities in view without finalizing category names, classification rules or geographic hierarchy.
