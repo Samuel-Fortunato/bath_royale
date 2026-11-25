@@ -127,20 +127,35 @@ Local verification: 105 tests pass, including structured sequences, equivalence,
 - [x] Assess Free-plan constraints, self-hosting, account/object portability, costs and a reproducible exit/acceptance procedure in [portability](docs/backend/portability.md); record the conditional recommendation in [ADR 0001](docs/backend/decision-0001.md).
 - [x] Add and realize an optional backend Nix shell using the existing lock; inspect existing rootless Podman without changing system configuration.
 - [x] Verify a network-disabled, rootless Supabase PostgreSQL component smoke test with fictional insert/export/restore and cleanup; verify configuration checks.
-- [ ] Owner decision on the conditional backend recommendation and significant open product rules before production implementation.
+- [x] Owner acceptance of Supabase/PostgreSQL as the bounded Phase 2.1A candidate and fictional PoC assumptions.
+- [ ] Owner decisions on remaining production product rules and production hosting after the exit gate.
 
 Phase 2.0 is an architecture assessment, not a portable production-backend acceptance. Supabase managed Free is recommended conditionally; a real managed-to-independent-self-hosted restore and same-password login are **not verified**. No cloud project, production authentication, remote synchronization or shared catalogue has been implemented. Session 4D physical-phone acceptance remains open independently.
 
 Verified locally on 2026-11-25: formatting, strict analysis (existing exact Material-import baseline), all 105 tests, Linux/Android debug builds, actionlint, Bash syntax/ShellCheck, local documentation links and `nix flake check --no-build --no-write-lock-file` pass. The optional shell realizes CLI 2.111.0, PostgreSQL client 17.12 and Podman/Compose from the existing lock. The first component restore encountered the already-existing `public` schema; the disposable script now explicitly cleans/recreates only its fictional dump scope and the rerun passes. No network/ports or test containers remain. This verifies basic SQL dump/restore within one disposable database container, not Auth/API, an independent full-stack restore or a managed exit. Full acceptance remains in Phase 2.1. No Flutter code, dependencies or SQLite schema changed.
 
-### Phase 2.1 — Fictional local proof of concept and exit rehearsal
+### Phase 2.1A — Local Supabase proof of concept, schema and authorization (completed)
 
-- [ ] Review/accept architecture direction and scope; approve public/private data and auth assumptions for the PoC.
-- [ ] Pin a minimal local Supabase stack and explicit loopback bindings; version SQL migrations, constraints, grants, RLS and opt-in fictional fixtures.
-- [ ] Verify database API access, Auth login/refresh and direct two-user authorization attacks, including private-history leaks and self-approval attempts.
-- [ ] Restore filtered database/Auth exports and object fixtures into an independent self-hosted target; verify unchanged-password login and repeat authorization checks.
-- [ ] Under a later explicit cloud-project task, repeat the real managed-Free exit rehearsal before admitting production users. Record actual versions, commands, checksums, timing and failures; do not infer success from SQL portability.
-- [ ] Resolve email delivery, target architecture/resources, backup/restore ownership, recovery objectives and running-cost limits without requiring paid subscriptions, domains or new hardware.
+- [x] Accept the bounded candidate and explicitly provisional public/private/Auth assumptions, retaining the conditional production exit gate.
+- [x] Pin a minimal rootless PostgreSQL/Auth/PostgREST Compose stack with exclusive loopback bindings, private disposable credentials, dedicated resources and documented lifecycle commands.
+- [x] Version SQL migrations, UUID relationships, rating/content validation, immutable associations, grants, RLS and separate opt-in fictional fixtures.
+- [x] Verify real Auth signup/password login/refresh/logout/expiry and A/B API/SQL authorization, public projection/join privacy, self-approval and privilege-escalation rejection.
+- [x] Verify clean initialization, transactional rollback, ordinary stop/start persistence, resource measurements and all existing Flutter regressions/builds.
+- [x] Update backend runbooks, provisional-decision boundaries and changelog.
+
+Verified on 2026-11-25: **232 assertions on a clean fictional stack**; PostgreSQL 17.6, Auth v2.198.0 and PostgREST v14.18 pinned by digest. All 105 Flutter tests, formatting, strict analysis, Linux/Android debug builds, Python lint/format, Compose parsing, effective loopback/rootless checks, actionlint, Nix flake evaluation and documentation links pass. Stop/start preserved fixture UUIDs/counts, migration history and credentials. Approximate idle usage: 90–140 MB RAM, 0.35% of one CPU core over a 10-second sample, 1.36 GB uncompressed images and 42 MiB database files. See [commands, evidence, limitations and failed-check corrections](docs/backend/local-poc.md). Logout revokes refresh/Auth sessions; issued API JWTs remain usable for their 60-second lifetime plus up to 30 seconds of PostgREST clock skew. Server codepoint limits are deliberately stricter than Flutter grapheme limits, with explicit Unicode tests. No system configuration change or cloud project; Flutter/local persistence remain unchanged. Hosted CI is reported after push without waiting.
+
+### Phase 2.1B — Independent local full-stack portability rehearsal
+
+- [ ] Export database/Auth/configuration and any enabled object fixtures; restore into an independent self-hosted target without shared volumes/source access.
+- [ ] Verify unchanged-password login, identity/content/constraint/RLS preservation, refreshed sessions and the repeated authorization matrix.
+- [ ] Record exact versions, exports/checksums, timing, resource needs and failed checks. This local rehearsal alone cannot prove the managed exit.
+
+### Phase 2.1C — Actual managed-Free exit rehearsal (later explicit authorization)
+
+- [ ] Create a managed test project only under a later explicit task; repeat the real managed-Free-to-independent-self-hosted export/restore and unchanged-password login before production users.
+- [ ] Resolve production email delivery, target architecture/resources, backup/restore ownership, recovery objectives and running-cost limits without requiring paid subscriptions, domains or new hardware.
+- [ ] Obtain production hosting acceptance only after successful exit evidence and remaining product decisions.
 
 ### Phase 2.2 — Local repository and durable synchronization foundation
 

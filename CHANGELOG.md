@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Phase 2.1A: add a minimal digest-pinned Supabase PostgreSQL/Auth/PostgREST environment using the optional Nix shell and rootless Podman, loopback-only API ports, private disposable credentials and scoped lifecycle/cleanup commands.
+- Add PostgreSQL migrations for profiles, attributed catalogue/proposals and visual identities, private repeat visits/favourites, optional author-owned reviews, structured tags/comments, grants/RLS, immutable associations and narrow public-projection/moderator operations.
+- Verify 232 assertions on a clean fictional stack through real Auth/API requests and SQL role checks, including cross-user attacks, public privacy, self-approval, invalid content, refresh/logout/expiry and rollback; verify stop/start persistence and measure resources.
+- Document provisional PoC rules, conservative server Unicode limits and residual JWT access after logout. Preserve the separate, unpassed independent-restore (2.1B) and managed-exit (2.1C) gates.
+- Preserve Flutter/SQLite behavior; all 105 regressions, formatting/strict analysis, Linux/Android debug builds and relevant Python/Compose/Nix/configuration checks pass.
+
 - Phase 2.0: document the conditional Supabase/PostgreSQL recommendation, official PocketBase/Appwrite comparison, minimal integration boundaries and proposed offline/privacy/authorization rules.
 - Add managed/self-hosted cost and portability assessment, an unverified exit runbook, migration acceptance gates, a short decision record and a proposed Phase 2 implementation breakdown.
 - Add an optional backend tools shell using the existing Nix lock and a repeatable network-disabled Supabase PostgreSQL component smoke test with fictional SQL export/restore and cleanup. Full Auth/API and managed migration remain untested; Session 4D phone acceptance remains pending.

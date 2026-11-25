@@ -52,3 +52,9 @@ app.*.map.json
 /preview/
 *.keystore
 *.jks
+
+# Local backend secrets/exports must live outside the checkout.
+/backend/.env
+/backend/.state/
+/supabase/.temp/
+**/__pycache__/

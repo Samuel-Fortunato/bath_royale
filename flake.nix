@@ -38,6 +38,8 @@
           postgresql_17
           podman
           podman-compose
+          python3
+          ruff
         ];
       };
 
