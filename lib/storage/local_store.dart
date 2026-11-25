@@ -30,7 +30,7 @@ class LocalStore {
         throw StateError('Database integrity check failed');
       }
       final version = database.userVersion;
-      if (version > 2) {
+      if (version > 3) {
         throw StateError('Database was created by a newer application');
       }
       transaction(() {
@@ -48,6 +48,27 @@ class LocalStore {
           );
           database.execute('INSERT INTO settings VALUES(1,1)');
           database.userVersion = 2;
+        }
+        if (version < 3) {
+          database.execute(
+            "ALTER TABLE bathrooms ADD COLUMN emoji TEXT NOT NULL DEFAULT '🚽' CHECK(length(emoji)>0)",
+          );
+          database.execute(
+            'ALTER TABLE bathrooms ADD COLUMN accent INTEGER NOT NULL DEFAULT 0 CHECK(accent BETWEEN 0 AND 5)',
+          );
+          for (final row in database.select('SELECT id,name FROM bathrooms')) {
+            final id = row['id'] as String;
+            final b = Bathroom(
+              id: id,
+              name: row['name'] as String,
+              createdBy: 'migration',
+            );
+            database.execute(
+              'UPDATE bathrooms SET emoji=?,accent=? WHERE id=?',
+              [b.emoji, b.accent, id],
+            );
+          }
+          database.userVersion = 3;
         }
       });
       if (database.select('PRAGMA foreign_key_check').isNotEmpty) {
@@ -101,6 +122,8 @@ CREATE TABLE favourites (user TEXT NOT NULL CHECK(length(user)>0), bathroom TEXT
             id: r['id'] as String,
             name: r['name'] as String,
             createdBy: r['creator'] as String,
+            emoji: r['emoji'] as String,
+            accent: r['accent'] as int,
           ),
       ],
       visits: [
@@ -151,11 +174,13 @@ CREATE TABLE favourites (user TEXT NOT NULL CHECK(length(user)>0), bathroom TEXT
       database.execute('DELETE FROM $table');
     }
     for (final b in data.bathrooms) {
-      database.execute('INSERT INTO bathrooms VALUES(?,?,?,?)', [
+      database.execute('INSERT INTO bathrooms VALUES(?,?,?,?,?,?)', [
         b.id,
         b.name,
         b.name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase(),
         b.createdBy,
+        b.emoji,
+        b.accent,
       ]);
     }
     for (final v in data.visits) {

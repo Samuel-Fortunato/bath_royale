@@ -171,7 +171,10 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         ),
         newVisit: visit,
       );
-      Navigator.of(context).pop();
+      setState(() => _allowPop = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.of(context).pop();
+      });
     } on StateError {
       _saving = false;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -188,49 +191,52 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     if (_scroll.hasClients) _scroll.jumpTo(0);
   }
 
-  Future<void> _chooseVisit(AppState state) async {
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (context) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * .6,
-          child: Column(
-            children: [
-              Text(
-                'Que experiência estás a avaliar?',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              Expanded(
-                child: ListView(
-                  children: [
-                    ListTile(
-                      title: const Text('Acabei de visitar'),
-                      selected: _visitId == null,
-                      onTap: () => Navigator.pop(context, ''),
-                    ),
-                    for (final visit
-                        in state
-                            .visitsFor(widget.bathroomId)
-                            .where((v) => state.reviewForVisit(v.id) == null))
-                      ListTile(
-                        title: Text(
-                          'Uma visita anterior · ${reviewDate(visit.visitedAt)}',
-                        ),
-                        selected: _visitId == visit.id,
-                        onTap: () => Navigator.pop(context, visit.id),
-                      ),
-                  ],
+  bool _allowPop = false;
+  bool _confirming = false;
+  Future<void> _back() async {
+    if (_confirming || _saving) return;
+    if (_step > 0) {
+      _go(_step - 1);
+      return;
+    }
+    final original = widget.review;
+    final dirty =
+        _rating != original?.rating ||
+        _hygiene != original?.hygiene ||
+        _comfort != original?.comfort ||
+        _aesthetics != original?.aesthetics ||
+        _paper != original?.paperAvailability ||
+        _tagInput.text.isNotEmpty ||
+        _tags.join('\n') != (original?.tags ?? []).join('\n');
+    _confirming = true;
+    final discard =
+        !dirty ||
+        await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Descartar avaliação?'),
+                content: const Text(
+                  'As alterações desta avaliação serão perdidas.',
                 ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Continuar a avaliar'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Descartar'),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-    if (mounted && result != null) {
-      setState(() => _visitId = result.isEmpty ? null : result);
+            ) ==
+            true;
+    _confirming = false;
+    if (discard && mounted) {
+      setState(() => _allowPop = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.pop(context);
+      });
     }
   }
 
@@ -336,11 +342,6 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                     : reviewDate(visits.first.visitedAt),
               ),
             ),
-            if (widget.review == null && widget.visitId == null)
-              TextButton(
-                onPressed: () => _chooseVisit(state),
-                child: const Text('Alterar'),
-              ),
           ],
         ),
         const SizedBox(height: 24),
@@ -504,10 +505,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     if (!_visitInitialized) {
-      final visits = state
-          .visitsFor(widget.bathroomId)
-          .where((v) => state.reviewForVisit(v.id) == null);
-      _visitId = widget.visitId ?? (visits.isEmpty ? null : visits.first.id);
+      _visitId = widget.visitId;
       _visitInitialized = true;
     }
     final allowed =
@@ -517,157 +515,165 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     final validStep = _step == 0
         ? _rating != null
         : [_hygiene, _comfort, _aesthetics, _paper].every((v) => v != null);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.review == null ? 'Nova avaliação' : 'Editar avaliação',
+    return PopScope(
+      canPop: _allowPop,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _back();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: BackButton(onPressed: _back),
+          title: Text(
+            widget.review == null ? 'Nova avaliação' : 'Editar avaliação',
+          ),
         ),
-      ),
-      body: !allowed
-          ? const Center(child: Text('Só podes editar as tuas avaliações.'))
-          : Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 640),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            state.allBathrooms
-                                .firstWhere((b) => b.id == widget.bathroomId)
-                                .name,
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              for (var i = 0; i < 3; i++)
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 3,
-                                    ),
-                                    child: Semantics(
-                                      label: 'Passo ${i + 1} de 3',
-                                      selected: i == _step,
-                                      child: Column(
-                                        children: [
-                                          LinearProgressIndicator(
-                                            value: i <= _step ? 1 : 0,
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            [
-                                              'Global',
-                                              'Detalhes',
-                                              'Etiquetas',
-                                            ][i],
-                                          ),
-                                        ],
+        body: !allowed
+            ? const Center(child: Text('Só podes editar as tuas avaliações.'))
+            : Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              state.allBathrooms
+                                  .firstWhere((b) => b.id == widget.bathroomId)
+                                  .name,
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                for (var i = 0; i < 3; i++)
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 3,
+                                      ),
+                                      child: Semantics(
+                                        label: 'Passo ${i + 1} de 3',
+                                        selected: i == _step,
+                                        child: Column(
+                                          children: [
+                                            LinearProgressIndicator(
+                                              value: i <= _step ? 1 : 0,
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              [
+                                                'Global',
+                                                'Detalhes',
+                                                'Etiquetas',
+                                              ][i],
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        controller: _scroll,
-                        keyboardDismissBehavior:
-                            ScrollViewKeyboardDismissBehavior.onDrag,
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                        child: _step == 0
-                            ? _global(state)
-                            : _step == 1
-                            ? Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Text(
-                                    'Os pequenos detalhes',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.headlineSmall,
-                                  ),
-                                  const SizedBox(height: 20),
-                                  _category(
-                                    'Higiene',
-                                    _hygiene,
-                                    4,
-                                    (r) => r.hygieneText,
-                                    (v) => _hygiene = v,
-                                  ),
-                                  _category(
-                                    'Conforto',
-                                    _comfort,
-                                    4,
-                                    (r) => r.comfortText,
-                                    (v) => _comfort = v,
-                                  ),
-                                  _category(
-                                    'Estética',
-                                    _aesthetics,
-                                    4,
-                                    (r) => r.aestheticText,
-                                    (v) => _aesthetics = v,
-                                  ),
-                                  _category(
-                                    'Papel',
-                                    _paper,
-                                    2,
-                                    (r) => r.paperText,
-                                    (v) => _paper = v,
-                                  ),
-                                ],
-                              )
-                            : _tagStep(state),
-                      ),
-                    ),
-                    SafeArea(
-                      top: false,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            if (_step > 0) ...[
-                              TextButton(
-                                onPressed: () => _go(_step - 1),
-                                child: const Text('Voltar'),
-                              ),
-                              const SizedBox(width: 12),
-                            ],
-                            Expanded(
-                              child: FilledButton(
-                                onPressed: !validStep || _saving
-                                    ? null
-                                    : () {
-                                        if (_step < 2) {
-                                          _go(_step + 1);
-                                        } else {
-                                          _save();
-                                        }
-                                      },
-                                child: Text(
-                                  _step < 2
-                                      ? 'Continuar'
-                                      : _tags.isEmpty
-                                      ? 'Guardar sem etiquetas'
-                                      : 'Guardar avaliação',
-                                ),
-                              ),
+                              ],
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                      Expanded(
+                        child: SingleChildScrollView(
+                          controller: _scroll,
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                          child: _step == 0
+                              ? _global(state)
+                              : _step == 1
+                              ? Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text(
+                                      'Os pequenos detalhes',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.headlineSmall,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    _category(
+                                      'Higiene',
+                                      _hygiene,
+                                      4,
+                                      (r) => r.hygieneText,
+                                      (v) => _hygiene = v,
+                                    ),
+                                    _category(
+                                      'Conforto',
+                                      _comfort,
+                                      4,
+                                      (r) => r.comfortText,
+                                      (v) => _comfort = v,
+                                    ),
+                                    _category(
+                                      'Estética',
+                                      _aesthetics,
+                                      4,
+                                      (r) => r.aestheticText,
+                                      (v) => _aesthetics = v,
+                                    ),
+                                    _category(
+                                      'Papel',
+                                      _paper,
+                                      2,
+                                      (r) => r.paperText,
+                                      (v) => _paper = v,
+                                    ),
+                                  ],
+                                )
+                              : _tagStep(state),
+                        ),
+                      ),
+                      SafeArea(
+                        top: false,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              if (_step > 0) ...[
+                                TextButton(
+                                  onPressed: () => _go(_step - 1),
+                                  child: const Text('Voltar'),
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                              Expanded(
+                                child: FilledButton(
+                                  onPressed: !validStep || _saving
+                                      ? null
+                                      : () {
+                                          if (_step < 2) {
+                                            _go(_step + 1);
+                                          } else {
+                                            _save();
+                                          }
+                                        },
+                                  child: Text(
+                                    _step < 2
+                                        ? 'Continuar'
+                                        : _tags.isEmpty
+                                        ? 'Guardar sem etiquetas'
+                                        : 'Guardar avaliação',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }

@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Add persistent bathroom emoji/accent identities, curated creation choices and an explicit randomize action; retain existing data with a simple transactional SQLite v3 migration.
+- Restore playful Explore/detail identities, golden rating stars, category accents and legacy tag decoration without changing stored tags; show active ordering and result counts only during search/filtering.
+- Prioritize reviewed experiences in visit history, keep standalone visits complete and add reusable individual experience details with ownership-aware review/edit/confirmed removal actions.
+- Simplify direct review to an atomic new visit on save; preserve exact invitation/history/edit associations, optional reviews, zero ratings, duplicate prevention, undo and cancellation. System back traverses wizard steps and confirms discarding changed drafts.
+- Establish the experimental storage policy: deliberate resets allowed for incompatible fictional test schemas, persistence on normal restarts, no destructive error recovery, and mandatory reconsideration before real users. Fresh installs include an unreviewed visit and favourite alongside varied sample identities/reviews and a fictional-data notice.
+- Verify all 89 tests, formatting, strict analysis and Linux/Android debug builds; inspect Flutter captures in both themes. Session 4A phone acceptance remains open.
+- Update public catalogue/contribution direction, approval-based recognition and attribution; keep university classification exploratory. Document Session 4B separately; no backend or reward systems implemented.
+
+
 - Redesign Collection with aligned progress/statistics, an adaptive collectible catalogue, clear visit-derived discovery states and independently scrollable Tronos/Diário tabs.
 - Group the shared lazy diary by local calendar date; show times and reviewed scores (including zero) without pending-review tasks.
 - Replace ranking category chips with underlined horizontal tabs, compact ordering and plain rank rows; preserve scopes, arithmetic means, scales, counts, ties and detail navigation.

@@ -1,3 +1,6 @@
+import 'dart:math';
+import '../models/bathroom.dart';
+import '../widgets/bathroom_identity.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
@@ -11,6 +14,8 @@ class BathroomFormPage extends StatefulWidget {
 }
 
 class _BathroomFormPageState extends State<BathroomFormPage> {
+  String _emoji = '🚽';
+  int _accent = 0;
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController();
 
@@ -23,7 +28,11 @@ class _BathroomFormPageState extends State<BathroomFormPage> {
   void _save() {
     if (!_form.currentState!.validate()) return;
     final state = context.read<AppState>();
-    final bathroom = state.createBathroom(_name.text);
+    final bathroom = state.createBathroom(
+      _name.text,
+      emoji: _emoji,
+      accent: _accent,
+    );
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) => ChangeNotifierProvider.value(
@@ -67,6 +76,62 @@ class _BathroomFormPageState extends State<BathroomFormPage> {
                 'Confirma que ainda não existe. Criar não conta como visita nem avaliação.',
               ),
               const SizedBox(height: 24),
+              Center(
+                child: BathroomIdentity(
+                  bathroom: Bathroom(
+                    id: 'preview',
+                    name: '',
+                    createdBy: '',
+                    emoji: _emoji,
+                    accent: _accent,
+                  ),
+                  size: 64,
+                ),
+              ),
+              const Text('Símbolo do trono'),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final emoji in Bathroom.emojis)
+                    ChoiceChip(
+                      label: Semantics(
+                        label:
+                            Bathroom.emojiNames[Bathroom.emojis.indexOf(emoji)],
+                        child: ExcludeSemantics(child: Text(emoji)),
+                      ),
+                      selected: _emoji == emoji,
+                      onSelected: (_) => setState(() => _emoji = emoji),
+                    ),
+                ],
+              ),
+              const Text('Cor do trono'),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (var i = 0; i < Bathroom.accentNames.length; i++)
+                    ChoiceChip(
+                      avatar: Icon(
+                        Icons.circle,
+                        color: Color(BathroomIdentity.seeds[i]),
+                        size: 16,
+                      ),
+                      label: Text(Bathroom.accentNames[i]),
+                      selected: _accent == i,
+                      onSelected: (_) => setState(() => _accent = i),
+                    ),
+                ],
+              ),
+              TextButton.icon(
+                onPressed: () => setState(() {
+                  final random = Random();
+                  _emoji =
+                      Bathroom.emojis[random.nextInt(Bathroom.emojis.length)];
+                  _accent = random.nextInt(Bathroom.accentNames.length);
+                }),
+                icon: const Icon(Icons.shuffle),
+                label: const Text('Surpreende-me'),
+              ),
+
               FilledButton(
                 onPressed: _save,
                 child: const Text('Criar casa de banho'),

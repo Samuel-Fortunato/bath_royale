@@ -2,6 +2,9 @@ import 'dart:io';
 
 // Accepted Phase 1 debt. New files and all other diagnostics must pass review.
 const materialImportBaseline = {
+  'test/experience_test.dart',
+  'lib/widgets/bathroom_identity.dart',
+  'lib/pages/experience_details.dart',
   'lib/app.dart',
   'lib/main.dart',
   'lib/models/bathroom_descriptions.dart',

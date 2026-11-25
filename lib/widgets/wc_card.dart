@@ -1,6 +1,7 @@
 import 'package:bath_royale/models/bathroom_entry.dart';
 import 'package:bath_royale/models/bathroom_descriptions.dart';
 import 'package:flutter/material.dart';
+import 'bathroom_identity.dart';
 
 class WcCard extends StatelessWidget {
   final BathroomEntry entry;
@@ -30,6 +31,8 @@ class WcCard extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  BathroomIdentity(bathroom: entry.bathroom),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       entry.bathroom.name,
@@ -56,7 +59,9 @@ class WcCard extends StatelessWidget {
                     children: [
                       TextSpan(
                         text: '★ ${ratingNumber(entry.communityRating!)} / 5',
-                        style: theme.textTheme.titleMedium,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: ratingGold(context),
+                        ),
                       ),
                       TextSpan(
                         text:

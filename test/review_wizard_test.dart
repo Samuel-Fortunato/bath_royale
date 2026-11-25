@@ -95,16 +95,15 @@ void main() {
   );
 
   testWidgets(
-    'draft survives steps, visit sheet and cancellation; zero saves atomically once',
+    'draft survives steps, system back and confirmed cancellation; zero saves atomically once',
     (tester) async {
       final state = AppState();
       addTearDown(state.dispose);
       final visit = state.recordVisit('5', visitedAt: DateTime.utc(2020));
       final before = state.visits.length;
       await mountWizard(tester, state);
-      await wizardTap(tester, find.text('Alterar'));
-      expect(find.byType(BottomSheet), findsOneWidget);
-      await wizardTap(tester, find.text('Acabei de visitar'));
+      expect(find.text('Alterar'), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
       await tester.tapAt(
         tester.getTopLeft(find.byType(StarRatingInput)) + const Offset(0, 32),
       );
@@ -130,8 +129,7 @@ void main() {
       await wizardTap(tester, find.text('Voltar'));
       expect(find.text('0,0 / 5'), findsOneWidget);
       expect(find.text('Acabei de visitar'), findsOneWidget);
-      await wizardTap(tester, find.text('Alterar'));
-      await wizardTap(tester, find.textContaining('Uma visita anterior'));
+      expect(find.text('Alterar'), findsNothing);
       await wizardTap(tester, find.text('Continuar'));
       await wizardTap(tester, find.text('Continuar'));
       expect(
@@ -140,6 +138,18 @@ void main() {
       );
       await tester.pageBack();
       await tester.pumpAndSettle();
+      expect(find.text('Os pequenos detalhes'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('0,0 / 5'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Descartar avaliação?'), findsOneWidget);
+      await wizardTap(tester, find.text('Continuar a avaliar'));
+      expect(find.text('0,0 / 5'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await wizardTap(tester, find.text('Descartar'));
       expect(state.visits.length, before);
       expect(state.reviewForVisit(visit.id), isNull);
       await mountWizard(

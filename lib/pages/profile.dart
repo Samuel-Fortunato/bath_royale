@@ -72,7 +72,7 @@ class ProfilePage extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Text(
-                'Os teus dados são guardados neste dispositivo, sem conta nem sincronização.',
+                'Dados locais, sem conta nem sincronização. O protótipo inclui exemplos fictícios.',
               ),
             ),
           ],
@@ -146,7 +146,7 @@ class SettingsPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Os teus dados são guardados neste dispositivo, sem conta nem sincronização.',
+                  'Dados locais, sem conta nem sincronização. O protótipo inclui exemplos fictícios.',
                 ),
               ],
             ),

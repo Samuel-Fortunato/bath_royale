@@ -7,6 +7,8 @@ import '../models/ranking.dart';
 import '../models/bathroom_descriptions.dart';
 import '../state/app_state.dart';
 import 'review_form.dart';
+import 'experience_details.dart';
+import '../widgets/bathroom_identity.dart';
 
 String reviewDate(DateTime value) {
   final date = value.toLocal();
@@ -153,9 +155,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
             if (review.tags.isNotEmpty)
               Wrap(
                 spacing: 6,
-                children: [
-                  for (final tag in review.tags) Chip(label: Text(tag)),
-                ],
+                children: [for (final tag in review.tags) ReviewTag(tag)],
               ),
             if (review.authorId == state.currentUserId)
               TextButton.icon(
@@ -168,64 +168,70 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
       ),
     );
 
-    Widget visitTile(Visit visit) => Card(
-      child: ListTile(
-        leading: const Icon(Icons.history),
-        title: Text(reviewDate(visit.visitedAt)),
-        subtitle: state.reviewForVisit(visit.id) == null
-            ? null
-            : Text(
-                '${state.reviewForVisit(visit.id)!.emojiRating()} ${ratingNumber(state.reviewForVisit(visit.id)!.rating)} / 5',
-              ),
-        trailing: Wrap(
-          children: [
-            IconButton(
-              tooltip: state.reviewForVisit(visit.id) == null
-                  ? 'Avaliar visita'
-                  : 'Editar avaliação',
-              icon: Icon(
-                state.reviewForVisit(visit.id) == null
-                    ? Icons.rate_review_outlined
-                    : Icons.edit_outlined,
-              ),
-              onPressed: () =>
-                  openForm(state.reviewForVisit(visit.id), visit.id),
-            ),
-            IconButton(
-              tooltip: 'Remover visita',
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () async {
-                final hasReview = state.reviewForVisit(visit.id) != null;
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Remover visita?'),
-                    content: Text(
-                      hasReview
-                          ? 'A avaliação associada também será removida.'
-                          : 'Esta visita será removida do teu histórico.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancelar'),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Remover'),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirmed == true) {
-                  state.deleteVisit(visit.id, deleteReview: hasReview);
-                }
-              },
-            ),
-          ],
+    void openExperience(String visitId) => Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => ChangeNotifierProvider.value(
+          value: state,
+          child: ExperienceDetailsPage(visitId: visitId),
         ),
       ),
     );
+    Widget visitTile(Visit visit) {
+      final review = state.reviewForVisit(visit.id);
+      return Card(
+        child: ListTile(
+          onTap: () => openExperience(visit.id),
+          leading: review == null
+              ? const Icon(Icons.place_outlined)
+              : Text(
+                  review.emojiRating(),
+                  style: const TextStyle(fontSize: 28),
+                ),
+          title: Text(
+            review == null
+                ? 'Visita registada'
+                : '${ratingNumber(review.rating)} / 5',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (review != null)
+                Text('${review.hygieneText} · ${review.paperText}'),
+              Text(
+                reviewDate(visit.visitedAt),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+          trailing: PopupMenuButton<String>(
+            tooltip: 'Ações da visita',
+            onSelected: (action) {
+              if (action == 'details') openExperience(visit.id);
+              if (action == 'review') openForm(review, visit.id);
+              if (action == 'remove') removeExperience(context, state, visit);
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'details',
+                child: Text('Ver experiência'),
+              ),
+              PopupMenuItem(
+                value: 'review',
+                child: Text(
+                  review == null ? 'Avaliar visita' : 'Editar avaliação',
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'remove',
+                child: Text('Remover visita'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     final personal = entry.personalReview;
     Widget summary() {
@@ -268,6 +274,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
               textAlign: TextAlign.center,
             )
           else ...[
+            Icon(Icons.star_rounded, color: ratingGold(context), size: 40),
             Text(
               '${ratingNumber(score!)} / 5',
               textAlign: TextAlign.center,
@@ -304,10 +311,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  categories[i].label,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
+                                CategoryLabel(i, categories[i].label),
                                 const SizedBox(height: 8),
                                 if (_personal)
                                   Text(
@@ -350,9 +354,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
               const Text('Etiquetas da tua última experiência'),
               Wrap(
                 spacing: 8,
-                children: [
-                  for (final tag in personal.tags) Chip(label: Text(tag)),
-                ],
+                children: [for (final tag in personal.tags) ReviewTag(tag)],
               ),
             ],
           ],
@@ -364,7 +366,13 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(entry.bathroom.name, maxLines: 2),
+          title: Row(
+            children: [
+              BathroomIdentity(bathroom: entry.bathroom, size: 40),
+              const SizedBox(width: 12),
+              Expanded(child: Text(entry.bathroom.name, maxLines: 2)),
+            ],
+          ),
           actions: [
             IconButton(
               tooltip: entry.activity.isFavorite

@@ -17,8 +17,12 @@ void main() {
       final path = '${directory.path}/test.sqlite';
       var store = LocalStore(sqlite3.open(path));
       var app = AppState.restore(store);
-      expect(app.visits.length, 5);
-      final bathroom = app.createBathroom('Trono persistente');
+      expect(app.visits.length, 6);
+      final bathroom = app.createBathroom(
+        'Trono persistente',
+        emoji: '👑',
+        accent: 4,
+      );
       expect(RegExp(r'^[0-9a-f-]{36}$').hasMatch(bathroom.id), isTrue);
       final visit = app.recordVisit(bathroom.id, visitedAt: DateTime.utc(2030));
       app.toggleFavorite(bathroom.id);
@@ -29,6 +33,9 @@ void main() {
       store = LocalStore(sqlite3.open(path));
       app = AppState.restore(store);
       expect(app.allBathrooms.length, 7);
+      final identity = app.allBathrooms.firstWhere((b) => b.id == bathroom.id);
+      expect(identity.emoji, '👑');
+      expect(identity.accent, 4);
       expect(app.visits.any((v) => v.id == visit.id), isTrue);
       expect(app.reviews.length, 4);
       expect(app.visits.any((v) => v.id == 'visit-0'), isFalse);
@@ -73,7 +80,7 @@ void main() {
       app = AppState.restore(store);
       expect(app.reviewForVisit(visit.id)!.tags, ['teste']);
       expect(app.reviewForVisit(visit.id)!.rating, 0);
-      expect(app.visits.length, 6);
+      expect(app.visits.length, 7);
       store.save(
         LocalData(
           bathrooms: [],
@@ -94,7 +101,7 @@ void main() {
     },
   );
 
-  test('schema v1 migrates to v2 without losing records', () {
+  test('schema v1 migrates to v3 without losing records', () {
     final db = sqlite3.openInMemory();
     db.execute(LocalStore.schemaV1);
     db.execute("INSERT INTO bathrooms VALUES('b','Trono','trono','me')");
@@ -102,7 +109,7 @@ void main() {
     db.userVersion = 1;
     final store = LocalStore(db);
     addTearDown(store.close);
-    expect(db.userVersion, 2);
+    expect(db.userVersion, 3);
     expect(store.load()!.bathrooms.single.id, 'b');
     expect(store.load()!.darkMode, isTrue);
   });

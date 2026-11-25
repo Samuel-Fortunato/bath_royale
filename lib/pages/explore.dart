@@ -215,30 +215,6 @@ class _ExplorePageState extends State<ExplorePage> {
                             ),
                           ),
                         ),
-                        PopupMenuButton<BathroomSort>(
-                          tooltip: 'Ordenar por',
-                          icon: const Icon(Icons.sort),
-                          initialValue: _sort,
-                          onSelected: (value) => setState(() => _sort = value),
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(
-                              value: BathroomSort.name,
-                              child: Text('Nome (A–Z)'),
-                            ),
-                            PopupMenuItem(
-                              value: BathroomSort.community,
-                              child: Text('Avaliação da comunidade'),
-                            ),
-                            PopupMenuItem(
-                              value: BathroomSort.personal,
-                              child: Text('Última experiência pessoal'),
-                            ),
-                            PopupMenuItem(
-                              value: BathroomSort.latestVisit,
-                              child: Text('Última visita (mais recente)'),
-                            ),
-                          ],
-                        ),
                         IconButton(
                           tooltip: 'Filtros',
                           icon: Badge(
@@ -249,6 +225,59 @@ class _ExplorePageState extends State<ExplorePage> {
                           onPressed: _showFilters,
                         ),
                       ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16, top: 4),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: PopupMenuButton<BathroomSort>(
+                        tooltip: 'Ordenar por',
+                        initialValue: _sort,
+                        onSelected: (value) => setState(() => _sort = value),
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: BathroomSort.name,
+                            child: Text('Nome (A–Z)'),
+                          ),
+                          PopupMenuItem(
+                            value: BathroomSort.community,
+                            child: Text('Avaliação da comunidade'),
+                          ),
+                          PopupMenuItem(
+                            value: BathroomSort.personal,
+                            child: Text('Última experiência pessoal'),
+                          ),
+                          PopupMenuItem(
+                            value: BathroomSort.latestVisit,
+                            child: Text('Última visita (mais recente)'),
+                          ),
+                        ],
+                        child: Container(
+                          constraints: const BoxConstraints(minHeight: 48),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.sort, size: 18),
+                              const SizedBox(width: 6),
+                              Text(switch (_sort) {
+                                BathroomSort.name => 'A–Z',
+                                BathroomSort.community => 'Comunidade',
+                                BathroomSort.personal => 'Pessoal',
+                                BathroomSort.latestVisit => 'Recentes',
+                              }),
+                              const Icon(Icons.expand_more, size: 18),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   if (activeFilters.isNotEmpty)
@@ -273,7 +302,8 @@ class _ExplorePageState extends State<ExplorePage> {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     spacing: 12,
                     children: [
-                      Text('${filteredWCs.length} casas de banho'),
+                      if (activeFilters.isNotEmpty || query.isNotEmpty)
+                        Text('${filteredWCs.length} resultados'),
                       if (activeFilters.isNotEmpty || _search.text.isNotEmpty)
                         TextButton(
                           onPressed: _clear,

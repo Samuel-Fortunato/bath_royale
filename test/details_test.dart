@@ -137,8 +137,9 @@ void main() {
     await tap(tester, find.text('Adicionar etiqueta'));
     await tap(tester, find.text('Guardar avaliação'));
     expect(state.reviews.length, 6);
-    expect(state.visits.length, 6);
-    expect(state.entries.first.personalReview!.visitId, visit.id);
+    expect(state.visits.length, 7);
+    expect(state.entries.first.personalReview!.visitId, isNot(visit.id));
+    expect(state.reviewForVisit(visit.id), isNull);
     expect(state.entries.first.personalReview!.tags, [
       '🪞 Espelho gigante',
       'vista',
@@ -232,13 +233,16 @@ void main() {
       expect(state.visitsFor('5').length, 1);
       expect(state.reviewForVisit(state.visitsFor('5').single.id), isNull);
       await tap(tester, find.text('Visitas'));
-      await tap(tester, find.byTooltip('Avaliar visita'));
+      await tap(tester, find.byTooltip('Ações da visita'));
+      await tap(tester, find.text('Avaliar visita'));
       await tester.pageBack();
       await tester.pumpAndSettle();
-      await tap(tester, find.byTooltip('Remover visita'));
+      await tap(tester, find.byTooltip('Ações da visita'));
+      await tap(tester, find.text('Remover visita'));
       await tap(tester, find.text('Cancelar'));
       expect(state.visitsFor('5').length, 1);
-      await tap(tester, find.byTooltip('Remover visita'));
+      await tap(tester, find.byTooltip('Ações da visita'));
+      await tap(tester, find.text('Remover visita'));
       await tap(tester, find.text('Remover'));
       expect(state.visitsFor('5'), isEmpty);
     },
@@ -260,14 +264,16 @@ void main() {
         ),
       );
       await tap(tester, find.text('Visitas'));
-      await tap(tester, find.byTooltip('Remover visita'));
+      await tap(tester, find.byTooltip('Ações da visita'));
+      await tap(tester, find.text('Remover visita'));
       expect(
         find.text('A avaliação associada também será removida.'),
         findsOneWidget,
       );
       await tap(tester, find.text('Cancelar'));
       expect(state.reviews.length, 5);
-      await tap(tester, find.byTooltip('Remover visita'));
+      await tap(tester, find.byTooltip('Ações da visita'));
+      await tap(tester, find.text('Remover visita'));
       await tap(tester, find.text('Remover'));
       expect(state.reviews.length, 4);
       expect(state.visitsFor('0'), isEmpty);

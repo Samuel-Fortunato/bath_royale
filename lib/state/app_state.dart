@@ -27,7 +27,31 @@ class AppState extends ChangeNotifier {
   static AppState restore(LocalStore store) {
     final data = store.load();
     final state = data == null
-        ? AppState(store: store)
+        ? AppState(
+            store: store,
+            visits: [
+              for (final r in createSampleReviews())
+                Visit(
+                  id: r.visitId,
+                  bathroomId: r.bathroomId,
+                  userId: r.authorId,
+                  visitedAt: r.createdAt,
+                ),
+              Visit(
+                id: 'sample-unreviewed',
+                bathroomId: '0',
+                userId: localUserId,
+                visitedAt: DateTime.utc(2026, 1, 2),
+              ),
+            ],
+            activities: [
+              const BathroomActivity(
+                userId: localUserId,
+                bathroomId: '3',
+                isFavorite: true,
+              ),
+            ],
+          )
         : AppState(
             store: store,
             bathrooms: data.bathrooms,
@@ -142,13 +166,22 @@ class AppState extends ChangeNotifier {
     return null;
   }
 
-  Bathroom createBathroom(String name) {
+  Bathroom createBathroom(String name, {String? emoji, int? accent}) {
+    if (emoji != null && !Bathroom.emojis.contains(emoji)) {
+      throw ArgumentError('Invalid emoji');
+    }
+    if (accent != null &&
+        (accent < 0 || accent >= Bathroom.accentNames.length)) {
+      throw ArgumentError('Invalid accent');
+    }
     final error = validateBathroomName(name);
     if (error != null) throw ArgumentError(error);
     final bathroom = Bathroom(
       id: newEntityId(),
       name: name.trim().replaceAll(RegExp(r'\s+'), ' '),
       createdBy: currentUserId,
+      emoji: emoji,
+      accent: accent,
     );
     _bathrooms.add(bathroom);
     notifyListeners();

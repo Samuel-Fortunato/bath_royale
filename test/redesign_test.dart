@@ -80,7 +80,7 @@ void main() {
       await tap(tester, find.text('🚽 Não avaliadas'));
       await tap(tester, find.text('Ver resultados'));
       expect(find.text('Nome de Teste'), findsOneWidget);
-      expect(find.text('1 casas de banho'), findsOneWidget);
+      expect(find.text('1 resultados'), findsOneWidget);
       expect(find.text('✓ Descoberta'), findsOneWidget);
       expect(find.byType(InputChip), findsNWidgets(2));
       expect(
@@ -96,7 +96,7 @@ void main() {
       expect(find.text('Nome de Teste'), findsOneWidget);
       await tap(tester, find.text('Limpar pesquisa e filtros'));
       expect(find.byType(InputChip), findsNothing);
-      expect(find.text('6 casas de banho'), findsOneWidget);
+      expect(find.text('6 resultados'), findsNothing);
     },
   );
 
