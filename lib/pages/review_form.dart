@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:flutter/services.dart';
 import '../models/review.dart';
 import '../models/visit.dart';
 import 'bathroom_details.dart' show reviewDate;
@@ -11,18 +11,23 @@ class ReviewFormPage extends StatefulWidget {
   final String bathroomId;
   final Review? review;
   final String? visitId;
+  final bool canCreateCustomTags;
   const ReviewFormPage({
     super.key,
     required this.bathroomId,
     this.review,
     this.visitId,
+    this.canCreateCustomTags = true,
   });
   @override
   State<ReviewFormPage> createState() => _ReviewFormPageState();
 }
 
 class _ReviewFormPageState extends State<ReviewFormPage> {
-  final _form = GlobalKey<FormState>();
+  int _step = 0;
+  final _scroll = ScrollController();
+  final _search = TextEditingController();
+  final _tagFocus = FocusNode();
   double? _rating;
   String? _visitId;
   bool _visitInitialized = false;
@@ -55,6 +60,9 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   @override
   void dispose() {
     _tagInput.dispose();
+    _search.dispose();
+    _scroll.dispose();
+    _tagFocus.dispose();
     super.dispose();
   }
 
@@ -91,21 +99,28 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         _tagError = 'Usa uma etiqueta por vez, até 30 caracteres.';
       } else if (_tags.length >= 10 && !_tags.contains(tag)) {
         _tagError = 'Podes adicionar até 10 etiquetas.';
+      } else if (_tags.any((t) => t.toLowerCase() == tag.toLowerCase())) {
+        _tagError = 'Esta etiqueta já está selecionada.';
       } else {
-        if (!_tags.contains(tag)) _tags.add(tag);
+        _tags.add(tag);
         _tagInput.clear();
         _tagError = null;
       }
     });
+    if (_tagError != null) _tagFocus.requestFocus();
   }
 
   void _save() {
-    final valid = _form.currentState!.validate();
+    if (_rating == null ||
+        [_hygiene, _comfort, _aesthetics, _paper].contains(null)) {
+      return;
+    }
     if (_tagInput.text.trim().isNotEmpty) {
       setState(() {
         _creatingTag = true;
         _tagError = 'Adiciona ou apaga a etiqueta antes de guardar.';
       });
+      _tagFocus.requestFocus();
       return;
     }
     if (_tags.length > 10 ||
@@ -121,7 +136,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
       );
       return;
     }
-    if (!valid) return;
+
     if (_saving) return;
     final state = context.read<AppState>();
     final old = widget.review;
@@ -167,312 +182,615 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     }
   }
 
+  void _go(int step) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() => _step = step);
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+  }
+
+  Future<void> _chooseVisit(AppState state) async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * .6,
+          child: Column(
+            children: [
+              Text(
+                'Que experiência estás a avaliar?',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              Expanded(
+                child: ListView(
+                  children: [
+                    ListTile(
+                      title: const Text('Acabei de visitar'),
+                      selected: _visitId == null,
+                      onTap: () => Navigator.pop(context, ''),
+                    ),
+                    for (final visit
+                        in state
+                            .visitsFor(widget.bathroomId)
+                            .where((v) => state.reviewForVisit(v.id) == null))
+                      ListTile(
+                        title: Text(
+                          'Uma visita anterior · ${reviewDate(visit.visitedAt)}',
+                        ),
+                        selected: _visitId == visit.id,
+                        onTap: () => Navigator.pop(context, visit.id),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (mounted && result != null) {
+      setState(() => _visitId = result.isEmpty ? null : result);
+    }
+  }
+
+  Widget _category(
+    String label,
+    int? value,
+    int max,
+    String Function(Review) describe,
+    ValueChanged<int> change,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+            final columns = (constraints.maxWidth / (100 * scale))
+                .floor()
+                .clamp(2, max + 1);
+            final width = (constraints.maxWidth - (columns - 1) * 6) / columns;
+            return Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (var i = 0; i <= max; i++)
+                  SizedBox(
+                    width: width,
+                    child: Semantics(
+                      selected: value == i,
+                      child: OutlinedButton(
+                        key: ValueKey('$label-$i'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 12,
+                          ),
+                          backgroundColor: value == i
+                              ? Theme.of(context).colorScheme.secondaryContainer
+                              : null,
+                          side: BorderSide(
+                            color: value == i
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.outlineVariant,
+                            width: value == i ? 2 : 1,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () => setState(() => change(i)),
+                        child: Column(
+                          children: [
+                            Text(
+                              describe(_example(i)).split(' ').first,
+                              style: const TextStyle(fontSize: 26),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              describe(
+                                _example(i),
+                              ).split(' ').skip(1).join(' '),
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            SizedBox(
+                              height: 18,
+                              child: value == i
+                                  ? const Icon(Icons.check, size: 18)
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  Widget _global(AppState state) {
+    final visitId = widget.review?.visitId ?? _visitId;
+    final visits = state
+        .visitsFor(widget.bathroomId)
+        .where((v) => v.id == visitId);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                visitId == null
+                    ? 'Acabei de visitar'
+                    : visits.isEmpty
+                    ? 'Visita indisponível'
+                    : reviewDate(visits.first.visitedAt),
+              ),
+            ),
+            if (widget.review == null && widget.visitId == null)
+              TextButton(
+                onPressed: () => _chooseVisit(state),
+                child: const Text('Alterar'),
+              ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Como foi a experiência?',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          _rating == null ? '🚽' : _exampleRating(_rating!).emojiRating(),
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 64),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          _rating == null ? '— / 5' : '${ratingNumber(_rating!)} / 5',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.displaySmall,
+        ),
+        const SizedBox(height: 16),
+        StarRatingInput(
+          value: _rating,
+          onChanged: (value) => setState(() => _rating = value),
+        ),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(child: Text('Terrível')),
+            Expanded(child: Text('Perfeito', textAlign: TextAlign.end)),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Toca ou arrasta sobre as estrelas. No início, escolhes zero.',
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _tagStep(AppState state) {
+    final known = {
+      ..._suggestions,
+      for (final r in state.reviews) ...r.tags,
+    }.toList();
+    final query = _search.text.trim().toLowerCase();
+    final suggestions = known
+        .where((t) => !_tags.contains(t) && t.toLowerCase().contains(query))
+        .take(query.isEmpty ? 6 : 12);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'O que torna este trono especial?',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'As etiquetas são opcionais. Escolhe as que descrevem a tua experiência.',
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _search,
+          decoration: const InputDecoration(
+            labelText: 'Procurar etiquetas',
+            prefixIcon: Icon(Icons.search),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        if (_tags.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text('Selecionadas (${_tags.length}/10)'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final tag in _tags)
+                InputChip(
+                  label: Text(tag),
+                  deleteButtonTooltipMessage: 'Remover $tag',
+                  onDeleted: () => setState(() {
+                    _tags.remove(tag);
+                    _tagError = null;
+                  }),
+                ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 16),
+        Text(query.isEmpty ? 'Sugestões' : 'Resultados (até 12)'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            for (final tag in suggestions)
+              ActionChip(
+                label: Text(tag),
+                onPressed: () => setState(() {
+                  if (_tags.length < 10) {
+                    _tags.add(tag);
+                    _tagError = null;
+                  } else {
+                    _tagError = 'Podes adicionar até 10 etiquetas.';
+                  }
+                }),
+              ),
+          ],
+        ),
+        if (suggestions.isEmpty) const Text('Sem etiquetas encontradas.'),
+        if (widget.canCreateCustomTags)
+          TextButton.icon(
+            onPressed: () => setState(() => _creatingTag = !_creatingTag),
+            icon: const Icon(Icons.add),
+            label: const Text('Inventar uma etiqueta'),
+          ),
+        if (_creatingTag) ...[
+          TextField(
+            controller: _tagInput,
+            focusNode: _tagFocus,
+            maxLength: 30,
+            decoration: InputDecoration(
+              errorText: _tagError,
+              errorMaxLines: 3,
+              labelText: 'A tua etiqueta',
+              hintText: 'Algo que só este trono tem…',
+            ),
+            onSubmitted: (_) => _addTag(),
+          ),
+          Wrap(
+            spacing: 8,
+            children: [
+              TextButton(
+                onPressed: () => setState(() {
+                  _creatingTag = false;
+                  _tagInput.clear();
+                  _tagError = null;
+                }),
+                child: const Text('Cancelar etiqueta'),
+              ),
+              TextButton(
+                onPressed: _addTag,
+                child: const Text('Adicionar etiqueta'),
+              ),
+            ],
+          ),
+        ],
+        if (_tagError != null && !_creatingTag)
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              _tagError!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final availableVisits = state
-        .visitsFor(widget.bathroomId)
-        .where((v) => state.reviewForVisit(v.id) == null)
-        .toList();
     if (!_visitInitialized) {
-      _visitId =
-          widget.visitId ??
-          (availableVisits.isEmpty ? null : availableVisits.first.id);
+      final visits = state
+          .visitsFor(widget.bathroomId)
+          .where((v) => state.reviewForVisit(v.id) == null);
+      _visitId = widget.visitId ?? (visits.isEmpty ? null : visits.first.id);
       _visitInitialized = true;
     }
     final allowed =
         widget.review == null ||
         (widget.review!.authorId == state.currentUserId &&
             widget.review!.bathroomId == widget.bathroomId);
-    Widget category(
-      String label,
-      int? value,
-      int max,
-      String Function(Review) describe,
-      ValueChanged<int?> change,
-    ) => Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: DropdownButtonFormField<int>(
-        initialValue: value,
-        isExpanded: true,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
-        items: [
-          for (var i = 0; i <= max; i++)
-            DropdownMenuItem(value: i, child: Text(describe(_example(i)))),
-        ],
-        onChanged: change,
-        validator: (v) => v == null ? 'Escolhe uma opção' : null,
-      ),
-    );
+    final validStep = _step == 0
+        ? _rating != null
+        : [_hygiene, _comfort, _aesthetics, _paper].every((v) => v != null);
     return Scaffold(
       appBar: AppBar(
         title: Text(
           widget.review == null ? 'Nova avaliação' : 'Editar avaliação',
         ),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: !allowed
-              ? const Text('Só podes editar as tuas avaliações.')
-              : Form(
-                  key: _form,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text(
-                          'Conta como foi a experiência neste trono. 🚽',
-                        ),
-                        if (widget.review == null &&
-                            widget.visitId == null) ...[
-                          const SizedBox(height: 16),
-                          DropdownButtonFormField<String>(
-                            initialValue: _visitId ?? '',
-                            isExpanded: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Que experiência estás a avaliar?',
-                              border: OutlineInputBorder(),
-                            ),
-                            items: [
-                              if (_visitId != null &&
-                                  !availableVisits.any((v) => v.id == _visitId))
-                                DropdownMenuItem(
-                                  value: _visitId,
-                                  enabled: false,
-                                  child: const Text('Visita indisponível'),
-                                ),
-                              for (final visit in availableVisits)
-                                DropdownMenuItem(
-                                  value: visit.id,
-                                  child: Text(
-                                    'Uma visita anterior · ${reviewDate(visit.visitedAt)}',
-                                  ),
-                                ),
-                              const DropdownMenuItem(
-                                value: '',
-                                child: Text('Acabei de visitar'),
-                              ),
-                            ],
-                            onChanged: (value) => setState(
-                              () => _visitId = value == '' ? null : value,
-                            ),
+      body: !allowed
+          ? const Center(child: Text('Só podes editar as tuas avaliações.'))
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            state.allBathrooms
+                                .firstWhere((b) => b.id == widget.bathroomId)
+                                .name,
                           ),
-                        ] else if (widget.review != null ||
-                            widget.visitId != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text('Avaliação desta visita'),
-                          ),
-
-                        const SizedBox(height: 16),
-                        FormField<double>(
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          initialValue: _rating,
-                          validator: (_) =>
-                              _rating == null ? 'Escolhe uma avaliação' : null,
-                          builder: (field) => Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Avaliação global',
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  KeyedSubtree(
-                                    key: ValueKey(_rating),
-                                    child: RatingBar.builder(
-                                      initialRating: _rating ?? 0,
-                                      minRating: 0,
-                                      allowHalfRating: true,
-                                      itemSize: 36,
-                                      itemPadding: const EdgeInsets.symmetric(
-                                        horizontal: 2,
-                                      ),
-                                      itemBuilder: (_, _) => const Icon(
-                                        Icons.star_rounded,
-                                        color: Colors.amber,
-                                      ),
-                                      onRatingUpdate: (value) {
-                                        setState(() => _rating = value);
-                                        field.didChange(value);
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: AnimatedSwitcher(
-                                      duration: const Duration(
-                                        milliseconds: 200,
-                                      ),
-                                      child: Text(
-                                        _rating == null
-                                            ? 'Escolhe'
-                                            : '${_exampleRating(_rating!).emojiRating()} ${_rating!.toStringAsFixed(1)} / 5',
-                                        key: ValueKey(_rating),
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.titleMedium,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Semantics(
-                                label: 'Avaliação global de zero a cinco',
-                                child: Slider(
-                                  value: _rating ?? 0,
-                                  min: 0,
-                                  max: 5,
-                                  divisions: 50,
-                                  label: (_rating ?? 0).toStringAsFixed(1),
-                                  onChanged: (value) {
-                                    setState(() => _rating = value);
-                                    field.didChange(value);
-                                  },
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  setState(() => _rating = 0);
-                                  field.didChange(0);
-                                },
-                                child: const Text('Dar zero'),
-                              ),
-                              if (field.hasError)
-                                Text(
-                                  field.errorText!,
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        category(
-                          'Higiene',
-                          _hygiene,
-                          4,
-                          (r) => r.hygieneText,
-                          (v) => _hygiene = v,
-                        ),
-                        category(
-                          'Conforto',
-                          _comfort,
-                          4,
-                          (r) => r.comfortText,
-                          (v) => _comfort = v,
-                        ),
-                        category(
-                          'Estética',
-                          _aesthetics,
-                          4,
-                          (r) => r.aestheticText,
-                          (v) => _aesthetics = v,
-                        ),
-                        category(
-                          'Papel',
-                          _paper,
-                          2,
-                          (r) => r.paperText,
-                          (v) => _paper = v,
-                        ),
-                        Text(
-                          'Etiquetas',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            for (final tag in _suggestions)
-                              FilterChip(
-                                label: Text(tag),
-                                selected: _tags.contains(tag),
-                                onSelected: (selected) => setState(() {
-                                  if (selected) {
-                                    if (_tags.length < 10) {
-                                      _tags.add(tag);
-                                      _tagError = null;
-                                    } else {
-                                      _tagError =
-                                          'Podes adicionar até 10 etiquetas.';
-                                    }
-                                  } else {
-                                    _tags.remove(tag);
-                                    _tagError = null;
-                                  }
-                                }),
-                              ),
-                            for (final tag in _tags.where(
-                              (t) => !_suggestions.contains(t),
-                            ))
-                              InputChip(
-                                label: Text(tag),
-                                onDeleted: () => setState(() {
-                                  _tags.remove(tag);
-                                  _tagError = null;
-                                }),
-                              ),
-                          ],
-                        ),
-                        ActionChip(
-                          label: const Text('Inventar uma etiqueta'),
-                          avatar: const Icon(Icons.add),
-                          onPressed: () =>
-                              setState(() => _creatingTag = !_creatingTag),
-                        ),
-                        if (_creatingTag)
+                          const SizedBox(height: 12),
                           Row(
                             children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _tagInput,
-                                  maxLength: 30,
-                                  decoration: InputDecoration(
-                                    labelText: 'A tua etiqueta',
-                                    hintText: 'Algo que só este trono tem…',
+                              for (var i = 0; i < 3; i++)
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 3,
+                                    ),
+                                    child: Semantics(
+                                      label: 'Passo ${i + 1} de 3',
+                                      selected: i == _step,
+                                      child: Column(
+                                        children: [
+                                          LinearProgressIndicator(
+                                            value: i <= _step ? 1 : 0,
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            [
+                                              'Global',
+                                              'Detalhes',
+                                              'Etiquetas',
+                                            ][i],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                  onSubmitted: (_) => _addTag(),
                                 ),
-                              ),
-                              IconButton(
-                                tooltip: 'Adicionar etiqueta',
-                                onPressed: _addTag,
-                                icon: const Icon(Icons.add_circle_outline),
-                              ),
                             ],
                           ),
-                        if (_tagError != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              _tagError!,
-                              semanticsLabel: 'Erro na etiqueta: $_tagError',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        controller: _scroll,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        child: _step == 0
+                            ? _global(state)
+                            : _step == 1
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    'Os pequenos detalhes',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.headlineSmall,
+                                  ),
+                                  const SizedBox(height: 20),
+                                  _category(
+                                    'Higiene',
+                                    _hygiene,
+                                    4,
+                                    (r) => r.hygieneText,
+                                    (v) => _hygiene = v,
+                                  ),
+                                  _category(
+                                    'Conforto',
+                                    _comfort,
+                                    4,
+                                    (r) => r.comfortText,
+                                    (v) => _comfort = v,
+                                  ),
+                                  _category(
+                                    'Estética',
+                                    _aesthetics,
+                                    4,
+                                    (r) => r.aestheticText,
+                                    (v) => _aesthetics = v,
+                                  ),
+                                  _category(
+                                    'Papel',
+                                    _paper,
+                                    2,
+                                    (r) => r.paperText,
+                                    (v) => _paper = v,
+                                  ),
+                                ],
+                              )
+                            : _tagStep(state),
+                      ),
+                    ),
+                    SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            if (_step > 0) ...[
+                              TextButton(
+                                onPressed: () => _go(_step - 1),
+                                child: const Text('Voltar'),
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: !validStep || _saving
+                                    ? null
+                                    : () {
+                                        if (_step < 2) {
+                                          _go(_step + 1);
+                                        } else {
+                                          _save();
+                                        }
+                                      },
+                                child: Text(
+                                  _step < 2
+                                      ? 'Continuar'
+                                      : _tags.isEmpty
+                                      ? 'Guardar sem etiquetas'
+                                      : 'Guardar avaliação',
+                                ),
                               ),
                             ),
-                          ),
-                        const SizedBox(height: 24),
-                        FilledButton(
-                          onPressed: _save,
-                          child: const Text('Guardar avaliação'),
+                          ],
                         ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+}
+
+/// A single adjustable star strip. Each star clips its own fractional fill.
+class StarRatingInput extends StatelessWidget {
+  const StarRatingInput({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
+  final double? value;
+  final ValueChanged<double> onChanged;
+
+  void _set(double next) => onChanged((next.clamp(0, 5) * 10).round() / 10);
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: 'Avaliação global',
+    slider: true,
+    value: value == null ? 'Sem resposta' : '${ratingNumber(value!)} de 5',
+    increasedValue: ratingNumber(((value ?? 0) + .1).clamp(0, 5)),
+    decreasedValue: ratingNumber(((value ?? 0) - .1).clamp(0, 5)),
+    onIncrease: () => _set((value ?? 0) + .1),
+    onDecrease: () => _set((value ?? 0) - .1),
+    child: Focus(
+      onKeyEvent: (node, event) {
+        if (event is KeyUpEvent) return KeyEventResult.ignored;
+        final key = event.logicalKey;
+        if (key == LogicalKeyboardKey.home) {
+          _set(0);
+        } else if (key == LogicalKeyboardKey.end) {
+          _set(5);
+        } else if (key == LogicalKeyboardKey.arrowRight ||
+            key == LogicalKeyboardKey.arrowUp) {
+          _set((value ?? 0) + .1);
+        } else if (key == LogicalKeyboardKey.arrowLeft ||
+            key == LogicalKeyboardKey.arrowDown) {
+          _set((value ?? 0) - .1);
+        } else {
+          return KeyEventResult.ignored;
+        }
+        return KeyEventResult.handled;
+      },
+      child: Builder(
+        builder: (context) => LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final focused = Focus.of(context).hasFocus;
+            void update(Offset position) {
+              Focus.of(context).requestFocus();
+              _set(position.dx / width * 5);
+            }
+
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (event) => update(event.localPosition),
+              onHorizontalDragStart: (event) => update(event.localPosition),
+              onHorizontalDragUpdate: (event) => update(event.localPosition),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: focused
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+                child: ExcludeSemantics(
+                  child: SizedBox(
+                    height: 64,
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < 5; i++)
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder: (context, box) {
+                                final size = box.maxWidth.clamp(0.0, 56.0);
+                                final fraction = ((value ?? 0) - i).clamp(
+                                  0.0,
+                                  1.0,
+                                );
+                                return Center(
+                                  child: SizedBox(
+                                    width: size,
+                                    height: size,
+                                    child: Stack(
+                                      children: [
+                                        Icon(
+                                          Icons.star_rounded,
+                                          size: size,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.outlineVariant,
+                                        ),
+                                        ClipRect(
+                                          child: Align(
+                                            alignment: Alignment.centerLeft,
+                                            widthFactor: fraction,
+                                            child: Icon(
+                                              Icons.star_rounded,
+                                              size: size,
+                                              color: Colors.amber,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
                       ],
                     ),
                   ),
                 ),
+              ),
+            );
+          },
         ),
       ),
-    );
-  }
+    ),
+  );
 }

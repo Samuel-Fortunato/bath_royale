@@ -51,8 +51,11 @@ Local verification on 2026-11-25: 51 tests pass, including 320/390/1200 px layou
 
 ### Session 2 — Review wizard
 
-- [ ] Implement Global / Details / Tags steps, precise accessible rating input, original category selectors and bounded tag selection; preserve draft, validation and atomic save/cancel semantics.
-- [ ] Add regression coverage and verify builds; obtain owner phone acceptance.
+- [x] Implement Global / Detalhes / Etiquetas steps, precise accessible star input, original category selectors and bounded tag selection; preserve draft, validation and atomic save/cancel semantics.
+- [x] Add regression coverage and verify formatting, strict analysis and Linux/Android debug builds.
+- [ ] Owner acceptance on a physical phone, including star precision/zero, caption wrapping, visit selection and keyboard behavior.
+
+Local verification on 2026-11-25: all 61 tests pass. Coverage includes tenths/zero/unanswered ratings, keyboard and adjustable semantics, draft navigation/cancellation, fixed and selectable visit association, exact editing, atomic/repeated submission, searchable/removable/bounded tags, duplicate/count/unfinished-tag validation, capability visibility, and 320/390/1200 px layouts in both themes at 1.5 text scaling with simulated keyboard insets. Flutter-rendered captures of all three steps at 320/390 px in both themes were visually inspected, including partial stars, caption wrapping and custom-tag keyboard layout. The exact Material import baseline now includes the dedicated wizard regression suite (22 files); no broad suppression, dependency or schema changes. Physical phone acceptance remains open. Session 3 has not started.
 
 ### Session 3 — Collection, rankings and profile
 

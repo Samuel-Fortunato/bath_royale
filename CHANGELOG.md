@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Implement the three-step Global / Detalhes / Etiquetas review wizard with a compact visit-selection sheet and persistent draft state.
+- Replace the rating slider and zero button with one accessible star strip: 0.1 precision, explicit zero, unanswered state, keyboard adjustment, live decimal-comma score and original reactive emojis.
+- Replace category dropdowns with responsive emoji/caption selectors and non-color selected indicators; preserve every original description and scale.
+- Add searchable, bounded tag suggestions and removable selected tags; isolate custom creation visibility and preserve visible draft, duplicate, length and count validation.
+- Preserve immutable edit/visit associations and existing atomic storage operations, including cancellation and duplicate-save protection, without schema changes.
+- Verify all 61 tests, strict analysis, formatting and Linux/Android debug builds; inspect Flutter-rendered light/dark mobile captures. Session 2 phone acceptance remains open.
+
 - Commit the approved UI/UX specification and interactive reference; schedule three redesign sessions before Phase 2.
 - Implement contextual page titles, preserved navigation state and persisted theme control in Profile → Settings while retaining the existing palettes.
 - Replace duplicated Explore filters with one grouped panel, active removable chips/count and visit-based discovery filters; retain all search/sort/filter options.
