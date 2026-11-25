@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:bath_royale/models/bathroom.dart';
 
-List<Bathroom> allBathroomsInit = [
+List<Bathroom> createSampleBathrooms() => [
   Bathroom(
     id: "0",
     name: "DEM - 3º piso",
@@ -78,5 +78,20 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  final List<Bathroom> allBathrooms = allBathroomsInit;
+  AppState() : allBathrooms = createSampleBathrooms() {
+    for (final bathroom in allBathrooms) {
+      bathroom.isFavorite.addListener(notifyListeners);
+    }
+  }
+
+  final List<Bathroom> allBathrooms;
+
+  @override
+  void dispose() {
+    for (final bathroom in allBathrooms) {
+      bathroom.isFavorite.removeListener(notifyListeners);
+      bathroom.isFavorite.dispose();
+    }
+    super.dispose();
+  }
 }

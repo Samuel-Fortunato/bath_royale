@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class Bathroom {
   final String id;
   final String name;
-  final ValueNotifier<bool> isFavorite = ValueNotifier(false);
+  final ValueNotifier<bool> isFavorite;
   bool reviewed;
 
   double rating; // 0-5
@@ -20,7 +20,7 @@ class Bathroom {
   Bathroom({
     required this.id,
     required this.name,
-    // this.isFavorite = false,
+    bool isFavorite = false,
     this.reviewed = false,
     this.rating = 0.0,
     this.paperAvailability = 0,
@@ -29,12 +29,12 @@ class Bathroom {
     this.aesthetics = 0,
     this.tags = const [],
     this.lastReviewed,
-  });
+  }) : isFavorite = ValueNotifier(isFavorite);
 
   Bathroom copyWith({
     String? id,
     String? name,
-    // bool? isFavorite,
+    bool? isFavorite,
     bool? reviewed,
     double? rating,
     int? paperAvailability,
@@ -47,7 +47,7 @@ class Bathroom {
     return Bathroom(
       id: id ?? this.id,
       name: name ?? this.name,
-      // isFavorite: isFavorite ?? this.isFavorite,
+      isFavorite: isFavorite ?? this.isFavorite.value,
       reviewed: reviewed ?? this.reviewed,
       rating: rating ?? this.rating,
       paperAvailability: paperAvailability ?? this.paperAvailability,
@@ -65,19 +65,19 @@ class Bathroom {
 
   void evaluate({
     required double rating,
-    required bool paperAvailable,
-    required double hygiene,
-    required double confort,
-    required double aesthetics,
+    required int paperAvailability,
+    required int hygiene,
+    required int confort,
+    required int aesthetics,
     required List<String> tags,
   }) {
     reviewed = true;
-    rating = rating;
-    paperAvailable = paperAvailable;
-    hygiene = hygiene;
-    confort = confort;
-    aesthetics = aesthetics;
-    tags = tags;
+    this.rating = rating;
+    this.paperAvailability = paperAvailability;
+    this.hygiene = hygiene;
+    this.confort = confort;
+    this.aesthetics = aesthetics;
+    this.tags = List.of(tags);
     lastReviewed = DateTime.now();
   }
 }

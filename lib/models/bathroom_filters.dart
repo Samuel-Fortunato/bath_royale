@@ -1,6 +1,5 @@
 import 'package:bath_royale/models/bathroom.dart';
 
-// TODO: Solve rating based filters on not reviewed WC's
 enum BathroomFilterID {
   notReviewed,
   reviewed,

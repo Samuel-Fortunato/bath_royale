@@ -32,6 +32,10 @@ flutter build linux --debug
 flutter build linux --release
 ```
 
-The `test` directory does not exist yet; add it as automated tests are introduced, and omit it from the formatting command until then. `flutter test` requires tests to be added first. Linux builds require a working Linux desktop toolchain. Android and web release preparation is planned, and platform-specific prerequisites must be configured separately. Generated outputs under `build/` are not source files.
+ Linux builds require a working Linux desktop toolchain. Android and web release preparation is planned, and platform-specific prerequisites must be configured separately. Generated outputs under `build/` are not source files.
 
 See [AGENTS.md](AGENTS.md) for development and Git practices.
+
+## Material library migration
+
+Flutter 3.50 deprecates the bundled `package:flutter/material.dart` in favour of the standalone `material_ui` package. The existing app still uses the bundled library, so analysis reports deprecation notices. The [Flutter migration guide](https://docs.flutter.dev/release/breaking-changes/material-ui-and-cupertino-ui) describes compatibility bridges needed when dependencies still use the bundled widgets. Migrate and verify the app and its `flutter_rating_bar` dependency together in a separate change to preserve the current appearance.

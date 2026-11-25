@@ -19,7 +19,9 @@ class WcCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final customColorRoles = Theme.of(context).extension<CustomColorRoles>()!;
-    final stateColor = bathroom.colorRating(context);
+    final stateColor = bathroom.reviewed
+        ? bathroom.colorRating(context)
+        : Theme.of(context).colorScheme.onSurface;
 
     // TODO: Not evaluated bathroom Card
     return Card(
@@ -36,7 +38,7 @@ class WcCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    bathroom.emojiRating(),
+                    bathroom.reviewed ? bathroom.emojiRating() : "🚽",
                     style: TextTheme.of(context).titleLarge,
                   ),
                   // TODO: spacing based on theme ???
@@ -63,47 +65,54 @@ class WcCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              // RATING ROW
-              Row(
-                children: [
-                  RatingBarIndicator(
-                    rating: bathroom.rating,
-                    itemCount: 5,
-                    itemSize: 18,
-                    itemBuilder: (_, _) =>
-                        Icon(Icons.star, color: customColorRoles.starRating),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    bathroom.rating.toStringAsFixed(1),
-                    style: TextTheme.of(context).bodyMedium,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // CATEGORY QUICK INFO
-              Wrap(
-                spacing: 12,
-                runSpacing: 4,
-                children: [
-                  infoSpan("Higiene", bathroom.hygieneText),
-                  infoSpan("Confort", bathroom.confortText),
-                  infoSpan("Aesthetics", bathroom.aestheticText),
-                  infoSpan("Papel", bathroom.paperText),
-                ],
-              ),
-              const SizedBox(height: 10),
-              // TAGS
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: bathroom.tags.map((t) {
-                  return Chip(
-                    label: Text(t),
-                    backgroundColor: stateColor.withValues(alpha: 0.25),
-                  );
-                }).toList(),
-              ),
+              if (!bathroom.reviewed)
+                Text(
+                  "Ainda não avaliada",
+                  style: TextTheme.of(context).bodyMedium,
+                ),
+              if (bathroom.reviewed) ...[
+                // RATING ROW
+                Row(
+                  children: [
+                    RatingBarIndicator(
+                      rating: bathroom.rating,
+                      itemCount: 5,
+                      itemSize: 18,
+                      itemBuilder: (_, _) =>
+                          Icon(Icons.star, color: customColorRoles.starRating),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      bathroom.rating.toStringAsFixed(1),
+                      style: TextTheme.of(context).bodyMedium,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // CATEGORY QUICK INFO
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  children: [
+                    infoSpan("Higiene", bathroom.hygieneText),
+                    infoSpan("Confort", bathroom.confortText),
+                    infoSpan("Aesthetics", bathroom.aestheticText),
+                    infoSpan("Papel", bathroom.paperText),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // TAGS
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: bathroom.tags.map((t) {
+                    return Chip(
+                      label: Text(t),
+                      backgroundColor: stateColor.withValues(alpha: 0.25),
+                    );
+                  }).toList(),
+                ),
+              ],
             ],
           ),
         ),

@@ -21,3 +21,7 @@
 - Stage only files relevant to each commit. Do not commit generated build artifacts or temporary files.
 - Do not push to GitHub or merge into main without explicit instruction. Never force-push, rewrite history or discard the owner's changes without explicit approval.
 - Report commits created at the end of each task.
+
+## Changelog
+
+- Maintain CHANGELOG.md with concise summaries of completed changes.

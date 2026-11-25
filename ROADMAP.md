@@ -9,7 +9,8 @@ The phases describe intended sequencing, not a fixed specification. Unconfirmed 
 
 ## Phase 1 — Complete the local prototype
 
-- [ ] Audit the existing prototype and fix bugs, including review updates, favourite filtering and unreviewed bathroom presentation.
+- [x] Audit the existing prototype and fix bugs, including review updates, favourite filtering and unreviewed bathroom presentation.
+- [x] Investigate the Flutter 3.50 Material deprecation; document migration considerations.
 - [ ] Separate bathroom entities from individual reviews and define local ownership and visit semantics.
 - [ ] Implement bathroom details.
 - [ ] Create and edit reviews while preserving the rating descriptions.

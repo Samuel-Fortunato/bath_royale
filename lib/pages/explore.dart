@@ -27,6 +27,11 @@ class _ExplorePageState extends State<ExplorePage> {
 
   void _toggleFilter(BathroomFilter filter, bool selected) {
     if (selected) {
+      if (filter.id == BathroomFilterID.notReviewed) {
+        activeFilters.removeWhere(
+          (other) => other.id != BathroomFilterID.favourite,
+        );
+      }
       if (filter.exclusiveGroup != null) {
         activeFilters.removeWhere(
           (other) => other.exclusiveGroup == filter.exclusiveGroup,
