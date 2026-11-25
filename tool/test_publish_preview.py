@@ -10,6 +10,15 @@ import publish_preview as publisher
 
 
 class PublicationTest(unittest.TestCase):
+    def test_checkout_precedes_artifact_download(self):
+        workflow = (Path(__file__).resolve().parents[1] /
+                    '.github/workflows/android-preview.yml').read_text()
+        publication = workflow.split('  prerelease:', 1)[1]
+        self.assertLess(publication.index('actions/checkout@'),
+                        publication.index('actions/download-artifact@'))
+        self.assertEqual(workflow.count('flutter build apk'), 1)
+        self.assertEqual(workflow.count('contents: write'), 1)
+
     def test_publication_scenarios(self):
         for scenario in ('new', 'partial', 'complete', 'wrong-tag', 'wrong-asset',
                          'bad-checksum', 'incomplete-public', 'interrupted'):
@@ -25,7 +34,7 @@ class PublicationTest(unittest.TestCase):
                     {'name': 'bath-royale.apk', 'id': 1}]
                 if scenario == 'complete':
                     assets.append({'name': 'SHA256SUMS', 'id': 2})
-                release = {'tag_name': 'preview-1001', 'target_commitish': 'abc',
+                release = {'id': 42, 'tag_name': 'preview-1001', 'target_commitish': 'abc',
                            'prerelease': True, 'draft': scenario not in
                            ('complete', 'incomplete-public'), 'assets': assets}
                 mutations = []
@@ -41,6 +50,7 @@ class PublicationTest(unittest.TestCase):
                         return {}
                     if '--paginate' in args:
                         return [[]] if scenario == 'new' else [[release]]
+                    self.assertNotIn('/releases/tags/', path)
                     return release
 
                 def gh(*args):

@@ -4,7 +4,6 @@ import json
 import os
 from pathlib import Path
 import subprocess
-import tempfile
 
 
 def gh(*args):
@@ -61,13 +60,15 @@ def publish(directory):
                  'recente se o Android recusar uma versão anterior.\n\n'
                  'Versão de teste com assinatura de desenvolvimento; não é uma versão '
                  'estável de produção.')
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.md') as file:
-            file.write(notes)
-            file.flush()
-            gh('release', 'create', tag, '--verify-tag', '--target', sha, '--draft',
-               '--prerelease', '--latest=false', '--title',
-               f'Bath Royale — Desenvolvimento {number}', '--notes-file', file.name)
-    release = api(f'repos/{repo}/releases/tags/{tag}')
+        release = api(f'repos/{repo}/releases', '-f', f'tag_name={tag}',
+                      '-f', f'target_commitish={sha}', '-F', 'draft=true',
+                      '-F', 'prerelease=true', '-f', 'make_latest=false',
+                      '-f', f'name=Bath Royale — Desenvolvimento {number}',
+                      '-f', f'body={notes}')
+    else:
+        release = matches[0]
+    release_path = f"repos/{repo}/releases/{release['id']}"
+    release = api(release_path)
     require(release['prerelease'] and release['target_commitish'] == sha,
             'Release identity mismatch')
     existing = verify_assets(release, directory, repo)
@@ -77,7 +78,7 @@ def publish(directory):
         return
     for name in sorted(names - existing):
         gh('release', 'upload', tag, str(directory / name))
-    release = api(f'repos/{repo}/releases/tags/{tag}')
+    release = api(release_path)
     require(verify_assets(release, directory, repo) == names, 'Incomplete draft')
     gh('release', 'edit', tag, '--draft=false', '--prerelease', '--latest=false')
 
