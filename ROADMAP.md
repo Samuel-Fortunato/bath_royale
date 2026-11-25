@@ -14,8 +14,8 @@ The phases describe intended sequencing, not a fixed specification. Unconfirmed 
 - [x] Separate bathroom entities from individual reviews and define local ownership and visit semantics.
 - [x] Implement bathroom details.
 - [x] Create and edit reviews while preserving the rating descriptions.
-- [ ] Create bathrooms with appropriate validation.
-- [ ] Improve search, sorting, filters and favourites.
+- [x] Create bathrooms with appropriate validation.
+- [x] Improve search, sorting, filters and favourites.
 - [ ] Persist local data and define a migration strategy.
 - [ ] Implement rankings and a personal collection.
 - [ ] Add automated tests for models, state and important user flows.
@@ -54,4 +54,9 @@ Bathroom entities, individual author-owned reviews and per-user favourites/lates
 
 ### Android build verification
 
-The Nix Android environment and Flutter 3.50.1 template migration are verified with a debug APK build (Gradle 9.5.0, AGP 9.3.1, KGP 2.4.20, Java 17). Application ID is unchanged. Device testing, Android release signing/builds and web deployment remain open; this does not complete Phase 5 release preparation.
+The Nix Android environment and Flutter 3.50.1 template migration are verified with a debug APK build (Gradle 9.5.0, AGP 9.3.1, KGP 2.4.20, Java 17). Application ID is unchanged. Physical Android execution is confirmed by the owner and the updated app successfully connected through flutter run. Android release signing/builds and web deployment remain open; this does not complete Phase 5 release preparation.
+
+
+### Bathroom creation and Explore milestone
+
+Verified in memory: validated creation with normalized duplicate-name prevention, name search, four deterministic sort orders, explicit personal/community labels, filter reset and empty states. Twenty unit/widget tests pass, including 390 px and 1200 px creation flows. Formatting, Linux debug/release and Android debug APK builds pass. Analysis retains only the documented Material import deprecations. Persistence, broader test coverage and release preparation remain open.

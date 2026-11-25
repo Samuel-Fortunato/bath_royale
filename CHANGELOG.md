@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Implement the + action and responsive bathroom creation with name validation, creator attribution and normalized duplicate-name protection.
+- Add Explore name search and sorting by community rating, personal rating, name and latest explicit visit, with deterministic ties and missing values last.
+- Add result counts, empty states, search/filter reset and explicit personal/community rating labels; preserve humorous rating descriptions and favourites.
+- Verify twenty automated tests, formatting, Linux debug/release builds, Android debug APK and a connected physical Android launch.
+
+
 - Align Android with the installed Flutter 3.50.1 templates: Gradle 9.5.0, AGP 9.3.1, KGP 2.4.20 and Java 17 compiler options.
 - Record the existing Nix Android SDK/NDK/Java environment and Nix-provided aapt2 override; preserve application identity and Flutter compatibility flags.
 - Ignore generated Android build directories and verify the debug APK with dependency validation enabled.

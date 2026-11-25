@@ -7,7 +7,9 @@ import 'sample_data.dart';
 
 class AppState extends ChangeNotifier {
   final String currentUserId;
-  final List<Bathroom> allBathrooms;
+  final List<Bathroom> _bathrooms;
+
+  List<Bathroom> get allBathrooms => List.unmodifiable(_bathrooms);
   final List<Review> _reviews;
   final Map<(String, String), BathroomActivity> _activities = {};
 
@@ -16,7 +18,7 @@ class AppState extends ChangeNotifier {
     List<Bathroom>? bathrooms,
     List<Review>? reviews,
     List<BathroomActivity>? activities,
-  }) : allBathrooms = List.unmodifiable(bathrooms ?? sampleBathrooms),
+  }) : _bathrooms = List.of(bathrooms ?? sampleBathrooms),
        _reviews = List.of(
          reviews ?? (bathrooms == null ? createSampleReviews() : <Review>[]),
        ) {
@@ -50,6 +52,39 @@ class AppState extends ChangeNotifier {
       }
       _activities[key] = activity;
     }
+  }
+
+  static String normalizeName(String name) =>
+      name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+
+  String? validateBathroomName(String name) {
+    final cleaned = name.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (cleaned.isEmpty) return 'Dá um nome a este trono.';
+    if (cleaned.length > 100) return 'Usa até 100 caracteres.';
+    if (cleaned.contains(RegExp(r'[\x00-\x1F\x7F]'))) {
+      return 'Usa apenas texto numa linha.';
+    }
+    if (_bathrooms.any((b) => normalizeName(b.name) == normalizeName(name))) {
+      return 'Já existe uma casa de banho com este nome.';
+    }
+    return null;
+  }
+
+  Bathroom createBathroom(String name) {
+    final error = validateBathroomName(name);
+    if (error != null) throw ArgumentError(error);
+    var serial = _bathrooms.length + 1;
+    while (_bathrooms.any((b) => b.id == 'bathroom-$serial')) {
+      serial++;
+    }
+    final bathroom = Bathroom(
+      id: 'bathroom-$serial',
+      name: name.trim().replaceAll(RegExp(r'\s+'), ' '),
+      createdBy: currentUserId,
+    );
+    _bathrooms.add(bathroom);
+    notifyListeners();
+    return bathroom;
   }
 
   List<Review> get reviews => List.unmodifiable(_reviews);

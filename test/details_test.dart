@@ -1,3 +1,4 @@
+import 'package:bath_royale/widgets/wc_card.dart';
 import 'package:bath_royale/pages/explore.dart';
 import 'package:bath_royale/pages/review_form.dart';
 import 'package:bath_royale/state/app_state.dart';
@@ -32,7 +33,15 @@ void main() {
       final state = AppState();
       addTearDown(state.dispose);
       await mount(tester, state, const ExplorePage());
-      await tap(tester, find.text('DEM - 3º piso'));
+      await tester.enterText(find.byType(TextField), 'DEM - 3º piso');
+      await tester.pumpAndSettle();
+      await tap(
+        tester,
+        find.descendant(
+          of: find.byType(WcCard),
+          matching: find.text('DEM - 3º piso'),
+        ),
+      );
       expect(find.text('Comunidade'), findsOneWidget);
       expect(find.text('Média: 4.7 / 5'), findsOneWidget);
       await tap(tester, find.byTooltip('Adicionar aos favoritos'));
@@ -58,7 +67,15 @@ void main() {
     final state = AppState();
     addTearDown(state.dispose);
     await mount(tester, state, const ExplorePage());
-    await tap(tester, find.text('DEM - 3º piso'));
+    await tester.enterText(find.byType(TextField), 'DEM - 3º piso');
+    await tester.pumpAndSettle();
+    await tap(
+      tester,
+      find.descendant(
+        of: find.byType(WcCard),
+        matching: find.text('DEM - 3º piso'),
+      ),
+    );
     await tap(tester, find.text('Nova avaliação'));
     await tap(tester, find.text('Guardar avaliação'));
     expect(find.text('Escolhe uma opção'), findsNWidgets(4));
@@ -109,7 +126,15 @@ void main() {
     final state = AppState();
     addTearDown(state.dispose);
     await mount(tester, state, const ExplorePage());
-    await tap(tester, find.text('DEM - 3º piso'));
+    await tester.enterText(find.byType(TextField), 'DEM - 3º piso');
+    await tester.pumpAndSettle();
+    await tap(
+      tester,
+      find.descendant(
+        of: find.byType(WcCard),
+        matching: find.text('DEM - 3º piso'),
+      ),
+    );
     await tap(tester, find.text('Nova avaliação'));
     await tester.enterText(find.byType(TextFormField).first, '5');
     await tester.pageBack();

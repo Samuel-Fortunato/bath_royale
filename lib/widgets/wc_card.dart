@@ -63,6 +63,12 @@ class WcCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
+              Text(
+                entry.communityRating == null
+                    ? 'Comunidade: sem avaliações'
+                    : 'Comunidade: ${entry.communityRating!.toStringAsFixed(1)} / 5 (${entry.reviewCount})',
+              ),
+              const Text('A minha avaliação'),
               if (review == null)
                 Text(
                   "Ainda não avaliada",
@@ -93,8 +99,8 @@ class WcCard extends StatelessWidget {
                   runSpacing: 4,
                   children: [
                     infoSpan("Higiene", review.hygieneText),
-                    infoSpan("Confort", review.comfortText),
-                    infoSpan("Aesthetics", review.aestheticText),
+                    infoSpan("Conforto", review.comfortText),
+                    infoSpan("Estética", review.aestheticText),
                     infoSpan("Papel", review.paperText),
                   ],
                 ),
