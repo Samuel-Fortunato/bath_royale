@@ -18,16 +18,20 @@ If Android reports an incompatible app or refuses an update, do **not** uninstal
 Checks run before signing/building:
 
 ```sh
-direnv exec . flutter pub get --enforce-lockfile
-direnv exec . dart format --output=none --set-exit-if-changed lib test tool
-direnv exec . dart run tool/check_analysis.dart
-direnv exec . flutter test --no-pub
-direnv exec . actionlint
+flutter pub get --enforce-lockfile
+dart format --output=none --set-exit-if-changed lib test tool
+dart run tool/check_analysis.dart
+flutter test --no-pub
+actionlint
 ```
 
 The analysis helper runs `dart analyze --format=machine` across the project and prints all diagnostics. It accepts only the exact bundled-Material import notice in the 20 existing Phase 1 files. New imports, other informational diagnostics, warnings, errors, malformed output and analyzer failures fail CI. Regression tests exercise this policy. Nothing is suppressed in `analysis_options.yaml`; ordinary `flutter analyze` still reports the known debt. Remove the baseline as part of the separate Material migration.
 
-GitHub Actions have immutable commit pins. The build job has only `contents: read`; only the optional pre-release job has `contents: write`. Checkout does not persist credentials. Pub and Gradle downloads are cached using toolchain/package/Gradle input hashes; signing files, app outputs and local data are excluded. Nix uses its standard binary cache. Cold runners can take longer to download the Android toolchain; the build job has a 60-minute timeout. Runs are serialized per branch without cancelling active builds. Workflow artifacts include the APK and `SHA256SUMS` with no additional ZIP compression.
+GitHub Actions have immutable commit pins. The build job has only `contents: read`; only the optional pre-release job has `contents: write`. Checkout does not persist credentials. Pub and Gradle downloads are cached using toolchain/package/Gradle input hashes; signing files, app outputs and local data are excluded. Nix uses its standard binary cache. Cold runners can take longer to download the Android toolchain; the build job has a 60-minute timeout. Routine previews (pushes and manual runs without publication) share a concurrency group per branch: a newer run cancels obsolete running and pending previews. Each explicit pre-release publication request has a unique run-ID group with cancellation disabled, protecting its full build-and-publish workflow from routine previews and other publication requests. Publication runs may execute concurrently; this does not guarantee publication or completion order. Workflow artifacts include the APK and `SHA256SUMS` with no additional ZIP compression.
+
+Local commands above assume the development tools are already on PATH (Codex is launched with `direnv exec . codex`). Fall back to `direnv exec . <command>` only when needed. Bubblewrap 0.12.0 is available; keep normal sandboxing enabled.
+
+After pushing routine verified development work, report the CI URL and current status and finish without waiting. Wait for hosted CI only for CI/CD implementation or debugging, or an explicit owner request, unless the owner waives waiting. Local validation never proves remote checks passed.
 
 ## Signing and existing installations
 
@@ -63,5 +67,9 @@ Optional release tags are unique `preview-<version_code>` tags pointing at the e
 Local verification on 2026-11-25: locked package resolution, formatting (36 files), strict analysis policy, all 40 tests, actionlint, Nix flake checks and the Android debug preview build passed. Ordinary `flutter analyze --no-pub` reports only the 20 documented Material notices (exit 1); the strict gate accepts these and no other diagnostics. Initial setup verified the existing phone/local certificate match and stored the approved signing secret.
 
 [The first GitHub Actions run](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/45604860872), from commit `58786e7`, succeeded on GitHub's hosted runner in 5m3s. It independently resolved the locked dependencies, passed checks and 40 tests, compiled the Android APK, verified package/version/certificate and uploaded `bath-royale-preview-1001` with its checksum. The generated version is `0.1.0-preview.1` / code `1001`. The optional pre-release job was correctly skipped on this push and has not been invoked; its workflow is linted, but publishing is not yet verified. The initial run's Node 20 action deprecation prompted an update to immutable pins for current Node 24 action releases.
+
+[The second hosted run](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/45605957997), from commit `a8a5fa5`, also completed successfully with the refreshed action pins. The CI/CD milestone remains complete; Phase 2 has not started.
+
+Workflow refinement on 2026-11-25: routine preview cancellation and isolated publication concurrency were validated locally with actionlint and a concurrency scenario check. The owner waived waiting for hosted CI for this change; its remote outcome is not established by local checks.
 
 An APK with matching identity, signing and an increasing version is eligible for an in-place Android update; actual preservation of this phone's data after installing a CI APK still needs a device update check. No CI APK has been installed on the owner's phone during setup.

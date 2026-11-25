@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Cancel superseded routine Android previews while isolating each explicit pre-release publication request.
+- Report CI status without waiting during routine development; prefer available development tools directly and preserve sandboxing.
+
 - Add Nix-locked GitHub Actions checks and Android preview APK artifacts on `main` pushes and manual runs, with dependency caching and 14-day retention.
 - Preserve Android preview signing through an approved Actions secret, verify APK identity/certificate/version, and add opt-in manual GitHub pre-releases.
 - Gate analysis with a tested, exact baseline for existing Material imports; retain all other diagnostics.

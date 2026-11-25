@@ -21,7 +21,9 @@
 - Stage only files relevant to each commit. Do not commit generated build artifacts or temporary files.
 - Fetch and check the upstream before pushing. If the remote branch has diverged, report the situation; do not automatically merge, rebase or perform potentially destructive operations.
 - Never force-push, rewrite history, discard the owner's changes, publish secrets or push incomplete or failing work. Merging branches still requires explicit instruction.
-- Report created commits and push status concisely at the end of each task. Verify the actual GitHub Actions result after workflow changes; never infer remote compilation success from local checks.
+- Report created commits, push status, the CI URL and its current status concisely, then finish routine development tasks without waiting for GitHub Actions.
+- Only wait for hosted CI when specifically implementing or debugging CI/CD, or when the owner explicitly requests it. Honor an explicit waiver of waiting, including for CI/CD work.
+- Never claim unverified remote checks passed or infer remote compilation success from local checks.
 
 ## Changelog
 
@@ -30,6 +32,8 @@
 ## NixOS environment and terminal output
 
 - Discover executables through PATH and `command -v`; do not assume conventional filesystem locations.
-- Use the existing Nix flake and direnv development environment. If a utility such as Python is missing, use a temporary `nix shell` rather than installing it globally.
+- Use the existing Nix flake and direnv development environment. Codex is launched with `direnv exec . codex`; prefer direct commands when required tools are already on PATH and fall back to `direnv exec . <command>` when necessary. Avoid unnecessary shell wrappers and repeated environment initialization.
+- Bubblewrap 0.12.0 is available on PATH; preserve normal sandboxing.
+- If a utility such as Python is missing, use a temporary `nix shell` rather than installing it globally.
 - Do not modify global NixOS or Home Manager configuration.
 - Keep terminal summaries extremely concise.
