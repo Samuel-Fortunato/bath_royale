@@ -102,9 +102,10 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   void _save() {
     final valid = _form.currentState!.validate();
     if (_tagInput.text.trim().isNotEmpty) {
-      setState(
-        () => _tagError = 'Adiciona ou apaga a etiqueta antes de guardar.',
-      );
+      setState(() {
+        _creatingTag = true;
+        _tagError = 'Adiciona ou apaga a etiqueta antes de guardar.';
+      });
       return;
     }
     if (_tags.length > 10 ||
@@ -323,16 +324,19 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                                   ),
                                 ],
                               ),
-                              Slider(
-                                value: _rating ?? 0,
-                                min: 0,
-                                max: 5,
-                                divisions: 50,
-                                label: (_rating ?? 0).toStringAsFixed(1),
-                                onChanged: (value) {
-                                  setState(() => _rating = value);
-                                  field.didChange(value);
-                                },
+                              Semantics(
+                                label: 'Avaliação global de zero a cinco',
+                                child: Slider(
+                                  value: _rating ?? 0,
+                                  min: 0,
+                                  max: 5,
+                                  divisions: 50,
+                                  label: (_rating ?? 0).toStringAsFixed(1),
+                                  onChanged: (value) {
+                                    setState(() => _rating = value);
+                                    field.didChange(value);
+                                  },
+                                ),
                               ),
                               TextButton(
                                 onPressed: () {
@@ -434,8 +438,8 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                                   controller: _tagInput,
                                   maxLength: 30,
                                   decoration: InputDecoration(
-                                    labelText: 'Outra etiqueta',
-                                    errorText: _tagError,
+                                    labelText: 'A tua etiqueta',
+                                    hintText: 'Algo que só este trono tem…',
                                   ),
                                   onSubmitted: (_) => _addTag(),
                                 ),
@@ -446,6 +450,17 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                                 icon: const Icon(Icons.add_circle_outline),
                               ),
                             ],
+                          ),
+                        if (_tagError != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              _tagError!,
+                              semanticsLabel: 'Erro na etiqueta: $_tagError',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                            ),
                           ),
                         const SizedBox(height: 24),
                         FilledButton(

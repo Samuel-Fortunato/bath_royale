@@ -52,6 +52,9 @@ class WcCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   IconButton(
+                    tooltip: entry.activity.isFavorite
+                        ? 'Remover dos favoritos'
+                        : 'Adicionar aos favoritos',
                     onPressed: toggleFavorite,
                     icon: Icon(
                       entry.activity.isFavorite
@@ -68,7 +71,7 @@ class WcCard extends StatelessWidget {
                     ? 'Comunidade: sem avaliações'
                     : 'Comunidade: ${entry.communityRating!.toStringAsFixed(1)} / 5 (${entry.reviewCount})',
               ),
-              const Text('A minha avaliação'),
+              const Text('A minha última experiência avaliada'),
               if (review == null)
                 Text(
                   "Ainda não avaliada",

@@ -45,7 +45,7 @@ class _RankingsPageState extends State<RankingsPage> {
             const SizedBox(height: 12),
             Text(
               _personal
-                  ? 'Média de todas as tuas avaliações.'
+                  ? 'Média de todas as tuas avaliações por casa de banho. No Explorar, a nota pessoal é a da tua visita avaliada mais recente.'
                   : 'Média de todas as avaliações locais da comunidade.',
             ),
             Wrap(

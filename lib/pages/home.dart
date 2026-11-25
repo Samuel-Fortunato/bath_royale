@@ -1,6 +1,7 @@
 import 'bathroom_form.dart';
 import 'collection.dart';
 import 'rankings.dart';
+import 'profile.dart';
 import 'package:bath_royale/pages/explore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -27,6 +28,7 @@ class _HomePageState extends State<HomePage> {
         title: Text('Bath Royale', style: TextTheme.of(context).headlineMedium),
         actions: [
           IconButton(
+            tooltip: appState.darkMode ? 'Usar tema claro' : 'Usar tema escuro',
             onPressed: () {
               appState.toggleTheme();
             },
@@ -54,18 +56,20 @@ class _HomePageState extends State<HomePage> {
           NavigationDestination(label: "Perfil", icon: Icon(Icons.person)),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Criar casa de banho',
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => ChangeNotifierProvider.value(
-              value: appState,
-              child: const BathroomFormPage(),
+      floatingActionButton: tabIndex != 0
+          ? null
+          : FloatingActionButton(
+              tooltip: 'Criar casa de banho',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ChangeNotifierProvider.value(
+                    value: appState,
+                    child: const BathroomFormPage(),
+                  ),
+                ),
+              ),
+              child: const Icon(Icons.add),
             ),
-          ),
-        ),
-        child: const Icon(Icons.add),
-      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: IndexedStack(
         index: tabIndex,
@@ -73,7 +77,7 @@ class _HomePageState extends State<HomePage> {
           ExplorePage(),
           CollectionPage(),
           RankingsPage(),
-          Placeholder(),
+          ProfilePage(),
         ],
       ),
     );

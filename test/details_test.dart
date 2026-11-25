@@ -124,10 +124,10 @@ void main() {
     await tap(tester, find.text('🪞 Espelho gigante'));
     await tap(tester, find.text('Inventar uma etiqueta'));
     await tester.ensureVisible(
-      find.widgetWithText(TextField, 'Outra etiqueta'),
+      find.widgetWithText(TextField, 'A tua etiqueta'),
     );
     await tester.enterText(
-      find.widgetWithText(TextField, 'Outra etiqueta'),
+      find.widgetWithText(TextField, 'A tua etiqueta'),
       'vista',
     );
     await tap(tester, find.byTooltip('Adicionar etiqueta'));
@@ -183,10 +183,10 @@ void main() {
       expect(find.textContaining('4.7 / 5'), findsOneWidget);
       await tap(tester, find.text('Inventar uma etiqueta'));
       await tester.ensureVisible(
-        find.widgetWithText(TextField, 'Outra etiqueta'),
+        find.widgetWithText(TextField, 'A tua etiqueta'),
       );
       await tester.enterText(
-        find.widgetWithText(TextField, 'Outra etiqueta'),
+        find.widgetWithText(TextField, 'A tua etiqueta'),
         'sossegado',
       );
       await tap(tester, find.byTooltip('Adicionar etiqueta'));
@@ -266,6 +266,39 @@ void main() {
     },
   );
 
+  testWidgets(
+    'unfinished hidden tag is revealed with a visible error and can be resolved',
+    (tester) async {
+      final state = AppState();
+      addTearDown(state.dispose);
+      final original = state.reviews.first;
+      await mount(
+        tester,
+        state,
+        ReviewFormPage(bathroomId: original.bathroomId, review: original),
+      );
+      await tap(tester, find.text('Inventar uma etiqueta'));
+      await tester.enterText(
+        find.widgetWithText(TextField, 'A tua etiqueta'),
+        'rascunho',
+      );
+      await tap(tester, find.text('Inventar uma etiqueta'));
+      expect(find.widgetWithText(TextField, 'A tua etiqueta'), findsNothing);
+      await tap(tester, find.text('Guardar avaliação'));
+      expect(
+        find.text('Adiciona ou apaga a etiqueta antes de guardar.'),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(TextField, 'A tua etiqueta'), findsOneWidget);
+      expect(state.reviews.first, same(original));
+      await tester.enterText(
+        find.widgetWithText(TextField, 'A tua etiqueta'),
+        '',
+      );
+      await tap(tester, find.text('Guardar avaliação'));
+      expect(state.reviews.first.tags, original.tags);
+    },
+  );
   testWidgets('another author cannot edit a review', (tester) async {
     final state = AppState(currentUserId: 'visitor');
     addTearDown(state.dispose);

@@ -149,7 +149,7 @@ class _ExplorePageState extends State<ExplorePage> {
                       ),
                       PopupMenuItem(
                         value: BathroomSort.personal,
-                        child: Text('A minha avaliação'),
+                        child: Text('Última experiência pessoal'),
                       ),
                       PopupMenuItem(
                         value: BathroomSort.latestVisit,

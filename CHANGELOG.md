@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Complete the Phase 1 local prototype audit with 36 tests and Linux/Android debug builds; document accepted Material deprecations and deferred release work.
+- Keep custom tag validation visible when input is hidden, refresh its label, and restrict bathroom creation to Explore.
+- Add a useful local profile, accessible icon labels and explicit mean-versus-latest personal rating explanations.
+
 - Add personal/community best and worst rankings across overall and category ratings, with counts and detail navigation.
 - Expand collection discovery, catalogue progress, personal statistics and chronological visit history.
 - Reveal custom tag input on request and refresh suggested tags and experience selection wording.
