@@ -50,7 +50,7 @@ Color ratingGold(BuildContext context) =>
     : const Color(0xff946600);
 
 class ReviewTag extends StatelessWidget {
-  final String tag;
+  final ReviewTagData tag;
   const ReviewTag(this.tag, {super.key});
   @override
   Widget build(BuildContext context) => Chip(
@@ -61,7 +61,7 @@ class ReviewTag extends StatelessWidget {
             style: const TextStyle(fontFamilyFallback: ['Noto Color Emoji']),
           ),
     label: Text(
-      tag,
+      tag.label,
       style: const TextStyle(fontFamilyFallback: ['Noto Color Emoji']),
     ),
   );

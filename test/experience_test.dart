@@ -1,3 +1,4 @@
+import 'package:bath_royale/models/tag_presentation.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
@@ -45,7 +46,21 @@ void main() {
       await wizardTap(tester, find.text('Visitas'));
       await wizardTap(tester, find.text('4,7 / 5'));
       expect(find.byType(ExperienceDetailsPage), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Editar avaliação'),
+        150,
+        scrollable: find
+            .descendant(
+              of: find.byType(ExperienceDetailsPage),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
       expect(find.text('Editar avaliação'), findsOneWidget);
+      expect(
+        tester.widget<SelectableText>(find.byType(SelectableText)).data,
+        state.reviews.first.comment,
+      );
       await tester.pumpWidget(const SizedBox.shrink());
       final foreign = AppState(
         visits: [
@@ -78,9 +93,9 @@ void main() {
   ) async {
     for (final tag in ['cozy', '🎨 grafiti', 'unknown', 'misto 🧪']) {
       await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: ReviewTag(tag))),
+        MaterialApp(home: Scaffold(body: ReviewTag(ReviewTagData.legacy(tag)))),
       );
-      expect(find.text(tag), findsOneWidget);
+      expect(find.text(ReviewTagData.legacy(tag).label), findsOneWidget);
       expect(find.text('🎨 🎨 grafiti'), findsNothing);
       if (tag == 'unknown' || tag == 'misto 🧪') {
         expect(find.text('🏷️'), findsOneWidget);

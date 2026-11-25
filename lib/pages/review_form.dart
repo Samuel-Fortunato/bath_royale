@@ -38,23 +38,26 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   bool _visitInitialized = false;
   bool _saving = false;
   final _tagInput = TextEditingController();
-  final List<String> _tags = [];
+  final List<ReviewTagData> _tags = [];
+  final _emojiInput = TextEditingController(text: '🏷️');
+  final _comment = TextEditingController();
   String? _tagError;
   bool _creatingTag = false;
-  static const _suggestions = [
+  static final _suggestions = [
     '🪞 Espelho gigante',
     '🎵 Música ambiente',
     '🪴 Selva interior',
     '🌅 Vista panorâmica',
     '🎨 Arte nas paredes',
     '🪝 Gancho para mochila',
-  ];
+  ].map(ReviewTagData.legacy).toList();
   int? _hygiene, _comfort, _aesthetics, _paper;
   @override
   void initState() {
     super.initState();
     final r = widget.review;
     _rating = r?.rating;
+    _comment.text = r?.comment ?? '';
     _tags.addAll(r?.tags ?? []);
     _hygiene = r?.hygiene;
     _comfort = r?.comfort;
@@ -65,6 +68,8 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   @override
   void dispose() {
     _tagInput.dispose();
+    _emojiInput.dispose();
+    _comment.dispose();
     _search.dispose();
     _scroll.dispose();
     _tagFocus.dispose();
@@ -103,16 +108,20 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   void _addTag() {
     final tag = _tagInput.text.trim();
     setState(() {
-      if (tag.isEmpty || tag.length > 30 || tag.contains(RegExp(r'[\n\r,]'))) {
+      if (!ReviewTagData.validEmoji(_emojiInput.text.trim())) {
+        _tagError = 'Escolhe um único emoji válido.';
+      } else if (tag.isEmpty ||
+          tag.characters.length > 30 ||
+          tag.contains(RegExp(r'[\n\r,]'))) {
         _tagError = 'Usa uma etiqueta por vez, até 30 caracteres.';
-      } else if (_tags.length >= 10 && !_tags.contains(tag)) {
+      } else if (_tags.length >= 10) {
         _tagError = 'Podes adicionar até 10 etiquetas.';
       } else if (_tags.any(
         (t) => TagPresentation.key(t) == TagPresentation.key(tag),
       )) {
         _tagError = 'Esta etiqueta já está selecionada.';
       } else {
-        _tags.add(tag);
+        _tags.add(ReviewTagData(emoji: _emojiInput.text, label: tag));
         _tagInput.clear();
         _tagError = null;
       }
@@ -133,19 +142,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
       _tagFocus.requestFocus();
       return;
     }
-    if (_tags.length > 10 ||
-        _tags.any(
-          (tag) =>
-              tag.trim().isEmpty ||
-              tag.length > 30 ||
-              tag.contains(RegExp(r'[\n\r]')),
-        )) {
-      setState(
-        () =>
-            _tagError = 'Usa até 10 etiquetas válidas, com até 30 caracteres.',
-      );
-      return;
-    }
+    if (_comment.text.trim().characters.length > 500) return;
 
     if (_saving) return;
     final state = context.read<AppState>();
@@ -178,6 +175,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
           comfort: _comfort!,
           aesthetics: _aesthetics!,
           tags: _tags,
+          comment: _comment.text,
         ),
         newVisit: visit,
       );
@@ -217,6 +215,8 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         _aesthetics != original?.aesthetics ||
         _paper != original?.paperAvailability ||
         _tagInput.text.isNotEmpty ||
+        (_creatingTag && _emojiInput.text != '🏷️') ||
+        _comment.text.trim() != (original?.comment ?? '') ||
         _tags.join('\n') != (original?.tags ?? []).join('\n');
     _confirming = true;
     final discard =
@@ -424,7 +424,10 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         Text(
           _rating == null ? '🚽' : _exampleRating(_rating!).emojiRating(),
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 64),
+          style: const TextStyle(
+            fontSize: 64,
+            fontFamilyFallback: ['Noto Color Emoji'],
+          ),
         ),
         const SizedBox(height: 16),
         Text(
@@ -446,7 +449,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         ),
         const SizedBox(height: 16),
         const Text(
-          'Toca ou arrasta sobre as estrelas. No início, escolhes zero.',
+          'Move o cursor para avaliar. No início, escolhes zero.',
           textAlign: TextAlign.center,
         ),
       ],
@@ -454,7 +457,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   }
 
   Widget _tagStep(AppState state) {
-    final known = <String, String>{
+    final known = <String, ReviewTagData>{
       for (final tag in {
         ..._suggestions,
         for (final r in state.reviews) ...r.tags,
@@ -476,7 +479,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'O que torna este trono especial?',
+          'Etiquetas e comentário',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 8),
@@ -510,7 +513,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                           ),
                         ),
                   label: Text(
-                    tag,
+                    tag.label,
                     style: const TextStyle(
                       fontFamilyFallback: ['Noto Color Emoji'],
                     ),
@@ -541,7 +544,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                         ),
                       ),
                 label: Text(
-                  tag,
+                  tag.label,
                   style: const TextStyle(
                     fontFamilyFallback: ['Noto Color Emoji'],
                   ),
@@ -565,6 +568,36 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
             label: const Text('Inventar uma etiqueta'),
           ),
         if (_creatingTag) ...[
+          Wrap(
+            spacing: 4,
+            children: [
+              for (final emoji in ['🏷️', '✨', '🌿', '👑', '🧻', '🎵'])
+                ChoiceChip(
+                  label: Text(
+                    emoji,
+                    style: const TextStyle(
+                      fontFamilyFallback: ['Noto Color Emoji'],
+                    ),
+                  ),
+                  selected: _emojiInput.text == emoji,
+                  onSelected: (_) => setState(() => _emojiInput.text = emoji),
+                ),
+            ],
+          ),
+          TextField(
+            controller: _emojiInput,
+            style: const TextStyle(fontFamilyFallback: ['Noto Color Emoji']),
+            decoration: const InputDecoration(
+              labelText: 'Emoji',
+              hintText: 'Usa o teclado de emojis',
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Pré-visualização: ${_emojiInput.text} ${_tagInput.text}',
+            style: const TextStyle(fontFamilyFallback: ['Noto Color Emoji']),
+          ),
           TextField(
             controller: _tagInput,
             focusNode: _tagFocus,
@@ -575,6 +608,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
               labelText: 'A tua etiqueta',
               hintText: 'Algo que só este trono tem…',
             ),
+            onChanged: (_) => setState(() {}),
             onSubmitted: (_) => _addTag(),
           ),
           Wrap(
@@ -595,6 +629,17 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
             ],
           ),
         ],
+        const SizedBox(height: 24),
+        TextField(
+          controller: _comment,
+          minLines: 3,
+          maxLines: 6,
+          maxLength: 500,
+          decoration: const InputDecoration(
+            labelText: 'Comentário (opcional)',
+            hintText: 'Como foi a tua experiência?',
+          ),
+        ),
         if (_tagError != null && !_creatingTag)
           Semantics(
             liveRegion: true,
@@ -668,12 +713,14 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                                               value: i <= _step ? 1 : 0,
                                             ),
                                             const SizedBox(height: 6),
-                                            Text(
-                                              [
-                                                'Global',
-                                                'Detalhes',
-                                                'Etiquetas',
-                                              ][i],
+                                            FittedBox(
+                                              child: Text(
+                                                [
+                                                  'Global',
+                                                  'Detalhes',
+                                                  'Etiquetas',
+                                                ][i],
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -784,7 +831,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   }
 }
 
-/// A single adjustable star strip. Each star clips its own fractional fill.
+/// Decorative fractional stars followed by an explicit adjustable slider.
 class StarRatingInput extends StatelessWidget {
   const StarRatingInput({
     super.key,
@@ -827,78 +874,84 @@ class StarRatingInput extends StatelessWidget {
       child: Builder(
         builder: (context) => LayoutBuilder(
           builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            final focused = Focus.of(context).hasFocus;
-            void update(Offset position) {
-              Focus.of(context).requestFocus();
-              _set(position.dx / width * 5);
-            }
-
-            return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTapDown: (event) => update(event.localPosition),
-              onHorizontalDragStart: (event) => update(event.localPosition),
-              onHorizontalDragUpdate: (event) => update(event.localPosition),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: focused
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.transparent,
-                    width: 2,
+            return Column(
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.transparent, width: 2),
                   ),
-                ),
-                child: ExcludeSemantics(
-                  child: SizedBox(
-                    height: 64,
-                    child: Row(
-                      children: [
-                        for (var i = 0; i < 5; i++)
-                          Expanded(
-                            child: LayoutBuilder(
-                              builder: (context, box) {
-                                final size = box.maxWidth.clamp(0.0, 56.0);
-                                final fraction = ((value ?? 0) - i).clamp(
-                                  0.0,
-                                  1.0,
-                                );
-                                return Center(
-                                  child: SizedBox(
-                                    width: size,
-                                    height: size,
-                                    child: Stack(
-                                      children: [
-                                        Icon(
-                                          Icons.star_rounded,
-                                          size: size,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.outlineVariant,
-                                        ),
-                                        ClipRect(
-                                          child: Align(
-                                            alignment: Alignment.centerLeft,
-                                            widthFactor: fraction,
-                                            child: Icon(
-                                              Icons.star_rounded,
-                                              size: size,
-                                              color: Colors.amber,
+                  child: ExcludeSemantics(
+                    child: SizedBox(
+                      height: 64,
+                      child: Row(
+                        children: [
+                          for (var i = 0; i < 5; i++)
+                            Expanded(
+                              child: LayoutBuilder(
+                                builder: (context, box) {
+                                  final size = box.maxWidth.clamp(0.0, 56.0);
+                                  final fraction = ((value ?? 0) - i).clamp(
+                                    0.0,
+                                    1.0,
+                                  );
+                                  return Center(
+                                    child: SizedBox(
+                                      width: size,
+                                      height: size,
+                                      child: Stack(
+                                        children: [
+                                          Icon(
+                                            Icons.star_rounded,
+                                            size: size,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.outlineVariant,
+                                          ),
+                                          ClipRect(
+                                            child: Align(
+                                              alignment: Alignment.centerLeft,
+                                              widthFactor: fraction,
+                                              child: Icon(
+                                                Icons.star_rounded,
+                                                size: size,
+                                                color: Colors.amber,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
+                ExcludeSemantics(
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      showValueIndicator: ShowValueIndicator.never,
+                      thumbColor: value == null ? Colors.transparent : null,
+                    ),
+                    child: Slider(
+                      key: const ValueKey('global-rating-slider'),
+                      value: value ?? 0,
+                      min: 0,
+                      max: 5,
+                      divisions: 50,
+                      onChangeStart: (v) {
+                        Focus.of(context).requestFocus();
+                        _set(v);
+                      },
+                      onChanged: _set,
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         ),

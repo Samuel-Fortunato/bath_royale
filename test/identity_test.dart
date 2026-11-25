@@ -5,6 +5,50 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {
+  test('v3 upgrades tags and comments once without resetting records', () {
+    final db = sqlite3.openInMemory();
+    db.execute(LocalStore.schemaV1);
+    db.execute(
+      'CREATE TABLE settings (id INTEGER PRIMARY KEY, dark_mode INTEGER NOT NULL)',
+    );
+    db.execute('INSERT INTO settings VALUES(1,0)');
+    db.execute(
+      "ALTER TABLE bathrooms ADD COLUMN emoji TEXT NOT NULL DEFAULT '🚽'",
+    );
+    db.execute(
+      'ALTER TABLE bathrooms ADD COLUMN accent INTEGER NOT NULL DEFAULT 0',
+    );
+    db.execute('INSERT INTO metadata VALUES(1,1)');
+    db.execute("INSERT INTO bathrooms VALUES('b','Teste','teste','me','👑',4)");
+    db.execute("INSERT INTO visits VALUES('v','b','me',123)");
+    db.execute('INSERT INTO reviews VALUES(?,?,?,?,?,?,?,?,?,?,?,?)', [
+      'r',
+      'v',
+      'b',
+      'me',
+      123,
+      123,
+      0,
+      0,
+      0,
+      0,
+      0,
+      '["👩🏽‍💻 Tecnologia","Nice"]',
+    ]);
+    db.userVersion = 3;
+    final store = LocalStore(db);
+    addTearDown(store.close);
+    final data = store.load()!;
+    expect(db.userVersion, 4);
+    expect(data.reviews.single.tags.first.emoji, '👩🏽‍💻');
+    expect(data.reviews.single.tags.first.label, 'Tecnologia');
+    expect(data.reviews.single.comment, isNull);
+    expect(data.bathrooms.single.emoji, '👑');
+    expect(data.darkMode, false);
+    store.save(data);
+    expect(store.load()!.reviews.single.tags, data.reviews.single.tags);
+    expect(db.select('PRAGMA foreign_key_check'), isEmpty);
+  });
   test('v2 migration preserves every entity, tag, favourite and setting', () {
     final db = sqlite3.openInMemory();
     db.execute(LocalStore.schemaV1);
@@ -40,12 +84,18 @@ void main() {
     final store = LocalStore(db);
     addTearDown(store.close);
     final data = store.load()!;
-    expect(db.userVersion, 3);
+    expect(db.userVersion, 4);
     expect(data.bathrooms.first.emoji, '📚');
     expect(data.bathrooms.first.createdBy, 'original');
     expect(data.visits.map((v) => v.id), ['v', 'unreviewed']);
     expect(data.reviews.single.rating, 0);
-    expect(data.reviews.single.tags, ['cozy', '🎨 grafiti', 'unknown']);
+    expect(data.reviews.single.comment, isNull);
+    expect(data.reviews.single.tags.map((t) => t.emoji), ['🛋️', '🎨', '🏷️']);
+    expect(data.reviews.single.tags.map((t) => t.label), [
+      'cozy',
+      'grafiti',
+      'unknown',
+    ]);
     expect(data.favourites.single.bathroomId, '3');
     expect(data.darkMode, false);
     expect(db.select('PRAGMA foreign_key_check'), isEmpty);

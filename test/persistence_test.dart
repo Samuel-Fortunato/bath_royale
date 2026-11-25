@@ -7,6 +7,41 @@ import 'package:bath_royale/models/review.dart';
 import 'package:bath_royale/models/visit.dart';
 
 void main() {
+  test('v4 fresh data and comments survive snapshots without reseeding', () {
+    final store = LocalStore(sqlite3.openInMemory());
+    addTearDown(store.close);
+    final state = AppState.restore(store);
+    addTearDown(state.dispose);
+    expect(store.database.userVersion, 4);
+    expect(
+      state.reviews.where((r) => r.comment != null).length,
+      greaterThan(2),
+    );
+    final old = state.reviews.first;
+    Review changed(String? comment) => Review(
+      id: old.id,
+      visitId: old.visitId,
+      bathroomId: old.bathroomId,
+      authorId: old.authorId,
+      createdAt: old.createdAt,
+      rating: old.rating,
+      paperAvailability: old.paperAvailability,
+      hygiene: old.hygiene,
+      comfort: old.comfort,
+      aesthetics: old.aesthetics,
+      tags: old.tags,
+      comment: comment,
+    );
+    expect(() => changed('a' * 501), throwsArgumentError);
+    state.saveReview(changed('  Texto\ncom duas linhas.  '));
+    final restored = AppState.restore(store);
+    addTearDown(restored.dispose);
+    expect(restored.reviews.first.comment, 'Texto\ncom duas linhas.');
+    expect(restored.reviews.first.tags, old.tags);
+    expect(changed('   ').comment, isNull);
+    expect(changed('👩🏽‍💻' * 500).comment, isNotNull);
+  });
+
   test(
     'restart restores entities, optional visits, theme, favourites and deletions',
     () {
@@ -78,7 +113,7 @@ void main() {
       store.close();
       store = LocalStore(sqlite3.open(path));
       app = AppState.restore(store);
-      expect(app.reviewForVisit(visit.id)!.tags, ['teste']);
+      expect(app.reviewForVisit(visit.id)!.tags.map((t) => t.label), ['teste']);
       expect(app.reviewForVisit(visit.id)!.rating, 0);
       expect(app.visits.length, 7);
       store.save(
@@ -109,7 +144,7 @@ void main() {
     db.userVersion = 1;
     final store = LocalStore(db);
     addTearDown(store.close);
-    expect(db.userVersion, 3);
+    expect(db.userVersion, 4);
     expect(store.load()!.bathrooms.single.id, 'b');
     expect(store.load()!.darkMode, isTrue);
   });

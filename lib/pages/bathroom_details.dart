@@ -152,6 +152,34 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
             Text(
               'Higiene: ${review.hygieneText}\nConforto: ${review.comfortText}\nEstética: ${review.aestheticText}\nPapel: ${review.paperText}',
             ),
+            if (review.comment != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      review.comment!,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => ChangeNotifierProvider.value(
+                            value: state,
+                            child: ExperienceDetailsPage(
+                              visitId: review.visitId,
+                            ),
+                          ),
+                        ),
+                      ),
+                      child: const Text('Ver experiência'),
+                    ),
+                  ],
+                ),
+              ),
             if (review.tags.isNotEmpty)
               Wrap(
                 spacing: 6,

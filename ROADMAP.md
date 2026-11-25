@@ -107,6 +107,17 @@ Session 4B baseline `d46ad71` was independently verified with 92 tests and succe
 
 Shared identity components and the visit-detail route are reused. Do not start backend development as part of these sessions.
 
+### Session 4D — Review interaction and data-model completion
+
+- [x] Separate decorative fractional stars from an explicit accessible 0–5 slider in tenths; preserve nullable/zero/edit semantics and discrete category scales.
+- [x] Persist structured emoji/label tags, canonical equivalence and capability-gated creation with emoji keyboard, suggestions and preview.
+- [x] Add optional 500-character comments to the third wizard step, drafts, editing, SQLite and experience/community presentation.
+- [x] Preserve existing data through a transactional v4 migration and seed deterministic fictional structured tags/comments on fresh installs.
+- [x] Update model/storage/design/reference documentation and verify automated regressions, formatting, strict analysis, Linux/Android builds and rendered phone layouts in both themes with enlarged text.
+- [ ] Owner acceptance of Session 4D on a physical phone.
+
+Local verification: 105 tests pass, including structured sequences, equivalence, custom creation, comments/drafts/cancellation, v3 upgrades and persistence, alongside all existing regressions. Both debug builds and the exact strict-analysis gate pass. Flutter-rendered 320/390dp light/dark layouts with enlarged text were inspected. Backend work has not started; classification remains exploratory and public catalogue/contribution direction is preserved.
+
 ## Phase 2 — Community functionality
 
 - [ ] Evaluate backend options, including the preferred Supabase and PostgreSQL candidates, before choosing an architecture.

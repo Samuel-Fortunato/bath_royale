@@ -58,6 +58,9 @@ void main() {
       await tap(tester, find.text('Estive aqui!'));
       await tap(tester, find.text('Agora não'));
       await tap(tester, find.text('Avaliações'));
+      final comment = state.reviews.first.comment!;
+      expect(tester.widget<Text>(find.text(comment)).maxLines, 4);
+      expect(find.text('Ver experiência'), findsOneWidget);
       await tap(tester, find.text('Editar avaliação'));
       tester
           .widget<StarRatingInput>(find.byType(StarRatingInput))
@@ -102,7 +105,8 @@ void main() {
     expect(state.reviews.length, 5);
     expect(find.text('— / 5'), findsOneWidget);
     await tester.tapAt(
-      tester.getTopLeft(find.byType(StarRatingInput)) + const Offset(0, 32),
+      tester.getTopLeft(find.byKey(const ValueKey('global-rating-slider'))) +
+          const Offset(24, 24),
     );
     await tester.pumpAndSettle();
     expect(find.text('0,0 / 5'), findsOneWidget);
@@ -125,7 +129,7 @@ void main() {
       'Espelho',
     );
     await tester.pumpAndSettle();
-    await tap(tester, find.text('🪞 Espelho gigante'));
+    await tap(tester, find.text('Espelho gigante'));
     await tap(tester, find.text('Inventar uma etiqueta'));
     await tester.ensureVisible(
       find.widgetWithText(TextField, 'A tua etiqueta'),
@@ -140,8 +144,8 @@ void main() {
     expect(state.visits.length, 7);
     expect(state.entries.first.personalReview!.visitId, isNot(visit.id));
     expect(state.reviewForVisit(visit.id), isNull);
-    expect(state.entries.first.personalReview!.tags, [
-      '🪞 Espelho gigante',
+    expect(state.entries.first.personalReview!.tags.map((t) => t.label), [
+      'Espelho gigante',
       'vista',
     ]);
     expect(state.entries.first.reviewCount, 2);

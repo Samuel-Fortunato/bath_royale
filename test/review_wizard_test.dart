@@ -80,6 +80,92 @@ void main() {
   });
 
   test(
+    'structured tags validate sequences and normalize label equivalence',
+    () {
+      for (final emoji in [
+        '👩🏽‍💻',
+        '👨‍👩‍👧‍👦',
+        '🇵🇹',
+        '1️⃣',
+        '❤️',
+        '🧻',
+      ]) {
+        expect(ReviewTagData.validEmoji(emoji), isTrue, reason: emoji);
+        final tag = ReviewTagData(emoji: emoji, label: '  Bom   Trono  ');
+        expect(tag.label, 'Bom Trono');
+        expect(TagPresentation.key(tag), 'bom trono');
+        expect(ReviewTagData.fromJson(tag.toJson()), tag);
+      }
+      for (final emoji in ['', 'a', 'ab', '😀😀', '🏽', '🇵', '1']) {
+        expect(ReviewTagData.validEmoji(emoji), isFalse, reason: emoji);
+      }
+      expect(
+        TagPresentation.key(ReviewTagData(emoji: '👑', label: 'GRAFITI')),
+        TagPresentation.key(ReviewTagData(emoji: '🎨', label: 'graffiti')),
+      );
+      expect(() => ReviewTagData(emoji: 'x', label: 'ok'), throwsArgumentError);
+      expect(
+        () => ReviewTagData(emoji: '👑', label: 'a' * 31),
+        throwsArgumentError,
+      );
+    },
+  );
+
+  testWidgets(
+    'custom emoji preview, optional comment draft, edit and persistence',
+    (tester) async {
+      final state = AppState();
+      addTearDown(state.dispose);
+      final original = state.reviews.first;
+      await mountWizard(
+        tester,
+        state,
+        page: ReviewFormPage(bathroomId: original.bathroomId, review: original),
+      );
+      await wizardTap(tester, find.text('Continuar'));
+      await wizardTap(tester, find.text('Continuar'));
+      await wizardTap(tester, find.text('Inventar uma etiqueta'));
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Emoji'),
+        '👩🏽‍💻',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'A tua etiqueta'),
+        'Tecnologia',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Pré-visualização: 👩🏽‍💻 Tecnologia'), findsOneWidget);
+      await wizardTap(tester, find.text('Adicionar etiqueta'));
+      final comment = find.widgetWithText(TextField, 'Comentário (opcional)');
+      await tester.ensureVisible(comment);
+      await tester.enterText(comment, '  Uma pausa memorável.  ');
+      await wizardTap(tester, find.text('Voltar'));
+      await wizardTap(tester, find.text('Continuar'));
+      expect(
+        tester.widget<TextField>(comment).controller!.text,
+        '  Uma pausa memorável.  ',
+      );
+      await wizardTap(tester, find.text('Guardar avaliação'));
+      final saved = state.reviews.firstWhere((r) => r.id == original.id);
+      expect(saved.comment, 'Uma pausa memorável.');
+      expect(saved.tags.last.emoji, '👩🏽‍💻');
+      expect(saved.tags.last.label, 'Tecnologia');
+      expect(saved.visitId, original.visitId);
+      await mountWizard(
+        tester,
+        state,
+        page: ReviewFormPage(bathroomId: saved.bathroomId, review: saved),
+      );
+      await wizardTap(tester, find.text('Continuar'));
+      await wizardTap(tester, find.text('Continuar'));
+      expect(tester.widget<TextField>(comment).controller!.text, saved.comment);
+      await tester.enterText(comment, '   ');
+      await wizardTap(tester, find.text('Guardar avaliação'));
+      expect(state.reviews.firstWhere((r) => r.id == saved.id).comment, isNull);
+    },
+  );
+
+  test(
     'central tag presentation preserves prefixes and matches legacy aliases',
     () {
       for (final tag in [
@@ -103,6 +189,36 @@ void main() {
         TagPresentation.key('grafiti'),
       );
       expect(TagPresentation.display('unknown'), '🏷️ unknown');
+    },
+  );
+
+  testWidgets(
+    'comment-only changes require discard and cancellation preserves review',
+    (tester) async {
+      final state = AppState();
+      addTearDown(state.dispose);
+      final original = state.reviews.first;
+      await mountWizard(
+        tester,
+        state,
+        page: ReviewFormPage(bathroomId: original.bathroomId, review: original),
+      );
+      await wizardTap(tester, find.text('Continuar'));
+      await wizardTap(tester, find.text('Continuar'));
+      final field = find.widgetWithText(TextField, 'Comentário (opcional)');
+      await tester.ensureVisible(field);
+      await tester.enterText(field, 'Alteração por guardar');
+      final widget = tester.widget<TextField>(field);
+      expect(widget.maxLength, 500);
+      for (var i = 0; i < 3; i++) {
+        await wizardTap(tester, find.byType(BackButton));
+      }
+      expect(find.text('Descartar avaliação?'), findsOneWidget);
+      await wizardTap(tester, find.text('Continuar a avaliar'));
+      await wizardTap(tester, find.byType(BackButton));
+      await wizardTap(tester, find.text('Descartar'));
+      expect(state.reviews.first, same(original));
+      expect(find.byType(ReviewFormPage), findsNothing);
     },
   );
 
@@ -155,7 +271,7 @@ void main() {
       );
       await wizardTap(tester, find.text('Adicionar etiqueta'));
       expect(find.text('Esta etiqueta já está selecionada.'), findsOneWidget);
-      expect(legacy.tags, ['Nice']);
+      expect(legacy.tags.map((t) => t.label), ['Nice']);
     },
   );
 
@@ -211,7 +327,7 @@ void main() {
       expect(find.text('Sujo'), findsOneWidget);
       final rect = tester.getRect(hygiene);
       await tester.dragFrom(
-        Offset(rect.left, rect.center.dy),
+        Offset(rect.left + 24, rect.center.dy),
         Offset(rect.width, 0),
       );
       await tester.pumpAndSettle();
@@ -246,12 +362,17 @@ void main() {
       final semantics = tester.ensureSemantics();
 
       await mountWizard(tester, state);
-      expect(find.byType(Slider), findsNothing);
+      expect(find.byType(Slider), findsOneWidget);
       expect(find.text('Dar zero'), findsNothing);
       expect(find.bySemanticsLabel('Avaliação global'), findsOneWidget);
-      final stars = find.byType(StarRatingInput);
-      final rect = tester.getRect(stars);
-      await tester.tapAt(Offset(rect.left, rect.center.dy));
+      final control = tester.getRect(find.byType(StarRatingInput));
+      await tester.tapAt(Offset(control.center.dx, control.top + 32));
+      await tester.pumpAndSettle();
+      expect(find.text('— / 5'), findsOneWidget);
+      final rect = tester.getRect(
+        find.byKey(const ValueKey('global-rating-slider')),
+      );
+      await tester.tapAt(Offset(rect.left + 24, rect.center.dy));
       await tester.pumpAndSettle();
       expect(find.text('0,0 / 5'), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
@@ -265,8 +386,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('0,0 / 5'), findsOneWidget);
       await tester.dragFrom(
-        Offset(rect.left, rect.center.dy),
-        Offset(rect.width * .74, 0),
+        Offset(rect.left + 24, rect.center.dy),
+        Offset((rect.width - 48) * .74, 0),
       );
       await tester.pumpAndSettle();
       expect(find.text('3,7 / 5'), findsOneWidget);
@@ -287,7 +408,8 @@ void main() {
       expect(find.text('Alterar'), findsNothing);
       expect(find.byType(BottomSheet), findsNothing);
       await tester.tapAt(
-        tester.getTopLeft(find.byType(StarRatingInput)) + const Offset(0, 32),
+        tester.getTopLeft(find.byKey(const ValueKey('global-rating-slider'))) +
+            const Offset(24, 24),
       );
       await tester.pumpAndSettle();
       await wizardTap(tester, find.text('Continuar'));
@@ -298,7 +420,7 @@ void main() {
         'Espelho',
       );
       await tester.pumpAndSettle();
-      await wizardTap(tester, find.text('🪞 Espelho gigante'));
+      await wizardTap(tester, find.text('Espelho gigante'));
       await wizardTap(tester, find.text('Voltar'));
       expect(
         tester
@@ -314,10 +436,7 @@ void main() {
       expect(find.text('Alterar'), findsNothing);
       await wizardTap(tester, find.text('Continuar'));
       await wizardTap(tester, find.text('Continuar'));
-      expect(
-        find.widgetWithText(InputChip, '🪞 Espelho gigante'),
-        findsOneWidget,
-      );
+      expect(find.widgetWithText(InputChip, 'Espelho gigante'), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(find.text('Os pequenos detalhes'), findsOneWidget);
@@ -341,7 +460,8 @@ void main() {
       );
       expect(find.text('Alterar'), findsNothing);
       await tester.tapAt(
-        tester.getTopLeft(find.byType(StarRatingInput)) + const Offset(0, 32),
+        tester.getTopLeft(find.byKey(const ValueKey('global-rating-slider'))) +
+            const Offset(24, 24),
       );
       await tester.pumpAndSettle();
       await wizardTap(tester, find.text('Continuar'));
@@ -382,11 +502,8 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(ActionChip), findsOneWidget);
-      await wizardTap(tester, find.text('🪞 Espelho gigante'));
-      expect(
-        find.widgetWithText(InputChip, '🪞 Espelho gigante'),
-        findsOneWidget,
-      );
+      await wizardTap(tester, find.text('Espelho gigante'));
+      expect(find.widgetWithText(InputChip, 'Espelho gigante'), findsOneWidget);
       await mountWizard(
         tester,
         state,
@@ -461,6 +578,7 @@ void main() {
             .widget<StarRatingInput>(find.byType(StarRatingInput))
             .onChanged(4);
         await tester.pumpAndSettle();
+        await capture(tester, 'global-$width-$dark');
         await wizardTap(tester, find.text('Continuar'));
         await answerDetails(tester);
         await capture(tester, 'scales-$width-$dark-1.0');
@@ -484,8 +602,13 @@ void main() {
           await mountWizard(tester, state, dark: dark, scale: 1.5);
           await tester.ensureVisible(find.byType(StarRatingInput));
           await tester.pumpAndSettle();
-          await tester.tapAt(tester.getCenter(find.byType(StarRatingInput)));
+          await tester.tapAt(
+            tester.getCenter(
+              find.byKey(const ValueKey('global-rating-slider')),
+            ),
+          );
           await tester.pumpAndSettle();
+          await capture(tester, 'global-$width-$dark-1.5');
           await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
           await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
           await wizardTap(tester, find.text('Continuar'));
@@ -531,6 +654,23 @@ void main() {
           await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
           await wizardTap(tester, find.text('Continuar'));
           await capture(tester, 'tags-$width-$dark-1.5');
+          await wizardTap(tester, find.text('Inventar uma etiqueta'));
+          await tester.enterText(
+            find.widgetWithText(TextField, 'A tua etiqueta'),
+            'Trono de teste',
+          );
+          await tester.ensureVisible(find.widgetWithText(TextField, 'Emoji'));
+          await capture(tester, 'custom-$width-$dark-1.5');
+          await wizardTap(tester, find.text('Cancelar etiqueta'));
+          await tester.ensureVisible(
+            find.widgetWithText(TextField, 'Comentário (opcional)'),
+          );
+          await tester.enterText(
+            find.widgetWithText(TextField, 'Comentário (opcional)'),
+            'Exemplo fictício: uma experiência tranquila. ' * 10,
+          );
+          await capture(tester, 'comment-$width-$dark-1.5');
+
           await wizardTap(tester, find.text('Inventar uma etiqueta'));
           await tester.enterText(
             find.widgetWithText(TextField, 'A tua etiqueta'),

@@ -62,6 +62,7 @@ AppState catalogue({int count = 100}) => AppState(
 
 Future<void> capture(WidgetTester tester, String name) async {
   if (!const bool.fromEnvironment('CAPTURE_SESSION3')) return;
+  await tester.pumpAndSettle();
   await tester.runAsync(() async {
     final boundary = tester.firstRenderObject<RenderRepaintBoundary>(
       find.byType(RepaintBoundary),

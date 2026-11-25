@@ -1,3 +1,6 @@
+import 'package:characters/characters.dart';
+import 'tag_presentation.dart';
+
 /// An individual, author-owned review. Repeat reviews are separate records.
 class Review {
   final String id;
@@ -11,7 +14,8 @@ class Review {
   final int hygiene;
   final int comfort;
   final int aesthetics;
-  final List<String> tags;
+  final List<ReviewTagData> tags;
+  final String? comment;
 
   Review({
     required this.id,
@@ -25,9 +29,25 @@ class Review {
     required this.hygiene,
     required this.comfort,
     required this.aesthetics,
-    List<String> tags = const [],
+    Iterable<Object> tags = const [],
+    String? comment,
   }) : updatedAt = updatedAt ?? createdAt,
-       tags = List.unmodifiable(tags) {
+       comment = comment == null || comment.trim().isEmpty
+           ? null
+           : comment.trim(),
+       tags = List.unmodifiable(
+         tags.map(
+           (tag) =>
+               tag is ReviewTagData ? tag : ReviewTagData.legacy(tag as String),
+         ),
+       ) {
+    if (this.comment != null && this.comment!.characters.length > 500) {
+      throw ArgumentError('Comment exceeds 500 characters');
+    }
+    if (this.tags.length > 10 ||
+        this.tags.map(TagPresentation.key).toSet().length != this.tags.length) {
+      throw ArgumentError('Invalid or duplicate tags');
+    }
     if (id.isEmpty ||
         visitId.isEmpty ||
         bathroomId.isEmpty ||

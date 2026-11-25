@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Session 4D: separate decorative fractional stars from an explicit precise overall slider, retaining unanswered/zero, keyboard access and saved ratings.
+- Add structured emoji/label tags with canonical matching, emoji suggestions/keyboard input, live preview and validation; preserve known legacy meanings through SQLite v4 conversion.
+- Add optional 500-character review comments with draft/discard/edit support, persistence and bounded community previews linking to full experiences.
+- Preserve records/settings through a transactional migration; fresh fictional samples include structured tags and varied comments. Update data/storage/design/reference documentation.
+- Verify 105 tests, formatting, strict analysis, Linux/Android debug builds and rendered light/dark phone layouts with enlarged text. Session 4D physical phone acceptance remains open; no backend work.
+
 - Replace wizard category cards with aligned horizontal emoji/slider scales, descriptive feedback, accessible keyboard controls and distinct unanswered/minimum states.
 - Centralize legacy tag decoration and equivalent-label matching in all chips/details; preserve stored text, avoid duplicate suggestions and prefix fresh fictional seed tags.
 - Separate default Geral rankings from remembered category tabs using compact trophy/chart tiles; retain all ranking semantics.

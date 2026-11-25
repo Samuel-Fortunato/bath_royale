@@ -3,6 +3,7 @@ import 'package:sqlite3/sqlite3.dart';
 import '../models/bathroom.dart';
 import '../models/bathroom_activity.dart';
 import '../models/review.dart';
+import '../models/tag_presentation.dart';
 import '../models/visit.dart';
 
 class LocalData {
@@ -30,7 +31,7 @@ class LocalStore {
         throw StateError('Database integrity check failed');
       }
       final version = database.userVersion;
-      if (version > 3) {
+      if (version > 4) {
         throw StateError('Database was created by a newer application');
       }
       transaction(() {
@@ -69,6 +70,19 @@ class LocalStore {
             );
           }
           database.userVersion = 3;
+        }
+        if (version < 4) {
+          database.execute('ALTER TABLE reviews ADD COLUMN comment TEXT');
+          for (final row in database.select('SELECT id,tags FROM reviews')) {
+            final tags = (jsonDecode(row['tags'] as String) as List)
+                .map((t) => ReviewTagData.legacy(t as String))
+                .toList();
+            database.execute('UPDATE reviews SET tags=? WHERE id=?', [
+              jsonEncode(tags),
+              row['id'],
+            ]);
+          }
+          database.userVersion = 4;
         }
       });
       if (database.select('PRAGMA foreign_key_check').isNotEmpty) {
@@ -149,7 +163,10 @@ CREATE TABLE favourites (user TEXT NOT NULL CHECK(length(user)>0), bathroom TEXT
             hygiene: r['hygiene'] as int,
             comfort: r['comfort'] as int,
             aesthetics: r['aesthetics'] as int,
-            tags: (jsonDecode(r['tags'] as String) as List).cast<String>(),
+            tags: (jsonDecode(r['tags'] as String) as List).map(
+              (t) => ReviewTagData.fromJson(t as Map<String, dynamic>),
+            ),
+            comment: r['comment'] as String?,
           ),
       ],
       favourites: [
@@ -192,20 +209,22 @@ CREATE TABLE favourites (user TEXT NOT NULL CHECK(length(user)>0), bathroom TEXT
       ]);
     }
     for (final r in data.reviews) {
-      database.execute('INSERT INTO reviews VALUES(?,?,?,?,?,?,?,?,?,?,?,?)', [
-        r.id,
-        r.visitId,
-        r.bathroomId,
-        r.authorId,
-        r.createdAt.microsecondsSinceEpoch,
-        r.updatedAt.microsecondsSinceEpoch,
-        r.rating,
-        r.paperAvailability,
-        r.hygiene,
-        r.comfort,
-        r.aesthetics,
-        jsonEncode(r.tags),
-      ]);
+      database
+          .execute('INSERT INTO reviews VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)', [
+            r.id,
+            r.visitId,
+            r.bathroomId,
+            r.authorId,
+            r.createdAt.microsecondsSinceEpoch,
+            r.updatedAt.microsecondsSinceEpoch,
+            r.rating,
+            r.paperAvailability,
+            r.hygiene,
+            r.comfort,
+            r.aesthetics,
+            jsonEncode(r.tags),
+            r.comment,
+          ]);
     }
     for (final f in data.favourites.where((f) => f.isFavorite)) {
       database.execute('INSERT INTO favourites VALUES(?,?)', [

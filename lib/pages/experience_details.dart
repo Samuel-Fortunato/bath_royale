@@ -119,6 +119,10 @@ class ExperienceDetailsPage extends StatelessWidget {
                   spacing: 8,
                   children: [for (final tag in review.tags) ReviewTag(tag)],
                 ),
+                if (review.comment != null) ...[
+                  const SizedBox(height: 16),
+                  SelectableText(review.comment!),
+                ],
               ],
               if (own) ...[
                 const SizedBox(height: 24),

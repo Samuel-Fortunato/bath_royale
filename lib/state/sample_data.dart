@@ -25,7 +25,8 @@ List<Review> createSampleReviews() => [
     hygiene: 4,
     comfort: 4,
     aesthetics: 1,
-    tags: ["nice", "cozy", "dark"].map(TagPresentation.display).toList(),
+    comment: 'Exemplo fictício: uma pausa tranquila entre aulas.',
+    tags: ["nice", "cozy", "dark"].map(ReviewTagData.legacy).toList(),
   ),
   Review(
     id: "sample-1",
@@ -38,7 +39,9 @@ List<Review> createSampleReviews() => [
     hygiene: 2,
     comfort: 0,
     aesthetics: 1,
-    tags: ["grafiti", "wtf", "no like"].map(TagPresentation.display).toList(),
+    comment:
+        'Exemplo fictício: faltava sabonete. As paredes têm personalidade.',
+    tags: ["grafiti", "wtf", "no like"].map(ReviewTagData.legacy).toList(),
   ),
   Review(
     id: "sample-2",
@@ -51,7 +54,8 @@ List<Review> createSampleReviews() => [
     hygiene: 3,
     comfort: 2,
     aesthetics: 4,
-    tags: ["nice", "small", "great view"].map(TagPresentation.display).toList(),
+    comment: 'Exemplo fictício: pequeno, mas com uma vista digna de postal.',
+    tags: ["nice", "small", "great view"].map(ReviewTagData.legacy).toList(),
   ),
   Review(
     id: "sample-3",
@@ -64,11 +68,8 @@ List<Review> createSampleReviews() => [
     hygiene: 1,
     comfort: 2,
     aesthetics: 1,
-    tags: [
-      "cozy",
-      "sad but true",
-      "noisy",
-    ].map(TagPresentation.display).toList(),
+    comment: 'Exemplo fictício: silêncio para pôr a leitura em dia.',
+    tags: ["cozy", "sad but true", "noisy"].map(ReviewTagData.legacy).toList(),
   ),
   Review(
     id: "sample-4",
@@ -81,6 +82,7 @@ List<Review> createSampleReviews() => [
     hygiene: 3,
     comfort: 2,
     aesthetics: 4,
-    tags: ["nice", "small", "great view"].map(TagPresentation.display).toList(),
+    comment: 'Exemplo fictício: valeu a pena subir as escadas.',
+    tags: ["nice", "small", "great view"].map(ReviewTagData.legacy).toList(),
   ),
 ];
