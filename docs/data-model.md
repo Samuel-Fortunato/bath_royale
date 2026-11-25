@@ -1,6 +1,6 @@
 # Local data model
 
-The prototype keeps data in memory. These rules are not an authentication or backend contract; storage and migration remain future work.
+The prototype restores and persists local SQLite data. See [storage architecture and migrations](storage.md). These rules are not an authentication or backend contract.
 
 ## Bathrooms, visits and reviews
 
@@ -19,10 +19,10 @@ A direct review can select an existing unreviewed visit or create a new visit at
 
 ## Ratings and sample data
 
-The personal review is the current user's latest by review creation time, with ID breaking equal-time ties; editing an older review does not promote it. Community rating is the mean of individual reviews, including repeated visits. No review is distinct from a zero rating. Cards and personal filters continue to use personal reviews; favourites use the independent flag.
+The personal review is the current user's latest reviewed visit by visit timestamp, with visit ID breaking equal-time ties. Delayed submission or editing an older experience does not promote it. Community rating is the mean of individual reviews, including repeated visits. No review is distinct from a zero rating. Cards and personal filters continue to use personal reviews; favourites use the independent flag.
 
-The original five sample reviews each have exactly one matching sample visit at the original sample date. The sixth bathroom has neither. All data resets when the process restarts.
+The original five sample reviews each have exactly one matching sample visit at the original sample date. The sixth bathroom has neither. Data and theme settings survive restarts; sample data is seeded only at first initialization. New entity identifiers use UUID v4.
 
 ## Verification
 
-Regression tests cover optional repeat visits, derived timestamps, favourites, ownership, atomic creation, association, duplicate prevention, editing, deletion, undo, cancellation, collection, search and sorting. Verification: all 21 tests pass; formatting, Linux debug and Android debug builds pass. Analysis exits with 15 Material import deprecation notices, including the new collection screen; it reports no other issues. Persistence, migration, multiplayer policy, moderation and ranking formulas remain open.
+Regression tests cover optional repeat visits, visit chronology, derived timestamps, favourites, ownership, atomic creation, association, rapid-tap duplicate prevention, editing, deletion, undo, cancellation, collection, search and sorting. All 29 tests pass, including restart, migration, storage failure and transaction rollback coverage. Formatting and Linux/Android debug builds pass. Analysis exits with 16 Material import deprecation notices and no other diagnostics. Multiplayer policy, moderation and ranking formulas remain open.

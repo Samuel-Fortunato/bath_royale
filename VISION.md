@@ -21,4 +21,4 @@ Bath Royale helps people find and rate bathrooms while making exploration a litt
 
 ## Decisions still open
 
-The local prototype links each review to one visit and keeps reviews optional, as described in [the data model](docs/data-model.md). Multiplayer review and visit policies, ranking formulas, persistence and migration strategy, location hierarchy, photo safeguards, moderation policy and gamification rules remain to be designed. Supabase and PostgreSQL are preferred candidates for the community backend, subject to evaluation before implementation. Specific features and rules in this vision are direction, not a finalized specification.
+The local prototype links each review to one visit and keeps reviews optional, as described in [the data model](docs/data-model.md). Multiplayer review and visit policies, ranking formulas, community migration strategy, location hierarchy, photo safeguards, moderation policy and gamification rules remain to be designed. Supabase and PostgreSQL are preferred candidates for the community backend, subject to evaluation before implementation. Specific features and rules in this vision are direction, not a finalized specification.

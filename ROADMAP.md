@@ -16,7 +16,7 @@ The phases describe intended sequencing, not a fixed specification. Unconfirmed 
 - [x] Create and edit reviews while preserving the rating descriptions.
 - [x] Create bathrooms with appropriate validation.
 - [x] Improve search, sorting, filters and favourites.
-- [ ] Persist local data and define a migration strategy.
+- [x] Persist local data and define a migration strategy.
 - [ ] Implement rankings; expand the visit-based personal collection as the prototype evolves.
 - [ ] Add automated tests for models, state and important user flows.
 - [ ] Verify formatting, analysis, tests and appropriate builds; update documentation.
@@ -59,7 +59,7 @@ The Nix Android environment and Flutter 3.50.1 template migration are verified w
 
 ### Bathroom creation and Explore milestone
 
-Verified in memory: validated creation with normalized duplicate-name prevention, name search, four deterministic sort orders, explicit personal/community labels, filter reset and empty states. Twenty unit/widget tests pass, including 390 px and 1200 px creation flows. Formatting, Linux debug/release and Android debug APK builds pass. Analysis retains only the documented Material import deprecations. Persistence, broader test coverage and release preparation remain open.
+Verified in memory: validated creation with normalized duplicate-name prevention, name search, four deterministic sort orders, explicit personal/community labels, filter reset and empty states. Twenty unit/widget tests pass, including 390 px and 1200 px creation flows. Formatting, Linux debug/release and Android debug APK builds pass. Analysis retains only the documented Material import deprecations. This historical milestone preceded local persistence; broader test coverage and release preparation remain open.
 
 ### Mobile UI refinement
 
@@ -67,4 +67,8 @@ Review ratings and tags, explicit visit feedback and undo, and compact Explore c
 
 ### Visit and review integration
 
-Every review belongs to one visit; visits may stand alone. The in-memory prototype supports repeat visits, a visit-based collection, optional reviews, history, conditional undo and confirmed removal. Twenty-one tests and Linux/Android debug builds pass; analysis reports the known Material import deprecations. Persistence and migration remain open.
+Every review belongs to one visit; visits may stand alone. The in-memory prototype supports repeat visits, a visit-based collection, optional reviews, history, conditional undo and confirmed removal. Twenty-one tests and Linux/Android debug builds pass; analysis reports the known Material import deprecations. This milestone preceded the local persistence milestone below.
+
+### Local persistence
+
+SQLite stores all entities, independent favourites and theme settings. UUIDs support local identity generation; latest personal reviews follow visit chronology and rapid registration reuses the same visit. Versioned migrations, atomic snapshots, first-run seeding and non-destructive storage error handling are implemented and verified with 29 tests, formatting and Linux/Android debug builds. Analysis retains only the Material import deprecations. See [storage architecture](docs/storage.md).
