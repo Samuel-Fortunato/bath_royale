@@ -77,6 +77,20 @@ class _ExplorePageState extends State<ExplorePage> {
     return bathroomFilters; // todos visíveis se 'notReviewed' não estiver ativo
   }
 
+  List<BathroomFilter> quickFilters() {
+    final visible = visibleFilters();
+    return [
+      ...visible.where(activeFilters.contains),
+      ...visible.where(
+        (f) =>
+            !activeFilters.contains(f) &&
+            (f.id == BathroomFilterID.favourite ||
+                f.id == BathroomFilterID.reviewed ||
+                f.id == BathroomFilterID.notReviewed),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -94,65 +108,127 @@ class _ExplorePageState extends State<ExplorePage> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
+              padding: const EdgeInsets.fromLTRB(12, 8, 8, 4),
+              child: Row(
                 children: [
-                  TextField(
-                    controller: _search,
-                    onChanged: (_) => setState(() {}),
-                    decoration: InputDecoration(
-                      labelText: 'Pesquisar por nome',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _search.text.isEmpty
-                          ? null
-                          : IconButton(
-                              tooltip: 'Limpar pesquisa',
-                              icon: const Icon(Icons.close),
-                              onPressed: () => setState(() => _search.clear()),
-                            ),
+                  Expanded(
+                    child: TextField(
+                      controller: _search,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'Procurar um trono',
+                        prefixIcon: const Icon(Icons.search),
+                        isDense: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        suffixIcon: _search.text.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Limpar pesquisa',
+                                icon: const Icon(Icons.close),
+                                onPressed: () =>
+                                    setState(() => _search.clear()),
+                              ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<BathroomSort>(
+                  PopupMenuButton<BathroomSort>(
+                    tooltip: 'Ordenar por',
+                    icon: const Icon(Icons.sort),
                     initialValue: _sort,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Ordenar por'),
-                    items: const [
-                      DropdownMenuItem(
+                    onSelected: (value) => setState(() => _sort = value),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
                         value: BathroomSort.name,
                         child: Text('Nome (A–Z)'),
                       ),
-                      DropdownMenuItem(
+                      PopupMenuItem(
                         value: BathroomSort.community,
                         child: Text('Avaliação da comunidade'),
                       ),
-                      DropdownMenuItem(
+                      PopupMenuItem(
                         value: BathroomSort.personal,
                         child: Text('A minha avaliação'),
                       ),
-                      DropdownMenuItem(
+                      PopupMenuItem(
                         value: BathroomSort.latestVisit,
                         child: Text('Última visita (mais recente)'),
                       ),
                     ],
-                    onChanged: (value) => setState(() => _sort = value!),
+                  ),
+                  IconButton(
+                    tooltip: 'Filtros',
+                    icon: Badge(
+                      isLabelVisible: activeFilters.isNotEmpty,
+                      label: Text('${activeFilters.length}'),
+                      child: const Icon(Icons.tune),
+                    ),
+                    onPressed: () => showModalBottomSheet<void>(
+                      context: context,
+                      showDragHandle: true,
+                      isScrollControlled: true,
+                      builder: (sheetContext) => StatefulBuilder(
+                        builder: (context, refresh) => SafeArea(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Filtros',
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.headlineSmall,
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Os filtros de avaliação usam as tuas experiências.',
+                                ),
+                                Wrap(
+                                  spacing: 8,
+                                  children: [
+                                    for (final filter in visibleFilters())
+                                      FilterChip(
+                                        label: Text(filter.label),
+                                        selected: activeFilters.contains(
+                                          filter,
+                                        ),
+                                        onSelected: (selected) {
+                                          _toggleFilter(filter, selected);
+                                          refresh(() {});
+                                        },
+                                      ),
+                                  ],
+                                ),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(sheetContext),
+                                    child: const Text('Ver resultados'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              child: Text('Os filtros de avaliação usam as tuas experiências.'),
             ),
             SizedBox(
               height: 40,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                itemCount: visibleFilters().length,
+                itemCount: quickFilters().length,
                 separatorBuilder: (_, _) => const SizedBox(width: 6),
                 itemBuilder: (context, index) {
-                  final filter = visibleFilters()[index];
+                  final filter = quickFilters()[index];
                   return ChoiceChip(
                     label: Text(filter.label),
                     selected: activeFilters.contains(filter),

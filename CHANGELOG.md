@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Refine review entry with interactive stars, decimal adjustment, rating feedback and editable suggested/custom tags.
+- Compact Explore search, sorting and filters, and improve visit status presentation.
+- Cover review controls, visit undo and mobile/desktop Explore flows with regression tests.
+
+- Add visit confirmation with haptic feedback and an undo action that preserves favourites and later visits.
 - Implement the + action and responsive bathroom creation with name validation, creator attribution and normalized duplicate-name protection.
 - Add Explore name search and sorting by community rating, personal rating, name and latest explicit visit, with deterministic ties and missing values last.
 - Add result counts, empty states, search/filter reset and explicit personal/community rating labels; preserve humorous rating descriptions and favourites.

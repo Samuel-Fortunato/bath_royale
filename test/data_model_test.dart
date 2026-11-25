@@ -44,6 +44,25 @@ AppState state({
 
 void main() {
   test(
+    'visit undo preserves favourites and refuses to replace a later visit',
+    () {
+      final app = state();
+      addTearDown(app.dispose);
+      app.recordVisit('wc', visitedAt: day);
+      app.toggleFavorite('wc');
+      expect(app.undoVisit('wc', recordedAt: day, previousAt: null), isTrue);
+      expect(app.activityFor('wc').lastVisitedAt, isNull);
+      expect(app.activityFor('wc').isFavorite, isTrue);
+      app.recordVisit('wc', visitedAt: day);
+      final later = day.add(const Duration(days: 1));
+      app.recordVisit('wc', visitedAt: later);
+      expect(app.undoVisit('wc', recordedAt: day, previousAt: null), isFalse);
+      expect(app.activityFor('wc').lastVisitedAt, later);
+      expect(app.undoVisit('wc', recordedAt: later, previousAt: day), isTrue);
+      expect(app.activityFor('wc').lastVisitedAt, day);
+    },
+  );
+  test(
     'multiple reviews, personal latest and community arithmetic mean are distinct',
     () {
       final app = state(

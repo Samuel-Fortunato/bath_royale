@@ -60,3 +60,7 @@ The Nix Android environment and Flutter 3.50.1 template migration are verified w
 ### Bathroom creation and Explore milestone
 
 Verified in memory: validated creation with normalized duplicate-name prevention, name search, four deterministic sort orders, explicit personal/community labels, filter reset and empty states. Twenty unit/widget tests pass, including 390 px and 1200 px creation flows. Formatting, Linux debug/release and Android debug APK builds pass. Analysis retains only the documented Material import deprecations. Persistence, broader test coverage and release preparation remain open.
+
+### Mobile UI refinement
+
+Review ratings and tags, explicit visit feedback and undo, and compact Explore controls are implemented and covered by regression tests. Linux and Android debug builds are verified. Broader responsive design and release preparation remain open.

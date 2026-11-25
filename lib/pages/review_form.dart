@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../models/review.dart';
 import '../models/bathroom_descriptions.dart';
 import '../state/app_state.dart';
@@ -14,15 +15,25 @@ class ReviewFormPage extends StatefulWidget {
 
 class _ReviewFormPageState extends State<ReviewFormPage> {
   final _form = GlobalKey<FormState>();
-  late final TextEditingController _rating;
-  late final TextEditingController _tags;
+  double? _rating;
+  final _tagInput = TextEditingController();
+  final List<String> _tags = [];
+  String? _tagError;
+  static const _suggestions = [
+    '✨ Limpo',
+    '🧻 Sem papel',
+    '🔒 Privado',
+    '♿ Acessível',
+    '🌸 Cheiro agradável',
+    '🚰 Sem sabonete',
+  ];
   int? _hygiene, _comfort, _aesthetics, _paper;
   @override
   void initState() {
     super.initState();
     final r = widget.review;
-    _rating = TextEditingController(text: r?.rating.toString() ?? '');
-    _tags = TextEditingController(text: r?.tags.join(', ') ?? '');
+    _rating = r?.rating;
+    _tags.addAll(r?.tags ?? []);
     _hygiene = r?.hygiene;
     _comfort = r?.comfort;
     _aesthetics = r?.aesthetics;
@@ -31,8 +42,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
 
   @override
   void dispose() {
-    _rating.dispose();
-    _tags.dispose();
+    _tagInput.dispose();
     super.dispose();
   }
 
@@ -48,8 +58,55 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     aesthetics: value,
   );
 
+  Review _exampleRating(double rating) => Review(
+    id: 'emoji',
+    bathroomId: widget.bathroomId,
+    authorId: 'local',
+    createdAt: DateTime.utc(2026),
+    rating: rating,
+    paperAvailability: 0,
+    hygiene: 0,
+    comfort: 0,
+    aesthetics: 0,
+  );
+
+  void _addTag() {
+    final tag = _tagInput.text.trim();
+    setState(() {
+      if (tag.isEmpty || tag.length > 30 || tag.contains(RegExp(r'[\n\r,]'))) {
+        _tagError = 'Usa uma etiqueta por vez, até 30 caracteres.';
+      } else if (_tags.length >= 10 && !_tags.contains(tag)) {
+        _tagError = 'Podes adicionar até 10 etiquetas.';
+      } else {
+        if (!_tags.contains(tag)) _tags.add(tag);
+        _tagInput.clear();
+        _tagError = null;
+      }
+    });
+  }
+
   void _save() {
-    if (!_form.currentState!.validate()) return;
+    final valid = _form.currentState!.validate();
+    if (_tagInput.text.trim().isNotEmpty) {
+      setState(
+        () => _tagError = 'Adiciona ou apaga a etiqueta antes de guardar.',
+      );
+      return;
+    }
+    if (_tags.length > 10 ||
+        _tags.any(
+          (tag) =>
+              tag.trim().isEmpty ||
+              tag.length > 30 ||
+              tag.contains(RegExp(r'[\n\r]')),
+        )) {
+      setState(
+        () =>
+            _tagError = 'Usa até 10 etiquetas válidas, com até 30 caracteres.',
+      );
+      return;
+    }
+    if (!valid) return;
     final state = context.read<AppState>();
     final old = widget.review;
     final now = DateTime.now();
@@ -67,14 +124,12 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
           updatedAt: old != null && old.updatedAt.isAfter(now)
               ? old.updatedAt
               : now,
-          rating: double.parse(_rating.text.trim().replaceAll(',', '.')),
+          rating: _rating!,
           paperAvailability: _paper!,
           hygiene: _hygiene!,
           comfort: _comfort!,
           aesthetics: _aesthetics!,
-          tags: _tags.text.trim().isEmpty
-              ? []
-              : _tags.text.split(',').map((t) => t.trim()).toSet().toList(),
+          tags: _tags,
         ),
       );
       Navigator.of(context).pop();
@@ -139,26 +194,87 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                           'Conta como foi a experiência. Avaliar não regista uma visita.',
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _rating,
-                          decoration: const InputDecoration(
-                            labelText: 'Avaliação global (0–5)',
-                            border: OutlineInputBorder(),
+                        FormField<double>(
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          initialValue: _rating,
+                          validator: (_) =>
+                              _rating == null ? 'Escolhe uma avaliação' : null,
+                          builder: (field) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Avaliação global',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  KeyedSubtree(
+                                    key: ValueKey(_rating),
+                                    child: RatingBar.builder(
+                                      initialRating: _rating ?? 0,
+                                      minRating: 0,
+                                      allowHalfRating: true,
+                                      itemSize: 36,
+                                      itemPadding: const EdgeInsets.symmetric(
+                                        horizontal: 2,
+                                      ),
+                                      itemBuilder: (_, _) => const Icon(
+                                        Icons.star_rounded,
+                                        color: Colors.amber,
+                                      ),
+                                      onRatingUpdate: (value) {
+                                        setState(() => _rating = value);
+                                        field.didChange(value);
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: AnimatedSwitcher(
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
+                                      child: Text(
+                                        _rating == null
+                                            ? 'Escolhe'
+                                            : '${_exampleRating(_rating!).emojiRating()} ${_rating!.toStringAsFixed(1)} / 5',
+                                        key: ValueKey(_rating),
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleMedium,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Slider(
+                                value: _rating ?? 0,
+                                min: 0,
+                                max: 5,
+                                divisions: 50,
+                                label: (_rating ?? 0).toStringAsFixed(1),
+                                onChanged: (value) {
+                                  setState(() => _rating = value);
+                                  field.didChange(value);
+                                },
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  setState(() => _rating = 0);
+                                  field.didChange(0);
+                                },
+                                child: const Text('Dar zero'),
+                              ),
+                              if (field.hasError)
+                                Text(
+                                  field.errorText!,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                ),
+                            ],
                           ),
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          validator: (value) {
-                            final score = double.tryParse(
-                              (value ?? '').trim().replaceAll(',', '.'),
-                            );
-                            return score == null ||
-                                    !score.isFinite ||
-                                    score < 0 ||
-                                    score > 5
-                                ? 'Indica um número entre 0 e 5'
-                                : null;
-                          },
                         ),
                         const SizedBox(height: 16),
                         category(
@@ -189,30 +305,65 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                           (r) => r.paperText,
                           (v) => _paper = v,
                         ),
-                        TextFormField(
-                          controller: _tags,
-                          decoration: const InputDecoration(
-                            labelText: 'Etiquetas (opcional)',
-                            helperText:
-                                'Separadas por vírgulas; até 10, com 30 caracteres cada.',
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (value) {
-                            if ((value ?? '').trim().isEmpty) return null;
-                            final tags = value!
-                                .split(',')
-                                .map((t) => t.trim())
-                                .toList();
-                            return tags.length > 10 ||
-                                    tags.any(
-                                      (t) =>
-                                          t.isEmpty ||
-                                          t.length > 30 ||
-                                          t.contains('\n'),
-                                    )
-                                ? 'Usa até 10 etiquetas não vazias, com até 30 caracteres.'
-                                : null;
-                          },
+                        Text(
+                          'Etiquetas',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            for (final tag in _suggestions)
+                              FilterChip(
+                                label: Text(tag),
+                                selected: _tags.contains(tag),
+                                onSelected: (selected) => setState(() {
+                                  if (selected) {
+                                    if (_tags.length < 10) {
+                                      _tags.add(tag);
+                                      _tagError = null;
+                                    } else {
+                                      _tagError =
+                                          'Podes adicionar até 10 etiquetas.';
+                                    }
+                                  } else {
+                                    _tags.remove(tag);
+                                    _tagError = null;
+                                  }
+                                }),
+                              ),
+                            for (final tag in _tags.where(
+                              (t) => !_suggestions.contains(t),
+                            ))
+                              InputChip(
+                                label: Text(tag),
+                                onDeleted: () => setState(() {
+                                  _tags.remove(tag);
+                                  _tagError = null;
+                                }),
+                              ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _tagInput,
+                                maxLength: 30,
+                                decoration: InputDecoration(
+                                  labelText: 'Outra etiqueta',
+                                  errorText: _tagError,
+                                ),
+                                onSubmitted: (_) => _addTag(),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Adicionar etiqueta',
+                              onPressed: _addTag,
+                              icon: const Icon(Icons.add_circle_outline),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 24),
                         FilledButton(

@@ -91,6 +91,17 @@ void main() {
       expect(state.allBathrooms.length, 7);
       await tester.pageBack();
       await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Ordenar por'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Última visita (mais recente)').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Filtros'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('🛋️ Confortável'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ver resultados'));
+      await tester.pumpAndSettle();
+      expect(find.text('🛋️ Confortável'), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'inexistente');
       await tester.pumpAndSettle();
       expect(find.textContaining('Nenhum trono à vista'), findsOneWidget);

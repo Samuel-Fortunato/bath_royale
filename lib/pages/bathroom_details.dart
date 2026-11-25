@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/review.dart';
 import '../models/bathroom_descriptions.dart';
@@ -120,10 +121,26 @@ class BathroomDetailsPage extends StatelessWidget {
                     : '${entry.personalReview!.rating.toStringAsFixed(1)} / 5',
               ),
               heading('As tuas visitas'),
-              Text(
-                entry.activity.lastVisitedAt == null
-                    ? 'Ainda sem visitas registadas'
-                    : 'Última visita: ${reviewDate(entry.activity.lastVisitedAt!)}',
+              Card(
+                child: ListTile(
+                  leading: CircleAvatar(
+                    child: Icon(
+                      entry.activity.lastVisitedAt == null
+                          ? Icons.explore_outlined
+                          : Icons.check_circle_outline,
+                    ),
+                  ),
+                  title: Text(
+                    entry.activity.lastVisitedAt == null
+                        ? 'Ainda por visitar'
+                        : 'Visita registada',
+                  ),
+                  subtitle: Text(
+                    entry.activity.lastVisitedAt == null
+                        ? 'Marca a tua primeira visita a este trono.'
+                        : 'Última visita: ${reviewDate(entry.activity.lastVisitedAt!)}',
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -137,12 +154,34 @@ class BathroomDetailsPage extends StatelessWidget {
                   ),
                   OutlinedButton.icon(
                     onPressed: () {
-                      state.recordVisit(bathroomId, visitedAt: DateTime.now());
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Visita registada!')),
+                      final previous = state
+                          .activityFor(bathroomId)
+                          .lastVisitedAt;
+                      final now = DateTime.now();
+                      state.recordVisit(bathroomId, visitedAt: now);
+                      if (state.activityFor(bathroomId).lastVisitedAt != now) {
+                        return;
+                      }
+                      HapticFeedback.lightImpact();
+                      final messenger = ScaffoldMessenger.of(context);
+                      messenger.hideCurrentSnackBar();
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: const Text('Visita registada! 🚽'),
+                          action: SnackBarAction(
+                            label: 'Desfazer',
+                            onPressed: () {
+                              state.undoVisit(
+                                bathroomId,
+                                recordedAt: now,
+                                previousAt: previous,
+                              );
+                            },
+                          ),
+                        ),
                       );
                     },
-                    icon: const Icon(Icons.check),
+                    icon: const Icon(Icons.add_location_alt_outlined),
                     label: const Text('Registar visita agora'),
                   ),
                 ],

@@ -87,7 +87,11 @@ void main() {
           ),
         ),
       );
+      await tester.tap(find.byTooltip('Filtros'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('✨ Avaliação positiva'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ver resultados'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('🚽 Não avaliadas'));
       await tester.pumpAndSettle();

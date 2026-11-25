@@ -137,6 +137,24 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Restores a visit only while the recorded timestamp is still current.
+  bool undoVisit(
+    String bathroomId, {
+    required DateTime recordedAt,
+    DateTime? previousAt,
+  }) {
+    final current = activityFor(bathroomId);
+    if (current.lastVisitedAt != recordedAt) return false;
+    _activities[(currentUserId, bathroomId)] = BathroomActivity(
+      userId: currentUserId,
+      bathroomId: bathroomId,
+      isFavorite: current.isFavorite,
+      lastVisitedAt: previousAt,
+    );
+    notifyListeners();
+    return true;
+  }
+
   /// Local ownership guard, not authentication or a future security boundary.
   void saveReview(Review review) {
     _requireBathroom(review.bathroomId);
