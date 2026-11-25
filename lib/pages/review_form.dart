@@ -30,13 +30,14 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   final _tagInput = TextEditingController();
   final List<String> _tags = [];
   String? _tagError;
+  bool _creatingTag = false;
   static const _suggestions = [
-    '✨ Limpo',
-    '🧻 Sem papel',
-    '🔒 Privado',
-    '♿ Acessível',
-    '🌸 Cheiro agradável',
-    '🚰 Sem sabonete',
+    '🪞 Espelho gigante',
+    '🎵 Música ambiente',
+    '🪴 Selva interior',
+    '🌅 Vista panorâmica',
+    '🎨 Arte nas paredes',
+    '🪝 Gancho para mochila',
   ];
   int? _hygiene, _comfort, _aesthetics, _paper;
   @override
@@ -233,7 +234,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                             initialValue: _visitId ?? '',
                             isExpanded: true,
                             decoration: const InputDecoration(
-                              labelText: 'Escolhe a visita',
+                              labelText: 'Que experiência estás a avaliar?',
                               border: OutlineInputBorder(),
                             ),
                             items: [
@@ -248,12 +249,12 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                                 DropdownMenuItem(
                                   value: visit.id,
                                   child: Text(
-                                    'Visita de ${reviewDate(visit.visitedAt)}',
+                                    'Uma visita anterior · ${reviewDate(visit.visitedAt)}',
                                   ),
                                 ),
                               const DropdownMenuItem(
                                 value: '',
-                                child: Text('Nova visita agora'),
+                                child: Text('Acabei de visitar'),
                               ),
                             ],
                             onChanged: (value) => setState(
@@ -419,26 +420,33 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                               ),
                           ],
                         ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _tagInput,
-                                maxLength: 30,
-                                decoration: InputDecoration(
-                                  labelText: 'Outra etiqueta',
-                                  errorText: _tagError,
-                                ),
-                                onSubmitted: (_) => _addTag(),
-                              ),
-                            ),
-                            IconButton(
-                              tooltip: 'Adicionar etiqueta',
-                              onPressed: _addTag,
-                              icon: const Icon(Icons.add_circle_outline),
-                            ),
-                          ],
+                        ActionChip(
+                          label: const Text('Inventar uma etiqueta'),
+                          avatar: const Icon(Icons.add),
+                          onPressed: () =>
+                              setState(() => _creatingTag = !_creatingTag),
                         ),
+                        if (_creatingTag)
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _tagInput,
+                                  maxLength: 30,
+                                  decoration: InputDecoration(
+                                    labelText: 'Outra etiqueta',
+                                    errorText: _tagError,
+                                  ),
+                                  onSubmitted: (_) => _addTag(),
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Adicionar etiqueta',
+                                onPressed: _addTag,
+                                icon: const Icon(Icons.add_circle_outline),
+                              ),
+                            ],
+                          ),
                         const SizedBox(height: 24),
                         FilledButton(
                           onPressed: _save,

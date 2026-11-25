@@ -121,7 +121,8 @@ void main() {
       );
       await tester.pumpAndSettle();
     }
-    await tap(tester, find.text('✨ Limpo'));
+    await tap(tester, find.text('🪞 Espelho gigante'));
+    await tap(tester, find.text('Inventar uma etiqueta'));
     await tester.ensureVisible(
       find.widgetWithText(TextField, 'Outra etiqueta'),
     );
@@ -134,7 +135,10 @@ void main() {
     expect(state.reviews.length, 6);
     expect(state.visits.length, 6);
     expect(state.entries.first.personalReview!.visitId, visit.id);
-    expect(state.entries.first.personalReview!.tags, ['✨ Limpo', 'vista']);
+    expect(state.entries.first.personalReview!.tags, [
+      '🪞 Espelho gigante',
+      'vista',
+    ]);
     expect(state.entries.first.reviewCount, 2);
     expect(find.byType(ReviewFormPage), findsNothing);
   });
@@ -177,6 +181,7 @@ void main() {
         ReviewFormPage(bathroomId: original.bathroomId, review: original),
       );
       expect(find.textContaining('4.7 / 5'), findsOneWidget);
+      await tap(tester, find.text('Inventar uma etiqueta'));
       await tester.ensureVisible(
         find.widgetWithText(TextField, 'Outra etiqueta'),
       );

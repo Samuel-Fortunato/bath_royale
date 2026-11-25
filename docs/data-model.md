@@ -26,3 +26,9 @@ The original five sample reviews each have exactly one matching sample visit at 
 ## Verification
 
 Regression tests cover optional repeat visits, visit chronology, derived timestamps, favourites, ownership, atomic creation, association, rapid-tap duplicate prevention, editing, deletion, undo, cancellation, collection, search and sorting. All 29 tests pass, including restart, migration, storage failure and transaction rollback coverage. Formatting and Linux/Android debug builds pass. Analysis exits with 16 Material import deprecation notices and no other diagnostics. Multiplayer policy, moderation and ranking formulas remain open.
+
+## Derived rankings and collection
+
+Rankings use all reviews by the current user for personal means, or all local reviews for community means. Each review has equal weight. All five metrics use their original scales (overall 5, paper 2, other categories 4); missing reviews are excluded and real zero scores remain valid. Ties use case-insensitive bathroom name then ID in both directions. This differs from the latest personal experience shown on Explore cards.
+
+Discovery means at least one visit by the current user. Progress divides discovered bathrooms by the current catalogue size (zero for an empty catalogue); statistics count unique visited bathrooms, all personal visits, personal reviews and independent favourites. History sorts by visit timestamp descending, then visit ID. None of these derived views changes schema version 2 or stored records. Suggested tags describe characteristics, and custom input is revealed by an action chip. Existing custom tags remain editable.

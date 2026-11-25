@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add personal/community best and worst rankings across overall and category ratings, with counts and detail navigation.
+- Expand collection discovery, catalogue progress, personal statistics and chronological visit history.
+- Reveal custom tag input on request and refresh suggested tags and experience selection wording.
+- Record future catalogue and contribution policies as documentation-only direction.
+
 - Persist local entities, favourites and theme in versioned SQLite storage; restore state and seed samples only once.
 - Use UUIDs for new records, visit chronology for personal ratings and a rapid-tap visit guard.
 - Add migration, restart, transaction rollback and storage-failure regression coverage; preserve files on startup errors.

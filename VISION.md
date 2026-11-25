@@ -22,3 +22,9 @@ Bath Royale helps people find and rate bathrooms while making exploration a litt
 ## Decisions still open
 
 The local prototype links each review to one visit and keeps reviews optional, as described in [the data model](docs/data-model.md). Multiplayer review and visit policies, ranking formulas, community migration strategy, location hierarchy, photo safeguards, moderation policy and gamification rules remain to be designed. Supabase and PostgreSQL are preferred candidates for the community backend, subject to evaluation before implementation. Specific features and rules in this vision are direction, not a finalized specification.
+
+## Catalogue and contribution direction
+
+The future catalogue should combine curated official bathrooms, public community contributions subject to validation and moderation, and private custom bathrooms for personal collections. Personal custom tags should remain personal unless explicitly proposed and accepted into the shared catalogue.
+
+Gamification and reputation-based progression may unlock privileges to propose public bathrooms and community tags, and eventually help validate contributions. Privileges must work alongside moderation, duplicate prevention, contribution quality and appropriate submission limits. Recording private experiences must never require earning privileges. Exact progression rules, permission levels and moderation workflows remain undecided. Phase 1 retains unrestricted local experimentation; these visibility and permission models are not implemented.

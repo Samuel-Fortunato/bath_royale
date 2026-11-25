@@ -1,5 +1,6 @@
 import 'bathroom_form.dart';
 import 'collection.dart';
+import 'rankings.dart';
 import 'package:bath_royale/pages/explore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -71,7 +72,7 @@ class _HomePageState extends State<HomePage> {
         children: [
           ExplorePage(),
           CollectionPage(),
-          Placeholder(),
+          RankingsPage(),
           Placeholder(),
         ],
       ),

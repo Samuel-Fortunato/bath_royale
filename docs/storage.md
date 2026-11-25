@@ -35,3 +35,5 @@ Future web support requires replacing the native opener with a WebAssembly/OPFS 
 ## Verified checks
 
 All 29 automated tests pass, including the existing behavior suite and isolated storage/UI tests. Formatting and Linux/Android debug compilation pass. Analysis exits with 16 Material import deprecation notices and no other diagnostics. Initial Android builds exposed missing SDK 35 and CMake 3.22.1; both are now supplied reproducibly by the flake.
+
+The owner also verified persistence by closing and reopening the app on a physical Android device. Rankings and collection statistics are derived from existing records and require no database migration.

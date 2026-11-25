@@ -71,7 +71,7 @@ void main() {
     expect(find.textContaining('que visitares'), findsOneWidget);
     final visit = state.recordVisit(bathroom.id, visitedAt: DateTime.utc(2026));
     await tester.pumpAndSettle();
-    expect(find.text('Trono novo'), findsOneWidget);
+    expect(find.text('Trono novo'), findsNWidgets(2));
     expect(find.text('1 visita'), findsOneWidget);
     state.deleteVisit(visit.id);
     await tester.pumpAndSettle();

@@ -17,7 +17,7 @@ The phases describe intended sequencing, not a fixed specification. Unconfirmed 
 - [x] Create bathrooms with appropriate validation.
 - [x] Improve search, sorting, filters and favourites.
 - [x] Persist local data and define a migration strategy.
-- [ ] Implement rankings; expand the visit-based personal collection as the prototype evolves.
+- [x] Implement local personal/community rankings and expand the visit-based collection.
 - [ ] Add automated tests for models, state and important user flows.
 - [ ] Verify formatting, analysis, tests and appropriate builds; update documentation.
 
@@ -72,3 +72,16 @@ Every review belongs to one visit; visits may stand alone. The in-memory prototy
 ### Local persistence
 
 SQLite stores all entities, independent favourites and theme settings. UUIDs support local identity generation; latest personal reviews follow visit chronology and rapid registration reuses the same visit. Versioned migrations, atomic snapshots, first-run seeding and non-destructive storage error handling are implemented and verified with 29 tests, formatting and Linux/Android debug builds. Analysis retains only the Material import deprecations. See [storage architecture](docs/storage.md).
+
+### Rankings and collection
+
+Local rankings show arithmetic means of all reviews in the chosen personal/community scope, category scales and review counts, with best/worst ordering and deterministic ties. Collection discovery follows visits, with progress against the current local catalogue, dynamic statistics and chronological history. Custom tag entry is revealed on request. Persistence restart was confirmed by the owner on a physical Android device.
+
+### Future catalogue and contribution policies (direction only)
+
+- Curate an official catalogue and validate/moderate public community bathroom proposals.
+- Support private custom bathrooms and personal tags without automatically adding tags to the shared catalogue.
+- Consider gamification/reputation privileges for public bathrooms, community tags and eventual contribution validation, combined with moderation, duplicate prevention, contribution quality and submission limits.
+- Keep private experience recording available without earned privileges. Exact progression, permissions and moderation workflows remain undecided. Phase 1 local experimentation remains unrestricted.
+
+Rankings/collection verification: all 33 tests, formatting and Linux/Android debug builds pass. Analysis reports only 18 Material import deprecation notices. No schema changes were needed.
