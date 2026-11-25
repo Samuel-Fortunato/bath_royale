@@ -7,7 +7,7 @@ The phases describe intended sequencing, not a fixed specification. Unconfirmed 
 - [x] Configure the project Nix flake and direnv integration.
 - [x] Establish a Flutter development environment and complete Linux debug and release builds.
 
-## Phase 1 — Complete the local prototype
+## Phase 1 — Complete the local prototype (completed)
 
 - [x] Audit the existing prototype and fix bugs, including review updates, favourite filtering and unreviewed bathroom presentation.
 - [x] Investigate the Flutter 3.50 Material deprecation; document migration considerations.
@@ -18,8 +18,8 @@ The phases describe intended sequencing, not a fixed specification. Unconfirmed 
 - [x] Improve search, sorting, filters and favourites.
 - [x] Persist local data and define a migration strategy.
 - [x] Implement local personal/community rankings and expand the visit-based collection.
-- [ ] Add automated tests for models, state and important user flows.
-- [ ] Verify formatting, analysis, tests and appropriate builds; update documentation.
+- [x] Add automated tests for models, state and important user flows.
+- [x] Verify formatting, analysis, tests and appropriate builds; update documentation.
 
 ## Phase 2 — Community functionality
 
@@ -85,3 +85,7 @@ Local rankings show arithmetic means of all reviews in the chosen personal/commu
 - Keep private experience recording available without earned privileges. Exact progression, permissions and moderation workflows remain undecided. Phase 1 local experimentation remains unrestricted.
 
 Rankings/collection verification: all 33 tests, formatting and Linux/Android debug builds pass. Analysis reports only 18 Material import deprecation notices. No schema changes were needed.
+
+### Final Phase 1 acceptance
+
+The local prototype acceptance criteria are satisfied: all 36 automated tests, formatting and Linux/Android debug builds pass. Analysis reports only 20 known Material import deprecations. Hidden tag validation, tab-specific creation, ranking explanations and the local profile are stabilized. See [audit evidence and deferred debt](docs/phase-1-audit.md). This completion does not complete release preparation or authorize community/backend implementation.
