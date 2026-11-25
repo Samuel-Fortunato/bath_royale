@@ -3,6 +3,7 @@ import 'package:bath_royale/models/bathroom_filters.dart';
 import 'package:bath_royale/widgets/wc_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'bathroom_details.dart';
 
 import 'package:bath_royale/state/app_state.dart';
 
@@ -94,7 +95,16 @@ class _ExplorePageState extends State<ExplorePage> {
               entry: filteredWCs[i],
               toggleFavorite: () =>
                   appState.toggleFavorite(filteredWCs[i].bathroom.id),
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ChangeNotifierProvider.value(
+                    value: appState,
+                    child: BathroomDetailsPage(
+                      bathroomId: filteredWCs[i].bathroom.id,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),

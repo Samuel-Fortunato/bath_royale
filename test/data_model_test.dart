@@ -229,4 +229,36 @@ void main() {
         .map((f) => f.id);
     expect(results, [BathroomFilterID.reviewed, BathroomFilterID.badRating]);
   });
+  test(
+    'create and edit recompute filters without implying a visit or favourite',
+    () {
+      final app = state();
+      addTearDown(app.dispose);
+      app.saveReview(review(rating: 5));
+      expect(
+        bathroomFilters
+            .firstWhere((f) => f.id == BathroomFilterID.goodRating)
+            .test(app.entries.single),
+        isTrue,
+      );
+      app.saveReview(
+        review(rating: 1, updatedAt: day.add(const Duration(hours: 1))),
+      );
+      expect(
+        bathroomFilters
+            .firstWhere((f) => f.id == BathroomFilterID.goodRating)
+            .test(app.entries.single),
+        isFalse,
+      );
+      expect(
+        bathroomFilters
+            .firstWhere((f) => f.id == BathroomFilterID.badRating)
+            .test(app.entries.single),
+        isTrue,
+      );
+      expect(app.entries.single.reviewCount, 1);
+      expect(app.entries.single.activity.lastVisitedAt, isNull);
+      expect(app.entries.single.activity.isFavorite, isFalse);
+    },
+  );
 }

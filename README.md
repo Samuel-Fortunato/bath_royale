@@ -4,7 +4,7 @@ Bath Royale is a light-hearted bathroom discovery and rating app, starting with 
 
 ## Current state
 
-This is an early local Flutter prototype. It displays sample bathrooms, rating descriptions and filters, allows toggling favourites in memory, and supports light and dark themes. Rankings and profile are placeholders. Data is not persisted. Bathroom entities, individual reviews and personal favourites/visits are separate in-memory records, with multiple reviews per bathroom and distinct personal and community ratings. Review forms, bathroom creation and details are not yet implemented. See [the local data model](docs/data-model.md) for ownership, visit and aggregate semantics. The app currently uses Dart, Provider and Material 3.
+This is an early local Flutter prototype. It displays sample bathrooms, rating descriptions and filters, allows toggling favourites in memory, and supports light and dark themes. Rankings and profile are placeholders. Data is not persisted. Bathroom entities, individual reviews and personal favourites/visits are separate in-memory records, with multiple reviews per bathroom and distinct personal and community ratings. Bathroom details now show community averages, individual reviews and personal history, with validated review creation/editing, favourites and explicit visit recording. Bathroom creation is not yet implemented. See [the local data model](docs/data-model.md) for ownership, visit and aggregate semantics. The app currently uses Dart, Provider and Material 3.
 
 ## Development setup
 

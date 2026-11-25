@@ -20,14 +20,22 @@ All entities and exposed source collections are immutable or unmodifiable. Mutat
 - The community rating is the arithmetic mean of every individual review's overall rating, across all authors and repeat reviews. `reviewCount` counts reviews, not users. Repeated experiences therefore have repeated weight. Updating an existing review replaces its contribution without increasing the count.
 - No reviews means a null community rating and zero count. No personal review means a null personal review, even if other users have reviewed the facility. A genuine zero rating remains a rating.
 
-Cards, rating/category filters and reviewed/unreviewed filters continue to use the personal review, preserving the existing appearance and humorous descriptions. Favourite filtering uses only the current user's activity. Community aggregates are available at the data-model level; presenting them and choosing future ranking or anti-abuse formulas remain separate product work. Category descriptions belong to individual reviews, so fractional averages are never rounded into invented descriptions.
+Cards, rating/category filters and reviewed/unreviewed filters continue to use the personal review, preserving the existing appearance and humorous descriptions. Favourite filtering uses only the current user's activity. Details display community aggregates separately from personal ratings; future ranking or anti-abuse formulas remain separate product work. Category descriptions belong to individual reviews, so fractional averages are never rounded into invented descriptions.
 
 ## Sample data and scope
 
-The original six facilities and five ratings are retained as separate records. The five original experiences are explicitly seeded with visits on a fixed sample date; the sixth has neither review nor visit. Favourites start empty. Review creation/update and visit recording are available through the state API for tests and subsequent UI work; this change adds no pages or forms.
+The original six facilities and five ratings are retained as separate records. The five original experiences are explicitly seeded with visits on a fixed sample date; the sixth has neither review nor visit. Favourites start empty. Bathroom details expose favourites and explicit visit recording. Review forms create individual experiences and edit only current-user reviews, preserving record identity and creation dates.
 
 Future work must decide review/visit linking, detailed visit history, deletion and moderation rules, aggregate weighting, authentication, storage and migration before implementing those behaviors.
+
+## Details and review forms
+
+Tapping a card opens a scrollable details route with a constrained desktop width. It shows community average/count, latest personal rating, latest explicit visit, personal review history and all individual community reviews (including the current user), sorted newest first. Reviews retain the humorous category descriptions, tags, creation dates and edit dates. Only owned reviews expose edit actions.
+
+The form requires an overall finite score between 0 and 5 (Portuguese decimal commas are accepted) and explicit choices for all four categories. Optional comma-separated tags are trimmed and deduplicated; input allows at most ten nonempty tags of up to thirty characters, with no embedded newlines. Edits preload all values; returning without saving leaves state untouched. Saving notifies Provider and immediately recomputes details, cards and filters. Visit recording is a separate action using the current time. All data still resets when the process restarts.
 
 ## Verification
 
 Verified on 2026-11-25 in the existing flake/direnv environment: formatting check (17 Dart files unchanged), all 11 unit/widget tests, Linux debug and release builds, and `git diff --check`. `flutter analyze` exits with status 1 for nine existing Material import deprecation notices; it reports no other issues. The initial sandboxed test command could not write SDK telemetry metadata; rerunning with the required SDK access succeeded.
+
+Details/review milestone: formatting, all 16 unit/widget tests and Linux debug/release builds verified. Analysis reports only the same Material import deprecation, now at 12 import sites including the new pages/tests. Initial widget tests exposed off-screen test taps and a visit snackbar covering the form action: the form now uses a scroll view retaining all fields, the snackbar is dismissed on opening the form, and the tests scroll and settle before interacting.

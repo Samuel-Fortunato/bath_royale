@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add responsive bathroom details with community averages, review counts, personal history, individual ratings and dates.
+- Add validated review creation and owner-only editing with existing humorous category descriptions.
+- Add favourite and explicit visit actions in details, with immediate card and filter updates.
+- Cover navigation, review validation, repeat reviews, editing, cancellation and narrow-screen layouts in tests.
+
 - Separate shared bathrooms, author-owned reviews and personal favourites/latest visits in memory.
 - Support repeat reviews, latest personal ratings and independent community averages; retain sample cards, filters and humorous descriptions.
 - Validate review scores, references and local ownership; add model and reactive UI regression tests.
