@@ -1,4 +1,5 @@
 import 'bathroom_form.dart';
+import 'collection.dart';
 import 'package:bath_royale/pages/explore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -42,6 +43,10 @@ class _HomePageState extends State<HomePage> {
         destinations: [
           NavigationDestination(label: "Explorar", icon: Icon(Icons.wc)),
           NavigationDestination(
+            label: "Coleção",
+            icon: Icon(Icons.collections_bookmark_outlined),
+          ),
+          NavigationDestination(
             label: "Rankings",
             icon: Icon(Icons.leaderboard),
           ),
@@ -63,7 +68,12 @@ class _HomePageState extends State<HomePage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: IndexedStack(
         index: tabIndex,
-        children: [ExplorePage(), Placeholder(), Placeholder()],
+        children: [
+          ExplorePage(),
+          CollectionPage(),
+          Placeholder(),
+          Placeholder(),
+        ],
       ),
     );
   }

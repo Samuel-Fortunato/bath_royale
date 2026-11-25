@@ -49,7 +49,7 @@ void main() {
       expect(state.activityFor('0').isFavorite, isTrue);
       await tap(tester, find.text('Registar visita agora'));
       expect(state.activityFor('0').lastVisitedAt!.year, DateTime.now().year);
-      await tester.tap(find.text('Desfazer'));
+      await tester.tap(find.text('Desfazer visita'));
       await tester.pumpAndSettle();
       expect(
         state.activityFor('0').lastVisitedAt,
@@ -57,6 +57,7 @@ void main() {
       );
       expect(state.activityFor('0').isFavorite, isTrue);
       await tap(tester, find.text('Registar visita agora'));
+      await tap(tester, find.text('Agora não'));
       await tap(tester, find.text('Editar avaliação'));
       tester.widget<Slider>(find.byType(Slider)).onChanged!(2.5);
       await tester.pumpAndSettle();
@@ -76,6 +77,7 @@ void main() {
   ) async {
     final state = AppState();
     addTearDown(state.dispose);
+    final visit = state.recordVisit('0', visitedAt: DateTime.utc(2027));
     await mount(tester, state, const ExplorePage());
     await tester.enterText(find.byType(TextField), 'DEM - 3º piso');
     await tester.pumpAndSettle();
@@ -130,6 +132,8 @@ void main() {
     await tap(tester, find.byTooltip('Adicionar etiqueta'));
     await tap(tester, find.text('Guardar avaliação'));
     expect(state.reviews.length, 6);
+    expect(state.visits.length, 6);
+    expect(state.entries.first.personalReview!.visitId, visit.id);
     expect(state.entries.first.personalReview!.tags, ['✨ Limpo', 'vista']);
     expect(state.entries.first.reviewCount, 2);
     expect(find.byType(ReviewFormPage), findsNothing);
@@ -191,6 +195,69 @@ void main() {
       await tap(tester, find.text('Guardar avaliação'));
       expect(state.reviews.first.rating, original.rating);
       expect(state.reviews.first.tags, original.tags);
+    },
+  );
+
+  testWidgets(
+    'visit invitation can be dismissed and history deletion is confirmed',
+    (tester) async {
+      final state = AppState();
+      addTearDown(state.dispose);
+      await mount(tester, state, const ExplorePage());
+      await tester.enterText(find.byType(TextField), 'Nome de Teste');
+      await tester.pumpAndSettle();
+      await tap(
+        tester,
+        find.descendant(
+          of: find.byType(WcCard),
+          matching: find.text('Nome de Teste'),
+        ),
+      );
+      await tap(tester, find.text('Registar visita agora'));
+      expect(state.visitsFor('5').length, 1);
+      await tap(tester, find.text('Avaliar esta visita'));
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(state.visitsFor('5').length, 1);
+      expect(state.reviewForVisit(state.visitsFor('5').single.id), isNull);
+      await tap(tester, find.byTooltip('Avaliar visita'));
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tap(tester, find.byTooltip('Remover visita'));
+      await tap(tester, find.text('Cancelar'));
+      expect(state.visitsFor('5').length, 1);
+      await tap(tester, find.byTooltip('Remover visita'));
+      await tap(tester, find.text('Remover'));
+      expect(state.visitsFor('5'), isEmpty);
+    },
+  );
+
+  testWidgets(
+    'removing a reviewed visit warns and removes its review only after confirmation',
+    (tester) async {
+      final state = AppState();
+      addTearDown(state.dispose);
+      await mount(tester, state, const ExplorePage());
+      await tester.enterText(find.byType(TextField), 'DEM - 3º piso');
+      await tester.pumpAndSettle();
+      await tap(
+        tester,
+        find.descendant(
+          of: find.byType(WcCard),
+          matching: find.text('DEM - 3º piso'),
+        ),
+      );
+      await tap(tester, find.byTooltip('Remover visita'));
+      expect(
+        find.text('A avaliação associada também será removida.'),
+        findsOneWidget,
+      );
+      await tap(tester, find.text('Cancelar'));
+      expect(state.reviews.length, 5);
+      await tap(tester, find.byTooltip('Remover visita'));
+      await tap(tester, find.text('Remover'));
+      expect(state.reviews.length, 4);
+      expect(state.visitsFor('0'), isEmpty);
     },
   );
 

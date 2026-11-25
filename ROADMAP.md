@@ -17,7 +17,7 @@ The phases describe intended sequencing, not a fixed specification. Unconfirmed 
 - [x] Create bathrooms with appropriate validation.
 - [x] Improve search, sorting, filters and favourites.
 - [ ] Persist local data and define a migration strategy.
-- [ ] Implement rankings and a personal collection.
+- [ ] Implement rankings; expand the visit-based personal collection as the prototype evolves.
 - [ ] Add automated tests for models, state and important user flows.
 - [ ] Verify formatting, analysis, tests and appropriate builds; update documentation.
 
@@ -50,7 +50,7 @@ The phases describe intended sequencing, not a fixed specification. Unconfirmed 
 
 ### Verified data-model milestone
 
-Bathroom entities, individual author-owned reviews and per-user favourites/latest visits are separated in memory. Multiple reviews, latest personal ratings and community means are covered by unit and widget regression tests. Cards and filters retain their existing personal-rating behavior. See [data-model semantics](docs/data-model.md). Details and review forms are now implemented; the remaining Phase 1 milestones remain open.
+Bathroom entities, visits, individual author-owned reviews and per-user favourites are separated in memory. Latest visits are derived from visit records. Multiple reviews, latest personal ratings and community means are covered by unit and widget regression tests. Cards and filters retain their existing personal-rating behavior. See [data-model semantics](docs/data-model.md). Details and review forms are now implemented; the remaining Phase 1 milestones remain open.
 
 ### Android build verification
 
@@ -64,3 +64,7 @@ Verified in memory: validated creation with normalized duplicate-name prevention
 ### Mobile UI refinement
 
 Review ratings and tags, explicit visit feedback and undo, and compact Explore controls are implemented and covered by regression tests. Linux and Android debug builds are verified. Broader responsive design and release preparation remain open.
+
+### Visit and review integration
+
+Every review belongs to one visit; visits may stand alone. The in-memory prototype supports repeat visits, a visit-based collection, optional reviews, history, conditional undo and confirmed removal. Twenty-one tests and Linux/Android debug builds pass; analysis reports the known Material import deprecations. Persistence and migration remain open.

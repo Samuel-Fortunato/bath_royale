@@ -1,6 +1,7 @@
 /// An individual, author-owned review. Repeat reviews are separate records.
 class Review {
   final String id;
+  final String visitId;
   final String bathroomId;
   final String authorId;
   final DateTime createdAt;
@@ -14,6 +15,7 @@ class Review {
 
   Review({
     required this.id,
+    required this.visitId,
     required this.bathroomId,
     required this.authorId,
     required this.createdAt,
@@ -26,7 +28,10 @@ class Review {
     List<String> tags = const [],
   }) : updatedAt = updatedAt ?? createdAt,
        tags = List.unmodifiable(tags) {
-    if (id.isEmpty || bathroomId.isEmpty || authorId.isEmpty) {
+    if (id.isEmpty ||
+        visitId.isEmpty ||
+        bathroomId.isEmpty ||
+        authorId.isEmpty) {
       throw ArgumentError('Review identifiers must not be empty');
     }
     if (!rating.isFinite ||

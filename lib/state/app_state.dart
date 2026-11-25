@@ -3,6 +3,7 @@ import 'package:bath_royale/models/bathroom.dart';
 import 'package:bath_royale/models/bathroom_activity.dart';
 import 'package:bath_royale/models/bathroom_entry.dart';
 import 'package:bath_royale/models/review.dart';
+import 'package:bath_royale/models/visit.dart';
 import 'sample_data.dart';
 
 class AppState extends ChangeNotifier {
@@ -11,16 +12,32 @@ class AppState extends ChangeNotifier {
 
   List<Bathroom> get allBathrooms => List.unmodifiable(_bathrooms);
   final List<Review> _reviews;
+  final List<Visit> _visits;
   final Map<(String, String), BathroomActivity> _activities = {};
 
   AppState({
     this.currentUserId = localUserId,
     List<Bathroom>? bathrooms,
     List<Review>? reviews,
+    List<Visit>? visits,
     List<BathroomActivity>? activities,
   }) : _bathrooms = List.of(bathrooms ?? sampleBathrooms),
        _reviews = List.of(
          reviews ?? (bathrooms == null ? createSampleReviews() : <Review>[]),
+       ),
+       _visits = List.of(
+         visits ??
+             (bathrooms == null && reviews == null
+                 ? [
+                     for (final r in createSampleReviews())
+                       Visit(
+                         id: r.visitId,
+                         bathroomId: r.bathroomId,
+                         userId: r.authorId,
+                         visitedAt: r.createdAt,
+                       ),
+                   ]
+                 : <Visit>[]),
        ) {
     if (currentUserId.isEmpty ||
         allBathrooms.any((b) => b.id.isEmpty || b.createdBy.isEmpty) ||
@@ -28,22 +45,31 @@ class AppState extends ChangeNotifier {
         _reviews.map((r) => r.id).toSet().length != _reviews.length) {
       throw ArgumentError('Invalid or duplicate identifiers');
     }
+    if (_visits.map((v) => v.id).toSet().length != _visits.length) {
+      throw ArgumentError('Duplicate visit identifiers');
+    }
+    for (final visit in _visits) {
+      _requireBathroom(visit.bathroomId);
+    }
+    if (_visits
+            .map((v) => (v.userId, v.bathroomId, v.visitedAt))
+            .toSet()
+            .length !=
+        _visits.length) {
+      throw ArgumentError('Duplicate visits');
+    }
+    final linked = <String>{};
     for (final review in _reviews) {
       _requireBathroom(review.bathroomId);
+      final matches = _visits.where((v) => v.id == review.visitId);
+      if (matches.length != 1 ||
+          matches.single.bathroomId != review.bathroomId ||
+          matches.single.userId != review.authorId ||
+          !linked.add(review.visitId)) {
+        throw ArgumentError('Invalid review visit');
+      }
     }
-    // The original five sample experiences are explicitly seeded as visits.
-    final initialActivities =
-        activities ??
-        (bathrooms == null
-            ? [
-                for (final review in createSampleReviews())
-                  BathroomActivity(
-                    userId: localUserId,
-                    bathroomId: review.bathroomId,
-                    lastVisitedAt: review.createdAt,
-                  ),
-              ]
-            : <BathroomActivity>[]);
+    final initialActivities = activities ?? <BathroomActivity>[];
     for (final activity in initialActivities) {
       _requireBathroom(activity.bathroomId);
       final key = (activity.userId, activity.bathroomId);
@@ -88,6 +114,25 @@ class AppState extends ChangeNotifier {
   }
 
   List<Review> get reviews => List.unmodifiable(_reviews);
+  List<Visit> get visits => List.unmodifiable(_visits);
+
+  List<Visit> visitsFor(String bathroomId) {
+    _requireBathroom(bathroomId);
+    return _visits
+        .where((v) => v.bathroomId == bathroomId && v.userId == currentUserId)
+        .toList()
+      ..sort((a, b) {
+        final order = b.visitedAt.compareTo(a.visitedAt);
+        return order == 0 ? b.id.compareTo(a.id) : order;
+      });
+  }
+
+  Review? reviewForVisit(String visitId) {
+    for (final review in _reviews) {
+      if (review.visitId == visitId) return review;
+    }
+    return null;
+  }
 
   List<BathroomEntry> get entries => [
     for (final bathroom in allBathrooms)
@@ -100,8 +145,14 @@ class AppState extends ChangeNotifier {
 
   BathroomActivity activityFor(String bathroomId) {
     _requireBathroom(bathroomId);
-    return _activities[(currentUserId, bathroomId)] ??
-        BathroomActivity(userId: currentUserId, bathroomId: bathroomId);
+    final visits = visitsFor(bathroomId);
+    return BathroomActivity(
+      userId: currentUserId,
+      bathroomId: bathroomId,
+      isFavorite: _activities[(currentUserId, bathroomId)]?.isFavorite ?? false,
+      lastVisitedAt: visits.isEmpty ? null : visits.first.visitedAt,
+      visitCount: visits.length,
+    );
   }
 
   void _requireBathroom(String id) {
@@ -116,58 +167,98 @@ class AppState extends ChangeNotifier {
       userId: currentUserId,
       bathroomId: bathroomId,
       isFavorite: !previous.isFavorite,
-      lastVisitedAt: previous.lastVisitedAt,
     );
     notifyListeners();
   }
 
-  /// Records the latest known visit; repeated/older dates do not invent counts.
-  void recordVisit(String bathroomId, {required DateTime visitedAt}) {
-    final previous = activityFor(bathroomId);
-    if (previous.lastVisitedAt != null &&
-        !visitedAt.isAfter(previous.lastVisitedAt!)) {
-      return;
+  String newVisitId() {
+    var id = 'visit-${DateTime.now().microsecondsSinceEpoch}';
+    while (_visits.any((v) => v.id == id)) {
+      id = '$id-1';
     }
-    _activities[(currentUserId, bathroomId)] = BathroomActivity(
-      userId: currentUserId,
-      bathroomId: bathroomId,
-      isFavorite: previous.isFavorite,
-      lastVisitedAt: visitedAt,
-    );
-    notifyListeners();
+    return id;
   }
 
-  /// Restores a visit only while the recorded timestamp is still current.
-  bool undoVisit(
-    String bathroomId, {
-    required DateTime recordedAt,
-    DateTime? previousAt,
-  }) {
-    final current = activityFor(bathroomId);
-    if (current.lastVisitedAt != recordedAt) return false;
-    _activities[(currentUserId, bathroomId)] = BathroomActivity(
-      userId: currentUserId,
+  void _validateNewVisit(Visit visit) {
+    _requireBathroom(visit.bathroomId);
+    if (visit.userId != currentUserId ||
+        _visits.any(
+          (v) =>
+              v.id == visit.id ||
+              (v.userId == visit.userId &&
+                  v.bathroomId == visit.bathroomId &&
+                  v.visitedAt == visit.visitedAt),
+        )) {
+      throw StateError('Invalid or duplicate visit');
+    }
+  }
+
+  Visit recordVisit(String bathroomId, {required DateTime visitedAt}) {
+    final visit = Visit(
+      id: newVisitId(),
       bathroomId: bathroomId,
-      isFavorite: current.isFavorite,
-      lastVisitedAt: previousAt,
+      userId: currentUserId,
+      visitedAt: visitedAt,
     );
+    _validateNewVisit(visit);
+    _visits.add(visit);
+    notifyListeners();
+    return visit;
+  }
+
+  /// Undo only the exact newly created visit, never an associated review.
+  bool undoVisit(String visitId) {
+    final matches = _visits.where(
+      (v) => v.id == visitId && v.userId == currentUserId,
+    );
+    if (matches.isEmpty || reviewForVisit(visitId) != null) return false;
+    _visits.remove(matches.single);
     notifyListeners();
     return true;
   }
 
+  void deleteVisit(String visitId, {bool deleteReview = false}) {
+    final matches = _visits.where(
+      (v) => v.id == visitId && v.userId == currentUserId,
+    );
+    if (matches.isEmpty) throw StateError('Visit not found');
+    final review = reviewForVisit(visitId);
+    if (review != null && !deleteReview) throw StateError('Visit has a review');
+    if (review != null) _reviews.remove(review);
+    _visits.remove(matches.single);
+    notifyListeners();
+  }
+
   /// Local ownership guard, not authentication or a future security boundary.
-  void saveReview(Review review) {
+  void saveReview(Review review, {Visit? newVisit}) {
     _requireBathroom(review.bathroomId);
     if (review.authorId != currentUserId) {
       throw StateError('Only the current author can save a review');
     }
     final index = _reviews.indexWhere((r) => r.id == review.id);
+    if (newVisit != null) {
+      if (index >= 0 || newVisit.id != review.visitId) {
+        throw StateError('Invalid new visit');
+      }
+      _validateNewVisit(newVisit);
+    }
+    final candidates = newVisit == null
+        ? _visits.where((v) => v.id == review.visitId).toList()
+        : [newVisit];
+    if (candidates.length != 1 ||
+        candidates.single.userId != review.authorId ||
+        candidates.single.bathroomId != review.bathroomId ||
+        _reviews.any((r) => r.visitId == review.visitId && r.id != review.id)) {
+      throw StateError('Invalid review visit');
+    }
     if (index < 0) {
+      if (newVisit != null) _visits.add(newVisit);
       _reviews.add(review);
     } else {
       final previous = _reviews[index];
       if (previous.authorId != currentUserId ||
           previous.bathroomId != review.bathroomId ||
+          previous.visitId != review.visitId ||
           previous.createdAt != review.createdAt ||
           review.updatedAt.isBefore(previous.updatedAt)) {
         throw StateError(

@@ -26,16 +26,18 @@ class BathroomDetailsPage extends StatelessWidget {
             final order = b.createdAt.compareTo(a.createdAt);
             return order == 0 ? b.id.compareTo(a.id) : order;
           });
-    final mine = reviews
-        .where((r) => r.authorId == state.currentUserId)
-        .toList();
-    void openForm([Review? review]) {
+    final visits = state.visitsFor(bathroomId);
+    void openForm([Review? review, String? visitId]) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => ChangeNotifierProvider.value(
             value: state,
-            child: ReviewFormPage(bathroomId: bathroomId, review: review),
+            child: ReviewFormPage(
+              bathroomId: bathroomId,
+              review: review,
+              visitId: visitId,
+            ),
           ),
         ),
       );
@@ -153,43 +155,131 @@ class BathroomDetailsPage extends StatelessWidget {
                     label: const Text('Nova avaliação'),
                   ),
                   OutlinedButton.icon(
-                    onPressed: () {
-                      final previous = state
-                          .activityFor(bathroomId)
-                          .lastVisitedAt;
-                      final now = DateTime.now();
-                      state.recordVisit(bathroomId, visitedAt: now);
-                      if (state.activityFor(bathroomId).lastVisitedAt != now) {
-                        return;
-                      }
+                    onPressed: () async {
+                      final visit = state.recordVisit(
+                        bathroomId,
+                        visitedAt: DateTime.now(),
+                      );
                       HapticFeedback.lightImpact();
-                      final messenger = ScaffoldMessenger.of(context);
-                      messenger.hideCurrentSnackBar();
-                      messenger.showSnackBar(
-                        SnackBar(
-                          content: const Text('Visita registada! 🚽'),
-                          action: SnackBarAction(
-                            label: 'Desfazer',
-                            onPressed: () {
-                              state.undoVisit(
-                                bathroomId,
-                                recordedAt: now,
-                                previousAt: previous,
-                              );
-                            },
+                      final choice = await showModalBottomSheet<String>(
+                        context: context,
+                        showDragHandle: true,
+                        builder: (context) => SafeArea(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Visita registada! 🚽',
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.headlineSmall,
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Queres partilhar como foi? A avaliação é totalmente opcional.',
+                                ),
+                                const SizedBox(height: 16),
+                                FilledButton.icon(
+                                  onPressed: () =>
+                                      Navigator.pop(context, 'review'),
+                                  icon: const Icon(Icons.rate_review),
+                                  label: const Text('Avaliar esta visita'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Agora não'),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, 'undo'),
+                                  child: const Text('Desfazer visita'),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
+                      if (!context.mounted) return;
+                      if (choice == 'review') openForm(null, visit.id);
+                      if (choice == 'undo') state.undoVisit(visit.id);
                     },
                     icon: const Icon(Icons.add_location_alt_outlined),
                     label: const Text('Registar visita agora'),
                   ),
                 ],
               ),
-              heading('O teu histórico'),
-              if (mine.isEmpty)
-                const Text('A tua primeira avaliação começa aqui.'),
-              ...mine.map(reviewTile),
+              heading('O teu histórico de visitas'),
+              if (visits.isEmpty) const Text('As tuas visitas aparecem aqui.'),
+              for (final visit in visits)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.history),
+                    title: Text(reviewDate(visit.visitedAt)),
+                    subtitle: state.reviewForVisit(visit.id) == null
+                        ? null
+                        : Text(
+                            '${state.reviewForVisit(visit.id)!.emojiRating()} ${state.reviewForVisit(visit.id)!.rating.toStringAsFixed(1)} / 5',
+                          ),
+                    trailing: Wrap(
+                      children: [
+                        IconButton(
+                          tooltip: state.reviewForVisit(visit.id) == null
+                              ? 'Avaliar visita'
+                              : 'Editar avaliação',
+                          icon: Icon(
+                            state.reviewForVisit(visit.id) == null
+                                ? Icons.rate_review_outlined
+                                : Icons.edit_outlined,
+                          ),
+                          onPressed: () => openForm(
+                            state.reviewForVisit(visit.id),
+                            visit.id,
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Remover visita',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () async {
+                            final hasReview =
+                                state.reviewForVisit(visit.id) != null;
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Remover visita?'),
+                                content: Text(
+                                  hasReview
+                                      ? 'A avaliação associada também será removida.'
+                                      : 'Esta visita será removida do teu histórico.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    child: const Text('Remover'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirmed == true) {
+                              state.deleteVisit(
+                                visit.id,
+                                deleteReview: hasReview,
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               heading('Todas as avaliações'),
               if (reviews.isEmpty)
                 const Text('Ainda ninguém se sentou para avaliar. 🚽'),

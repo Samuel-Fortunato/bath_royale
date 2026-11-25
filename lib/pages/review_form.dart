@@ -2,13 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../models/review.dart';
+import '../models/visit.dart';
+import 'bathroom_details.dart' show reviewDate;
 import '../models/bathroom_descriptions.dart';
 import '../state/app_state.dart';
 
 class ReviewFormPage extends StatefulWidget {
   final String bathroomId;
   final Review? review;
-  const ReviewFormPage({super.key, required this.bathroomId, this.review});
+  final String? visitId;
+  const ReviewFormPage({
+    super.key,
+    required this.bathroomId,
+    this.review,
+    this.visitId,
+  });
   @override
   State<ReviewFormPage> createState() => _ReviewFormPageState();
 }
@@ -16,6 +24,9 @@ class ReviewFormPage extends StatefulWidget {
 class _ReviewFormPageState extends State<ReviewFormPage> {
   final _form = GlobalKey<FormState>();
   double? _rating;
+  String? _visitId;
+  bool _visitInitialized = false;
+  bool _saving = false;
   final _tagInput = TextEditingController();
   final List<String> _tags = [];
   String? _tagError;
@@ -48,6 +59,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
 
   Review _example(int value) => Review(
     id: 'description',
+    visitId: 'description',
     bathroomId: widget.bathroomId,
     authorId: 'local',
     createdAt: DateTime.utc(2026),
@@ -60,6 +72,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
 
   Review _exampleRating(double rating) => Review(
     id: 'emoji',
+    visitId: 'emoji',
     bathroomId: widget.bathroomId,
     authorId: 'local',
     createdAt: DateTime.utc(2026),
@@ -107,6 +120,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
       return;
     }
     if (!valid) return;
+    if (_saving) return;
     final state = context.read<AppState>();
     final old = widget.review;
     final now = DateTime.now();
@@ -114,10 +128,20 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     while (state.reviews.any((r) => r.id == id)) {
       id = '$id-1';
     }
+    final visit = old == null && _visitId == null
+        ? Visit(
+            id: state.newVisitId(),
+            bathroomId: widget.bathroomId,
+            userId: state.currentUserId,
+            visitedAt: now,
+          )
+        : null;
+    _saving = true;
     try {
       state.saveReview(
         Review(
           id: old?.id ?? id,
+          visitId: old?.visitId ?? visit?.id ?? _visitId!,
           bathroomId: widget.bathroomId,
           authorId: old?.authorId ?? state.currentUserId,
           createdAt: old?.createdAt ?? now,
@@ -131,9 +155,11 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
           aesthetics: _aesthetics!,
           tags: _tags,
         ),
+        newVisit: visit,
       );
       Navigator.of(context).pop();
     } on StateError {
+      _saving = false;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Não foi possível guardar esta avaliação.'),
@@ -145,6 +171,16 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final availableVisits = state
+        .visitsFor(widget.bathroomId)
+        .where((v) => state.reviewForVisit(v.id) == null)
+        .toList();
+    if (!_visitInitialized) {
+      _visitId =
+          widget.visitId ??
+          (availableVisits.isEmpty ? null : availableVisits.first.id);
+      _visitInitialized = true;
+    }
     final allowed =
         widget.review == null ||
         (widget.review!.authorId == state.currentUserId &&
@@ -191,8 +227,49 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Text(
-                          'Conta como foi a experiência. Avaliar não regista uma visita.',
+                          'Conta como foi a experiência neste trono. 🚽',
                         ),
+                        if (widget.review == null &&
+                            widget.visitId == null) ...[
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<String>(
+                            initialValue: _visitId ?? '',
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Escolhe a visita',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: [
+                              if (_visitId != null &&
+                                  !availableVisits.any((v) => v.id == _visitId))
+                                DropdownMenuItem(
+                                  value: _visitId,
+                                  enabled: false,
+                                  child: const Text('Visita indisponível'),
+                                ),
+                              for (final visit in availableVisits)
+                                DropdownMenuItem(
+                                  value: visit.id,
+                                  child: Text(
+                                    'Visita de ${reviewDate(visit.visitedAt)}',
+                                  ),
+                                ),
+                              const DropdownMenuItem(
+                                value: '',
+                                child: Text('Nova visita agora'),
+                              ),
+                            ],
+                            onChanged: (value) => setState(
+                              () => _visitId = value == '' ? null : value,
+                            ),
+                          ),
+                        ] else if (widget.review != null ||
+                            widget.visitId != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text('Avaliação desta visita'),
+                          ),
+
                         const SizedBox(height: 16),
                         FormField<double>(
                           autovalidateMode: AutovalidateMode.onUserInteraction,

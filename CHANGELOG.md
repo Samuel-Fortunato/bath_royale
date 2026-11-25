@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Link each review to one visit and support optional reviews, repeat visits and derived visit counts.
+- Add visit history, a personal collection, optional review invitations, safe undo and confirmed removal.
+- Create visits atomically with direct reviews or associate reviews with existing visits.
+
 - Refine review entry with interactive stars, decimal adjustment, rating feedback and editable suggested/custom tags.
 - Compact Explore search, sorting and filters, and improve visit status presentation.
 - Cover review controls, visit undo and mobile/desktop Explore flows with regression tests.

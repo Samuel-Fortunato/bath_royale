@@ -54,6 +54,30 @@ void main() {
     },
   );
 
+  testWidgets('collection follows explicit visit creation and removal', (
+    tester,
+  ) async {
+    final state = AppState(bathrooms: []);
+    addTearDown(state.dispose);
+    final bathroom = state.createBathroom('Trono novo');
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: state,
+        child: MaterialApp(theme: AppTheme.lightTheme, home: const HomePage()),
+      ),
+    );
+    await tester.tap(find.text('Coleção'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('que visitares'), findsOneWidget);
+    final visit = state.recordVisit(bathroom.id, visitedAt: DateTime.utc(2026));
+    await tester.pumpAndSettle();
+    expect(find.text('Trono novo'), findsOneWidget);
+    expect(find.text('1 visita'), findsOneWidget);
+    state.deleteVisit(visit.id);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('que visitares'), findsOneWidget);
+  });
+
   for (final width in [390.0, 1200.0]) {
     testWidgets('creation, duplicate validation, search and reset at $width', (
       tester,

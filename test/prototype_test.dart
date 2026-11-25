@@ -1,5 +1,6 @@
 import 'package:bath_royale/models/bathroom.dart';
 import 'package:bath_royale/models/review.dart';
+import 'package:bath_royale/models/visit.dart';
 import 'package:bath_royale/pages/explore.dart';
 import 'package:bath_royale/state/app_state.dart';
 import 'package:bath_royale/theme/theme.dart';
@@ -15,6 +16,7 @@ void main() {
     final date = DateTime.utc(2026);
     Review makeReview(String id, String author, double rating) => Review(
       id: id,
+      visitId: 'visit-$id',
       bathroomId: 'wc',
       authorId: author,
       createdAt: date,
@@ -28,6 +30,14 @@ void main() {
       currentUserId: 'me',
       bathrooms: [const Bathroom(id: 'wc', name: 'Test', createdBy: 'other')],
       reviews: [makeReview('other', 'other', 5)],
+      visits: [
+        Visit(
+          id: 'visit-other',
+          bathroomId: 'wc',
+          userId: 'other',
+          visitedAt: date,
+        ),
+      ],
     );
     addTearDown(state.dispose);
     await tester.pumpWidget(
@@ -41,7 +51,15 @@ void main() {
     );
     expect(find.text('Ainda não avaliada'), findsOneWidget);
     expect(find.text('5.0'), findsNothing);
-    state.saveReview(makeReview('mine', 'me', 1));
+    state.saveReview(
+      makeReview('mine', 'me', 1),
+      newVisit: Visit(
+        id: 'visit-mine',
+        bathroomId: 'wc',
+        userId: 'me',
+        visitedAt: date,
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Ainda não avaliada'), findsNothing);
     expect(find.text('1.0'), findsOneWidget);

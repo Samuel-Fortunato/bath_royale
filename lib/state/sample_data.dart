@@ -15,6 +15,7 @@ const sampleBathrooms = [
 List<Review> createSampleReviews() => [
   Review(
     id: "sample-0",
+    visitId: "visit-0",
     bathroomId: "0",
     authorId: localUserId,
     createdAt: DateTime.utc(2026, 1, 1),
@@ -27,6 +28,7 @@ List<Review> createSampleReviews() => [
   ),
   Review(
     id: "sample-1",
+    visitId: "visit-1",
     bathroomId: "1",
     authorId: localUserId,
     createdAt: DateTime.utc(2026, 1, 1),
@@ -39,6 +41,7 @@ List<Review> createSampleReviews() => [
   ),
   Review(
     id: "sample-2",
+    visitId: "visit-2",
     bathroomId: "2",
     authorId: localUserId,
     createdAt: DateTime.utc(2026, 1, 1),
@@ -51,6 +54,7 @@ List<Review> createSampleReviews() => [
   ),
   Review(
     id: "sample-3",
+    visitId: "visit-3",
     bathroomId: "3",
     authorId: localUserId,
     createdAt: DateTime.utc(2026, 1, 1),
@@ -63,6 +67,7 @@ List<Review> createSampleReviews() => [
   ),
   Review(
     id: "sample-4",
+    visitId: "visit-4",
     bathroomId: "4",
     authorId: localUserId,
     createdAt: DateTime.utc(2026, 1, 1),
