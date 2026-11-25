@@ -20,6 +20,7 @@ const materialImportBaseline = {
   // Redesign regressions use the same bundled widgets as production.
   'test/redesign_test.dart',
   'test/review_wizard_test.dart',
+  'test/collection_profile_test.dart',
   'test/explore_creation_test.dart',
   'test/phase1_audit_test.dart',
   'test/prototype_test.dart',

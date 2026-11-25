@@ -1,25 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
-import 'bathroom_details.dart';
+import '../widgets/wc_card.dart';
+import 'collection.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final visits =
-        state.visits.where((v) => v.userId == state.currentUserId).toList()
-          ..sort((a, b) => b.visitedAt.compareTo(a.visitedAt));
-    final favourites = state.entries
-        .where((e) => e.activity.isFavorite)
-        .toList();
-    void open(String id) => Navigator.push(
+    void open(String title, Widget page) => Navigator.push(
       context,
       MaterialPageRoute<void>(
         builder: (_) => ChangeNotifierProvider.value(
           value: state,
-          child: BathroomDetailsPage(bathroomId: id),
+          child: Scaffold(
+            appBar: AppBar(title: Text(title)),
+            body: SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: page,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -29,60 +35,76 @@ class ProfilePage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text(
-              'O teu canto do reino 🚽',
-              style: Theme.of(context).textTheme.headlineSmall,
+            const Center(
+              child: CircleAvatar(
+                radius: 32,
+                child: Icon(Icons.person_outline, size: 36),
+              ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Perfil local neste dispositivo. Os teus dados são guardados aqui, sem conta nem sincronização.',
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              children: [
-                Chip(label: Text('${visits.length} visitas')),
-                Chip(
-                  label: Text(
-                    '${state.reviews.where((r) => r.authorId == state.currentUserId).length} avaliações',
-                  ),
-                ),
-              ],
-            ),
-            if (visits.isNotEmpty)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.history),
-                  title: const Text('A tua última visita'),
-                  subtitle: Text(
-                    '${state.allBathrooms.firstWhere((b) => b.id == visits.first.bathroomId).name}\n${reviewDate(visits.first.visitedAt)}',
-                  ),
-                  onTap: () => open(visits.first.bathroomId),
-                ),
-              ),
-            const SizedBox(height: 16),
             Text(
-              'Os teus favoritos',
-              style: Theme.of(context).textTheme.titleLarge,
+              'O teu perfil',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
-            if (favourites.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  'Guarda os teus tronos preferidos com o coração. ♥',
-                ),
+            Text(
+              'Perfil local',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 24),
+            const LocalStatistics(includeDiscoveries: true),
+            const SizedBox(height: 24),
+            ListTile(
+              leading: const Icon(Icons.favorite_outline),
+              title: const Text('Os meus favoritos'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => open('Os meus favoritos', const FavouritesList()),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('Histórico de atividade'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => open('Histórico de atividade', const VisitDiary()),
+            ),
+            const Divider(height: 1),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                'Os teus dados são guardados neste dispositivo, sem conta nem sincronização.',
               ),
-            for (final entry in favourites)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.favorite),
-                  title: Text(entry.bathroom.name),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => open(entry.bathroom.id),
-                ),
-              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class FavouritesList extends StatelessWidget {
+  const FavouritesList({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final entries = state.entries.where((e) => e.activity.isFavorite).toList();
+    if (entries.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text('Guarda os teus tronos preferidos com o coração. ♥'),
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: entries.length,
+      itemBuilder: (context, index) => WcCard(
+        entry: entries[index],
+        toggleFavorite: () => state.toggleFavorite(entries[index].bathroom.id),
+        onTap: () =>
+            openCollectedBathroom(context, state, entries[index].bathroom.id),
       ),
     );
   }
@@ -103,14 +125,28 @@ class SettingsPage extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                Text(
+                  'Aparência',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
                 SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
                   title: const Text('Modo escuro'),
+                  subtitle: const Text(
+                    'A tua escolha fica guardada neste dispositivo.',
+                  ),
                   value: state.darkMode,
                   onChanged: (_) => state.toggleTheme(),
                 ),
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('Os teus dados são guardados neste dispositivo.'),
+                const Divider(height: 32),
+                Text(
+                  'Dados locais',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Os teus dados são guardados neste dispositivo, sem conta nem sincronização.',
                 ),
               ],
             ),

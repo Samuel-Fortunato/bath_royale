@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Redesign Collection with aligned progress/statistics, an adaptive collectible catalogue, clear visit-derived discovery states and independently scrollable Tronos/Diário tabs.
+- Group the shared lazy diary by local calendar date; show times and reviewed scores (including zero) without pending-review tasks.
+- Replace ranking category chips with underlined horizontal tabs, compact ordering and plain rank rows; preserve scopes, arithmetic means, scales, counts, ties and detail navigation.
+- Refine the local profile with real statistics and navigation to shared favourites/history views; clarify settings and preserve persisted theme selection.
+- Verify all 78 tests, strict analysis, formatting and Linux/Android debug builds; inspect light/dark Flutter captures at mobile/desktop widths and enlarged text. Session 3 physical phone acceptance remains open. No storage/schema changes.
+
 - Implement the three-step Global / Detalhes / Etiquetas review wizard with a compact visit-selection sheet and persistent draft state.
 - Replace the rating slider and zero button with one accessible star strip: 0.1 precision, explicit zero, unanswered state, keyboard adjustment, live decimal-comma score and original reactive emojis.
 - Replace category dropdowns with responsive emoji/caption selectors and non-color selected indicators; preserve every original description and scale.

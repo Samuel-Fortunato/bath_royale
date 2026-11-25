@@ -82,6 +82,57 @@ void main() {
       expect(personal.single.count, 1);
     },
   );
+  testWidgets(
+    'metric tabs preserve personal means, scales and repeated-review counts',
+    (tester) async {
+      final state = AppState(currentUserId: 'visitor');
+      addTearDown(state.dispose);
+      for (var i = 0; i < 2; i++) {
+        final visit = state.recordVisit(
+          '0',
+          visitedAt: DateTime.utc(2030, 1, i + 1),
+        );
+        state.saveReview(
+          Review(
+            id: 'mean-$i',
+            visitId: visit.id,
+            bathroomId: '0',
+            authorId: 'visitor',
+            createdAt: visit.visitedAt,
+            rating: i == 0 ? 4 : 0,
+            hygiene: i == 0 ? 4 : 0,
+            comfort: i == 0 ? 2 : 0,
+            aesthetics: i == 0 ? 3 : 1,
+            paperAvailability: i == 0 ? 2 : 0,
+          ),
+        );
+      }
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: state,
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const Scaffold(body: RankingsPage()),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Pessoal'));
+      await tester.pumpAndSettle();
+      final expected = ['2,0 / 5', '2,0 / 4', '1,0 / 4', '2,0 / 4', '1,0 / 2'];
+      for (var i = 0; i < RankingMetric.values.length; i++) {
+        await tester.ensureVisible(find.text(RankingMetric.values[i].label));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(RankingMetric.values[i].label));
+        await tester.pumpAndSettle();
+        expect(find.text(expected[i]), findsOneWidget);
+        expect(find.text('2 avaliações'), findsOneWidget);
+      }
+      await tester.tap(find.text('Comunidade'));
+      await tester.pumpAndSettle();
+      expect(find.text('3 avaliações'), findsOneWidget);
+    },
+  );
+
   for (final width in [390.0, 1200.0]) {
     testWidgets('ranking controls and detail navigation at $width', (
       tester,
@@ -103,11 +154,13 @@ void main() {
       );
       await tester.tap(find.text('Pessoal'));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Papel'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Papel'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Melhores primeiro'));
+      await tester.tap(find.text('Melhores'));
       await tester.pumpAndSettle();
-      expect(find.text('Piores primeiro'), findsOneWidget);
+      expect(find.text('Piores'), findsOneWidget);
       await tester.tap(find.text('CP - 2º Piso'));
       await tester.pumpAndSettle();
       expect(find.text('Comunidade'), findsOneWidget);

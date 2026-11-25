@@ -39,9 +39,9 @@ void main() {
         expect(find.byType(FloatingActionButton), findsNothing);
         expect(tester.takeException(), isNull);
       }
-      expect(find.text('O teu canto do reino 🚽'), findsOneWidget);
+      expect(find.text('O teu perfil'), findsOneWidget);
       await tester.scrollUntilVisible(
-        find.text('DEM - 3º piso'),
+        find.text('Os meus favoritos'),
         150,
         scrollable: find
             .descendant(
@@ -50,9 +50,13 @@ void main() {
             )
             .first,
       );
+      await tester.tap(find.text('Os meus favoritos'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('DEM - 3º piso'));
       await tester.pumpAndSettle();
       expect(find.text('Comunidade'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();
       await tester.tap(find.text('Explorar'));

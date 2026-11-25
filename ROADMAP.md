@@ -55,16 +55,17 @@ Local verification on 2026-11-25: 51 tests pass, including 320/390/1200 px layou
 - [x] Add regression coverage and verify formatting, strict analysis and Linux/Android debug builds.
 - [ ] Owner acceptance on a physical phone, including star precision/zero, caption wrapping, visit selection and keyboard behavior.
 
-Local verification on 2026-11-25: all 61 tests pass. Coverage includes tenths/zero/unanswered ratings, keyboard and adjustable semantics, draft navigation/cancellation, fixed and selectable visit association, exact editing, atomic/repeated submission, searchable/removable/bounded tags, duplicate/count/unfinished-tag validation, capability visibility, and 320/390/1200 px layouts in both themes at 1.5 text scaling with simulated keyboard insets. Flutter-rendered captures of all three steps at 320/390 px in both themes were visually inspected, including partial stars, caption wrapping and custom-tag keyboard layout. The exact Material import baseline now includes the dedicated wizard regression suite (22 files); no broad suppression, dependency or schema changes. Physical phone acceptance remains open. Session 3 has not started.
+Local verification on 2026-11-25: all 61 tests pass. Coverage includes tenths/zero/unanswered ratings, keyboard and adjustable semantics, draft navigation/cancellation, fixed and selectable visit association, exact editing, atomic/repeated submission, searchable/removable/bounded tags, duplicate/count/unfinished-tag validation, capability visibility, and 320/390/1200 px layouts in both themes at 1.5 text scaling with simulated keyboard insets. Flutter-rendered captures of all three steps at 320/390 px in both themes were visually inspected, including partial stars, caption wrapping and custom-tag keyboard layout. The exact Material import baseline now includes the dedicated wizard regression suite (22 files); no broad suppression, dependency or schema changes. Physical phone acceptance remains open.
 
 ### Session 3 — Collection, rankings and profile
 
-- [ ] Implement collection/diary tabs, responsive progress/statistics and collectible catalogue views.
-- [ ] Implement compact ranking scope/metric/sort controls and rows with unchanged means, scales and tie ordering.
-- [ ] Refine the local profile and settings presentation using real derived statistics and navigation.
-- [ ] Add regression coverage and verify builds; obtain owner phone acceptance.
+- [x] Implement collection/diary tabs, responsive progress/statistics and collectible catalogue views.
+- [x] Implement compact ranking scope/metric/sort controls and rows with unchanged means, scales and tie ordering.
+- [x] Refine the local profile and settings presentation using real derived statistics and navigation.
+- [x] Add regression coverage and verify formatting, strict analysis and Linux/Android debug builds.
+- [ ] Owner acceptance on a physical phone, including collection/diary scrolling, ranking controls, profile navigation and persisted theme.
 
-Session 1 changes these later screens only where the shared shell and favourite-heart consistency require it. Phase 2 has not started.
+Local verification on 2026-11-25: all 78 tests pass, including empty catalogues, unique discoveries versus repeat visits, optional/zero reviews, local calendar grouping, lazy 100-bathroom/101-visit lists, independent tab scroll restoration, profile navigation, all five ranking metrics and repeated-review means/counts. Layout and accessibility checks cover 320/390/1200 px, both themes and 1.0/1.5 text scaling. Flutter-rendered captures with readable text and bundled icons were inspected in both themes; the collection adapts from two phone columns to four desktop columns, or one column for narrow enlarged text. Strict analysis accepts only the exact Material import baseline (23 files); Linux and Android debug builds pass. No state, storage, dependency or schema changes. Hosted CI is reported after push without waiting. Physical phone acceptance remains open; Phase 2 has not started.
 
 ## Phase 2 — Community functionality
 

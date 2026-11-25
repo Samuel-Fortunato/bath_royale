@@ -1,3 +1,4 @@
+import 'package:bath_royale/pages/collection.dart';
 import 'package:bath_royale/models/bathroom_sort.dart';
 import 'package:bath_royale/pages/home.dart';
 import 'package:bath_royale/state/app_state.dart';
@@ -68,14 +69,22 @@ void main() {
     );
     await tester.tap(find.text('Coleção'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('que visitares'), findsOneWidget);
+    expect(find.text('○ Por descobrir'), findsOneWidget);
+    expect(find.text('0 / 1'), findsOneWidget);
     final visit = state.recordVisit(bathroom.id, visitedAt: DateTime.utc(2026));
     await tester.pumpAndSettle();
-    expect(find.text('Trono novo'), findsNWidgets(2));
+    expect(
+      find.descendant(
+        of: find.byType(CollectionPage),
+        matching: find.text('Trono novo'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('1 visita'), findsOneWidget);
     state.deleteVisit(visit.id);
     await tester.pumpAndSettle();
-    expect(find.textContaining('que visitares'), findsOneWidget);
+    expect(find.text('○ Por descobrir'), findsOneWidget);
+    expect(find.text('0 / 1'), findsOneWidget);
   });
 
   for (final width in [390.0, 1200.0]) {
