@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/review.dart';
+import '../models/visit.dart';
+import '../models/ranking.dart';
 import '../models/bathroom_descriptions.dart';
 import '../state/app_state.dart';
 import 'review_form.dart';
@@ -12,12 +14,21 @@ String reviewDate(DateTime value) {
   return '${pad(date.day)}/${pad(date.month)}/${date.year} ${pad(date.hour)}:${pad(date.minute)}';
 }
 
-class BathroomDetailsPage extends StatelessWidget {
+class BathroomDetailsPage extends StatefulWidget {
   final String bathroomId;
   const BathroomDetailsPage({super.key, required this.bathroomId});
 
   @override
+  State<BathroomDetailsPage> createState() => _BathroomDetailsPageState();
+}
+
+class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
+  bool _personal = false;
+  bool _inviting = false;
+
+  @override
   Widget build(BuildContext context) {
+    final bathroomId = widget.bathroomId;
     final state = context.watch<AppState>();
     final entry = state.entries.firstWhere((e) => e.bathroom.id == bathroomId);
     final reviews =
@@ -43,10 +54,82 @@ class BathroomDetailsPage extends StatelessWidget {
       );
     }
 
-    Widget heading(String text) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Text(text, style: Theme.of(context).textTheme.titleLarge),
-    );
+    Future<void> registerVisit() async {
+      if (_inviting) return;
+      setState(() => _inviting = true);
+      try {
+        final visit = state.recordVisit(bathroomId, visitedAt: DateTime.now());
+        HapticFeedback.lightImpact();
+        final choice = await showModalBottomSheet<String>(
+          context: context,
+          showDragHandle: true,
+          isScrollControlled: true,
+          builder: (sheetContext) => SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => Navigator.pop(sheetContext, 'undo'),
+                        icon: const Icon(Icons.undo),
+                        label: const Text('Desfazer'),
+                      ),
+                      IconButton(
+                        tooltip: 'Fechar convite',
+                        onPressed: () => Navigator.pop(sheetContext),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '🚽 🎉',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 40),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Mais um trono!',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Visita registada com sucesso.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Como foi a experiência?',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(sheetContext, 'review'),
+                    child: const Text('Avaliar experiência'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    child: const Text('Agora não'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        if (!context.mounted) return;
+        if (choice == 'undo') state.undoVisit(visit.id);
+        if (choice == 'review') openForm(null, visit.id);
+      } finally {
+        if (mounted) setState(() => _inviting = false);
+      }
+    }
+
     Widget reviewTile(Review review) => Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -59,9 +142,7 @@ class BathroomDetailsPage extends StatelessWidget {
                   : 'Explorador ${review.authorId}',
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            Text(
-              '${review.emojiRating()} ${review.rating.toStringAsFixed(1)} / 5',
-            ),
+            Text('${review.emojiRating()} ${ratingNumber(review.rating)} / 5'),
             Text('Criada: ${reviewDate(review.createdAt)}'),
             if (review.updatedAt != review.createdAt)
               Text('Editada: ${reviewDate(review.updatedAt)}'),
@@ -86,205 +167,286 @@ class BathroomDetailsPage extends StatelessWidget {
         ),
       ),
     );
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(entry.bathroom.name),
-        actions: [
-          IconButton(
-            tooltip: entry.activity.isFavorite
-                ? 'Remover dos favoritos'
-                : 'Adicionar aos favoritos',
-            onPressed: () => state.toggleFavorite(bathroomId),
-            icon: Icon(
-              entry.activity.isFavorite ? Icons.star : Icons.star_border,
+
+    Widget visitTile(Visit visit) => Card(
+      child: ListTile(
+        leading: const Icon(Icons.history),
+        title: Text(reviewDate(visit.visitedAt)),
+        subtitle: state.reviewForVisit(visit.id) == null
+            ? null
+            : Text(
+                '${state.reviewForVisit(visit.id)!.emojiRating()} ${ratingNumber(state.reviewForVisit(visit.id)!.rating)} / 5',
+              ),
+        trailing: Wrap(
+          children: [
+            IconButton(
+              tooltip: state.reviewForVisit(visit.id) == null
+                  ? 'Avaliar visita'
+                  : 'Editar avaliação',
+              icon: Icon(
+                state.reviewForVisit(visit.id) == null
+                    ? Icons.rate_review_outlined
+                    : Icons.edit_outlined,
+              ),
+              onPressed: () =>
+                  openForm(state.reviewForVisit(visit.id), visit.id),
             ),
-          ),
-        ],
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              heading('Comunidade'),
-              Text(
-                entry.communityRating == null
-                    ? 'Ainda sem avaliações'
-                    : 'Média: ${entry.communityRating!.toStringAsFixed(1)} / 5',
-              ),
-              Text(
-                '${entry.reviewCount} ${entry.reviewCount == 1 ? 'avaliação' : 'avaliações'}',
-              ),
-              heading('A tua avaliação mais recente'),
-              Text(
-                entry.personalReview == null
-                    ? 'Ainda não avaliaste esta casa de banho'
-                    : '${entry.personalReview!.rating.toStringAsFixed(1)} / 5',
-              ),
-              heading('As tuas visitas'),
-              Card(
-                child: ListTile(
-                  leading: CircleAvatar(
-                    child: Icon(
-                      entry.activity.lastVisitedAt == null
-                          ? Icons.explore_outlined
-                          : Icons.check_circle_outline,
+            IconButton(
+              tooltip: 'Remover visita',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () async {
+                final hasReview = state.reviewForVisit(visit.id) != null;
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Remover visita?'),
+                    content: Text(
+                      hasReview
+                          ? 'A avaliação associada também será removida.'
+                          : 'Esta visita será removida do teu histórico.',
                     ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancelar'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Remover'),
+                      ),
+                    ],
                   ),
-                  title: Text(
-                    entry.activity.lastVisitedAt == null
-                        ? 'Ainda por visitar'
-                        : 'Visita registada',
-                  ),
-                  subtitle: Text(
-                    entry.activity.lastVisitedAt == null
-                        ? 'Marca a tua primeira visita a este trono.'
-                        : 'Última visita: ${reviewDate(entry.activity.lastVisitedAt!)}',
-                  ),
-                ),
+                );
+                if (confirmed == true) {
+                  state.deleteVisit(visit.id, deleteReview: hasReview);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final personal = entry.personalReview;
+    Widget summary() {
+      final empty = _personal ? personal == null : reviews.isEmpty;
+      final score = _personal ? personal?.rating : entry.communityRating;
+      final categories = RankingMetric.values.skip(1).toList();
+      final descriptions = personal == null
+          ? <String>[]
+          : [
+              personal.hygieneText,
+              personal.comfortText,
+              personal.aestheticText,
+              personal.paperText,
+            ];
+      return ListView(
+        key: const PageStorageKey('summary'),
+        padding: const EdgeInsets.all(16),
+        children: [
+          Wrap(
+            spacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('Comunidade'),
+                selected: !_personal,
+                onSelected: (_) => setState(() => _personal = false),
               ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 8,
-                children: [
-                  FilledButton.icon(
-                    onPressed: () => openForm(),
-                    icon: const Icon(Icons.rate_review),
-                    label: const Text('Nova avaliação'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final visit = state.recordVisit(
-                        bathroomId,
-                        visitedAt: DateTime.now(),
-                      );
-                      HapticFeedback.lightImpact();
-                      final choice = await showModalBottomSheet<String>(
-                        context: context,
-                        showDragHandle: true,
-                        builder: (context) => SafeArea(
+              ChoiceChip(
+                label: const Text('A tua experiência'),
+                selected: _personal,
+                onSelected: (_) => setState(() => _personal = true),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          if (empty)
+            Text(
+              _personal
+                  ? 'Ainda não avaliaste esta casa de banho'
+                  : 'Ainda sem avaliações',
+              textAlign: TextAlign.center,
+            )
+          else ...[
+            Text(
+              '${ratingNumber(score!)} / 5',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _personal
+                  ? 'Última experiência avaliada · ${reviewDate(state.visits.firstWhere((v) => v.id == personal!.visitId).visitedAt)}'
+                  : '${reviews.length} ${reviews.length == 1 ? 'avaliação' : 'avaliações'} da comunidade · média das avaliações locais',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns =
+                    constraints.maxWidth >= 340 &&
+                        MediaQuery.textScalerOf(context).scale(14) <= 20
+                    ? 2
+                    : 1;
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    for (var i = 0; i < categories.length; i++)
+                      SizedBox(
+                        width:
+                            (constraints.maxWidth - (columns - 1) * 12) /
+                            columns,
+                        child: Card(
+                          margin: EdgeInsets.zero,
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                            padding: const EdgeInsets.all(16),
                             child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Visita registada! 🚽',
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.headlineSmall,
+                                  categories[i].label,
+                                  style: Theme.of(context).textTheme.bodySmall,
                                 ),
                                 const SizedBox(height: 8),
-                                const Text(
-                                  'Queres partilhar como foi? A avaliação é totalmente opcional.',
-                                ),
-                                const SizedBox(height: 16),
-                                FilledButton.icon(
-                                  onPressed: () =>
-                                      Navigator.pop(context, 'review'),
-                                  icon: const Icon(Icons.rate_review),
-                                  label: const Text('Avaliar esta visita'),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('Agora não'),
-                                ),
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(context, 'undo'),
-                                  child: const Text('Desfazer visita'),
-                                ),
+                                if (_personal)
+                                  Text(
+                                    descriptions[i],
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleMedium,
+                                  )
+                                else ...[
+                                  Text(
+                                    '${ratingNumber(reviews.fold<double>(0, (sum, r) => sum + categories[i].score(r)) / reviews.length)} / ${categories[i].maximum}',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleLarge,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  LinearProgressIndicator(
+                                    value:
+                                        reviews.fold<double>(
+                                          0,
+                                          (sum, r) =>
+                                              sum + categories[i].score(r),
+                                        ) /
+                                        reviews.length /
+                                        categories[i].maximum,
+                                    semanticsLabel: categories[i].label,
+                                  ),
+                                ],
                               ],
                             ),
                           ),
                         ),
-                      );
-                      if (!context.mounted) return;
-                      if (choice == 'review') openForm(null, visit.id);
-                      if (choice == 'undo') state.undoVisit(visit.id);
-                    },
-                    icon: const Icon(Icons.add_location_alt_outlined),
-                    label: const Text('Registar visita agora'),
-                  ),
+                      ),
+                  ],
+                );
+              },
+            ),
+            if (_personal && personal!.tags.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Text('Etiquetas da tua última experiência'),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final tag in personal.tags) Chip(label: Text(tag)),
                 ],
               ),
-              heading('O teu histórico de visitas'),
-              if (visits.isEmpty) const Text('As tuas visitas aparecem aqui.'),
-              for (final visit in visits)
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.history),
-                    title: Text(reviewDate(visit.visitedAt)),
-                    subtitle: state.reviewForVisit(visit.id) == null
-                        ? null
-                        : Text(
-                            '${state.reviewForVisit(visit.id)!.emojiRating()} ${state.reviewForVisit(visit.id)!.rating.toStringAsFixed(1)} / 5',
-                          ),
-                    trailing: Wrap(
+            ],
+          ],
+        ],
+      );
+    }
+
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(entry.bathroom.name, maxLines: 2),
+          actions: [
+            IconButton(
+              tooltip: entry.activity.isFavorite
+                  ? 'Remover dos favoritos'
+                  : 'Adicionar aos favoritos',
+              onPressed: () => state.toggleFavorite(bathroomId),
+              icon: Icon(
+                entry.activity.isFavorite
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+              ),
+            ),
+          ],
+        ),
+        body: SafeArea(
+          top: false,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
                       children: [
-                        IconButton(
-                          tooltip: state.reviewForVisit(visit.id) == null
-                              ? 'Avaliar visita'
-                              : 'Editar avaliação',
-                          icon: Icon(
-                            state.reviewForVisit(visit.id) == null
-                                ? Icons.rate_review_outlined
-                                : Icons.edit_outlined,
-                          ),
-                          onPressed: () => openForm(
-                            state.reviewForVisit(visit.id),
-                            visit.id,
-                          ),
+                        FilledButton.icon(
+                          onPressed: _inviting ? null : registerVisit,
+                          icon: const Icon(Icons.add_location_alt_outlined),
+                          label: const Text('Estive aqui!'),
                         ),
-                        IconButton(
-                          tooltip: 'Remover visita',
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: () async {
-                            final hasReview =
-                                state.reviewForVisit(visit.id) != null;
-                            final confirmed = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Remover visita?'),
-                                content: Text(
-                                  hasReview
-                                      ? 'A avaliação associada também será removida.'
-                                      : 'Esta visita será removida do teu histórico.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
-                                    child: const Text('Cancelar'),
-                                  ),
-                                  FilledButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    child: const Text('Remover'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (confirmed == true) {
-                              state.deleteVisit(
-                                visit.id,
-                                deleteReview: hasReview,
-                              );
-                            }
-                          },
+                        OutlinedButton.icon(
+                          onPressed: () => openForm(),
+                          icon: const Icon(Icons.rate_review_outlined),
+                          label: const Text('Avaliar'),
                         ),
                       ],
                     ),
                   ),
-                ),
-              heading('Todas as avaliações'),
-              if (reviews.isEmpty)
-                const Text('Ainda ninguém se sentou para avaliar. 🚽'),
-              ...reviews.map(reviewTile),
-            ],
+                  const TabBar(
+                    tabs: [
+                      Tab(text: 'Resumo'),
+                      Tab(text: 'Avaliações'),
+                      Tab(text: 'Visitas'),
+                    ],
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        summary(),
+                        reviews.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'Ainda ninguém se sentou para avaliar. 🚽',
+                                ),
+                              )
+                            : ListView.builder(
+                                key: const PageStorageKey('reviews'),
+                                padding: const EdgeInsets.all(16),
+                                itemCount: reviews.length,
+                                itemBuilder: (_, i) => reviewTile(reviews[i]),
+                              ),
+                        visits.isEmpty
+                            ? const Center(
+                                child: Text('As tuas visitas aparecem aqui.'),
+                              )
+                            : ListView.builder(
+                                key: const PageStorageKey('visits'),
+                                padding: const EdgeInsets.all(16),
+                                itemCount: visits.length,
+                                itemBuilder: (_, i) => visitTile(visits[i]),
+                              ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

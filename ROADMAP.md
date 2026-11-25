@@ -33,6 +33,36 @@ See [Android preview operations](docs/android-previews.md). Production signing a
 
 Verified on 2026-11-25: local formatting, strict analysis, all 40 tests, actionlint, Nix flake checks and Android preview compilation pass. [The first GitHub Actions run](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/45604860872) independently passed the checks, built APK version `0.1.0-preview.1` / code `1001`, verified the existing signing certificate and uploaded the APK/checksum artifact. Optional pre-release publishing is implemented and linted; it has not been invoked. A physical in-place installation of the CI APK remains a separate device check.
 
+## Phase 1.6 — Approved UI/UX redesign (before Phase 2)
+
+The [design specification](docs/bath-royale-design/ui-design.md) and [interactive reference](docs/bath-royale-design/ui-reference.html) are the approved direction. Implement in three focused sessions without changing storage, ownership, ranking formulas or backend scope.
+
+### Session 1 — Application shell, Explore and bathroom details
+
+- [x] Contextual destination titles, preserved tab state, accessible Profile → Settings theme control and shared Material typography/card hierarchy; retain both existing palettes.
+- [x] One grouped filter panel, active removable chips/count, all existing search/sort/filter options, and visit-derived discovery filters.
+- [x] Compact neutral cards with primary community score/count, secondary personal rating, discovery status and independent favourite hearts throughout the app.
+- [x] Independent Summary, Reviews and Personal Visits tabs; numeric community category means with original scales, latest reviewed personal experience by visit chronology, and lazy independent histories.
+- [x] Immediate visit registration with a celebratory invitation, separately positioned undo/dismissal, optional review, safe undo and existing confirmed removal/ownership behavior.
+- [x] Automated regression coverage, formatting, strict analysis and Linux/Android debug builds.
+- [ ] Owner acceptance on a physical phone, including theme settings, filters, tab scrolling and visit invitation gestures.
+
+Local verification on 2026-11-25: 51 tests pass, including 320/390/1200 px layouts in both themes at 1.5 text scaling, labelled/touch-target accessibility checks, scope/chronology, long histories, filter reset and visit dismissal/undo. The strict analyzer accepts only the existing exact Material import diagnostic (21 files, including the new regression suite); no broad suppression or dependency change. Hosted CI is reported after push without waiting; physical acceptance remains open.
+
+### Session 2 — Review wizard
+
+- [ ] Implement Global / Details / Tags steps, precise accessible rating input, original category selectors and bounded tag selection; preserve draft, validation and atomic save/cancel semantics.
+- [ ] Add regression coverage and verify builds; obtain owner phone acceptance.
+
+### Session 3 — Collection, rankings and profile
+
+- [ ] Implement collection/diary tabs, responsive progress/statistics and collectible catalogue views.
+- [ ] Implement compact ranking scope/metric/sort controls and rows with unchanged means, scales and tie ordering.
+- [ ] Refine the local profile and settings presentation using real derived statistics and navigation.
+- [ ] Add regression coverage and verify builds; obtain owner phone acceptance.
+
+Session 1 changes these later screens only where the shared shell and favourite-heart consistency require it. Phase 2 has not started.
+
 ## Phase 2 — Community functionality
 
 - [ ] Evaluate backend options, including the preferred Supabase and PostgreSQL candidates, before choosing an architecture.

@@ -1,8 +1,6 @@
 import 'package:bath_royale/models/bathroom_entry.dart';
 import 'package:bath_royale/models/bathroom_descriptions.dart';
-import 'package:bath_royale/theme/custom_color_roles.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 class WcCard extends StatelessWidget {
   final BathroomEntry entry;
@@ -18,128 +16,77 @@ class WcCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bathroom = entry.bathroom;
+    final theme = Theme.of(context);
     final review = entry.personalReview;
-    final customColorRoles = Theme.of(context).extension<CustomColorRoles>()!;
-    final stateColor = review != null
-        ? review.colorRating(context)
-        : Theme.of(context).colorScheme.onSurface;
-
     return Card(
-      color: stateColor.withValues(alpha: 0.10),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.fromLTRB(16, 8, 8, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // HEADER
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    review != null ? review.emojiRating() : "🚽",
-                    style: TextTheme.of(context).titleLarge,
-                  ),
-                  // TODO: spacing based on theme ???
-                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      bathroom.name,
-                      style: TextTheme.of(context).titleLarge,
+                      entry.bathroom.name,
+                      style: theme.textTheme.titleMedium,
                     ),
                   ),
-                  const SizedBox(width: 8),
                   IconButton(
                     tooltip: entry.activity.isFavorite
                         ? 'Remover dos favoritos'
                         : 'Adicionar aos favoritos',
+                    isSelected: entry.activity.isFavorite,
                     onPressed: toggleFavorite,
-                    icon: Icon(
-                      entry.activity.isFavorite
-                          ? Icons.star
-                          : Icons.star_border,
-                      color: customColorRoles.favouriteStar,
-                    ),
+                    icon: const Icon(Icons.favorite_border),
+                    selectedIcon: const Icon(Icons.favorite),
+                    color: theme.colorScheme.primary,
                   ),
                 ],
               ),
+              if (entry.communityRating == null)
+                const Text('Comunidade: sem avaliações')
+              else
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '★ ${ratingNumber(entry.communityRating!)} / 5',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      TextSpan(
+                        text:
+                            ' · ${entry.reviewCount} ${entry.reviewCount == 1 ? 'avaliação' : 'avaliações'} da comunidade',
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 8),
-              Text(
-                entry.communityRating == null
-                    ? 'Comunidade: sem avaliações'
-                    : 'Comunidade: ${entry.communityRating!.toStringAsFixed(1)} / 5 (${entry.reviewCount})',
-              ),
-              const Text('A minha última experiência avaliada'),
-              if (review == null)
-                Text(
-                  "Ainda não avaliada",
-                  style: TextTheme.of(context).bodyMedium,
-                ),
-              if (review != null) ...[
-                // RATING ROW
-                Row(
-                  children: [
-                    RatingBarIndicator(
-                      rating: review.rating,
-                      itemCount: 5,
-                      itemSize: 18,
-                      itemBuilder: (_, _) =>
-                          Icon(Icons.star, color: customColorRoles.starRating),
-                    ),
-                    const SizedBox(width: 6),
+              Wrap(
+                spacing: 16,
+                runSpacing: 4,
+                children: [
+                  if (review != null)
                     Text(
-                      review.rating.toStringAsFixed(1),
-                      style: TextTheme.of(context).bodyMedium,
+                      'A tua avaliação: ${ratingNumber(review.rating)} / 5',
+                      style: theme.textTheme.bodySmall,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // CATEGORY QUICK INFO
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 4,
-                  children: [
-                    infoSpan("Higiene", review.hygieneText),
-                    infoSpan("Conforto", review.comfortText),
-                    infoSpan("Estética", review.aestheticText),
-                    infoSpan("Papel", review.paperText),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                // TAGS
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: review.tags.map((t) {
-                    return Chip(
-                      label: Text(t),
-                      backgroundColor: stateColor.withValues(alpha: 0.25),
-                    );
-                  }).toList(),
-                ),
-              ],
+                  Text(
+                    entry.activity.visitCount > 0
+                        ? '✓ Descoberta'
+                        : 'Por descobrir',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
             ],
           ),
         ),
       ),
     );
   }
-}
-
-// TODO: Rework infoSpan
-Widget infoSpan(String label, String value) {
-  return Text.rich(
-    TextSpan(
-      children: [
-        TextSpan(
-          text: "$label: ",
-          // TODO: make theme-based
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        TextSpan(text: value),
-      ],
-    ),
-  );
 }

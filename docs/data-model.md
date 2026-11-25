@@ -19,7 +19,7 @@ A direct review can select an existing unreviewed visit or create a new visit at
 
 ## Ratings and sample data
 
-The personal review is the current user's latest reviewed visit by visit timestamp, with visit ID breaking equal-time ties. Delayed submission or editing an older experience does not promote it. Community rating is the mean of individual reviews, including repeated visits. No review is distinct from a zero rating. Cards and personal filters continue to use personal reviews; favourites use the independent flag.
+The personal review is the current user's latest reviewed visit by visit timestamp, with visit ID breaking equal-time ties. Delayed submission or editing an older experience does not promote it. Community rating is the mean of individual reviews, including repeated visits. No review is distinct from a zero rating. Explore cards prioritize the community mean/count and separately label the latest personal review. Personal rating filters continue to use personal reviews; discovery filters use actual personal visits. Favourites use the independent flag.
 
 The original five sample reviews each have exactly one matching sample visit at the original sample date. The sixth bathroom has neither. Data and theme settings survive restarts; sample data is seeded only at first initialization. New entity identifiers use UUID v4.
 
@@ -34,3 +34,7 @@ Rankings use all reviews by the current user for personal means, or all local re
 Discovery means at least one visit by the current user. Progress divides discovered bathrooms by the current catalogue size (zero for an empty catalogue); statistics count unique visited bathrooms, all personal visits, personal reviews and independent favourites. History sorts by visit timestamp descending, then visit ID. None of these derived views changes schema version 2 or stored records. Suggested tags describe characteristics, and custom input is revealed by an action chip. Existing custom tags remain editable.
 
 The personal ranking explanation explicitly contrasts averages with the latest reviewed visit shown on Explore cards. The local profile derives favourites and recent activity without new records. See [Phase 1 acceptance](phase-1-audit.md) for final verification and deferred debt.
+
+## Phase 1.6 presentation
+
+Bathroom details have independent Summary, Reviews and Personal Visits tabs. Summary defaults to all locally available reviews (including own, once), with numeric category means on their original scales. Personal scope uses the existing latest-reviewed-visit derivation and that visit's date, with original category descriptions. Histories retain their existing ordering, edit ownership and confirmed deletion behavior, using lazy lists with independent scroll positions. Closing, swiping or backing out of the visit invitation saves the visit; the separately labelled undo action delegates to the existing exact-visit safety check. Theme switching moved to Settings and still uses the same persisted state operation. No schema, state mutation or storage adapter changes were required.

@@ -62,7 +62,7 @@ class CollectionPage extends StatelessWidget {
                   ),
                 ),
                 Chip(
-                  avatar: const Icon(Icons.star_outline),
+                  avatar: const Icon(Icons.favorite_outline),
                   label: Text(
                     '${entries.where((e) => e.activity.isFavorite).length} favoritos',
                   ),

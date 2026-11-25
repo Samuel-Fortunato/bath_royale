@@ -88,3 +88,6 @@ extension ReviewDescriptions on Review {
     return customColorRoles.bad;
   }
 }
+
+/// Portuguese display notation; stored scores retain their full precision.
+String ratingNumber(num value) => value.toStringAsFixed(1).replaceAll('.', ',');

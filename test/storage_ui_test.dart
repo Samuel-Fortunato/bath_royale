@@ -29,7 +29,7 @@ void main() {
       );
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
-      expect(find.text('Bath Royale'), findsOneWidget);
+      expect(find.widgetWithText(AppBar, 'Explorar'), findsOneWidget);
       expect(attempts, 2);
       await tester.pumpWidget(const SizedBox.shrink());
     },

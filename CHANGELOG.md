@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Commit the approved UI/UX specification and interactive reference; schedule three redesign sessions before Phase 2.
+- Implement contextual page titles, preserved navigation state and persisted theme control in Profile → Settings while retaining the existing palettes.
+- Replace duplicated Explore filters with one grouped panel, active removable chips/count and visit-based discovery filters; retain all search/sort/filter options.
+- Compact bathroom cards around community ratings/counts, secondary personal ratings and discovery status; use hearts consistently for favourites.
+- Split bathroom details into independent Summary, Reviews and Personal Visits tabs with numeric category means, chronological personal experience and lazy histories.
+- Redesign immediate visit confirmation with separate undo/close controls and optional review; retain safe undo, ownership and confirmed removal semantics.
+- Verify 51 tests, formatting, strict analysis and Linux/Android debug builds; leave phone acceptance and subsequent redesign sessions open.
+
 - Cancel superseded routine Android previews while isolating each explicit pre-release publication request.
 - Report CI status without waiting during routine development; prefer available development tools directly and preserve sandboxing.
 

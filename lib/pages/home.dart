@@ -23,17 +23,24 @@ class _HomePageState extends State<HomePage> {
     AppState appState = context.watch<AppState>();
 
     return Scaffold(
-      // TODO: appbar changing color when scrolling
       appBar: AppBar(
-        title: Text('Bath Royale', style: TextTheme.of(context).headlineMedium),
+        title: Text(
+          const ['Explorar', 'Coleção', 'Rankings', 'Perfil'][tabIndex],
+        ),
         actions: [
-          IconButton(
-            tooltip: appState.darkMode ? 'Usar tema claro' : 'Usar tema escuro',
-            onPressed: () {
-              appState.toggleTheme();
-            },
-            icon: Icon(appState.darkMode ? Icons.dark_mode : Icons.light_mode),
-          ),
+          if (tabIndex == 3)
+            IconButton(
+              tooltip: 'Definições',
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ChangeNotifierProvider.value(
+                    value: appState,
+                    child: const SettingsPage(),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -71,14 +78,17 @@ class _HomePageState extends State<HomePage> {
               child: const Icon(Icons.add),
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: IndexedStack(
-        index: tabIndex,
-        children: [
-          ExplorePage(),
-          CollectionPage(),
-          RankingsPage(),
-          ProfilePage(),
-        ],
+      body: SafeArea(
+        top: false,
+        child: IndexedStack(
+          index: tabIndex,
+          children: [
+            ExplorePage(),
+            CollectionPage(),
+            RankingsPage(),
+            ProfilePage(),
+          ],
+        ),
       ),
     );
   }

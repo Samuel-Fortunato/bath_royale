@@ -8,6 +8,8 @@ enum BathroomFilterID {
   confy,
   instagramable,
   favourite,
+  visited,
+  undiscovered,
 }
 
 class BathroomFilter {
@@ -25,6 +27,18 @@ class BathroomFilter {
 }
 
 final List<BathroomFilter> bathroomFilters = [
+  BathroomFilter(
+    id: BathroomFilterID.visited,
+    label: 'Visitadas',
+    test: (b) => b.activity.visitCount > 0,
+    exclusiveGroup: 'discoveryGroup',
+  ),
+  BathroomFilter(
+    id: BathroomFilterID.undiscovered,
+    label: 'Por descobrir',
+    test: (b) => b.activity.visitCount == 0,
+    exclusiveGroup: 'discoveryGroup',
+  ),
   BathroomFilter(
     id: BathroomFilterID.notReviewed,
     label: "🚽 Não avaliadas",
@@ -61,7 +75,7 @@ final List<BathroomFilter> bathroomFilters = [
   ),
   BathroomFilter(
     id: BathroomFilterID.favourite,
-    label: "⭐ Favoritos",
+    label: "♥ Favoritos",
     test: (b) => b.activity.isFavorite,
   ),
 ];

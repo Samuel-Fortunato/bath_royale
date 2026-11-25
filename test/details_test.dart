@@ -44,32 +44,33 @@ void main() {
         ),
       );
       expect(find.text('Comunidade'), findsOneWidget);
-      expect(find.text('Média: 4.7 / 5'), findsOneWidget);
+      expect(find.text('4,7 / 5'), findsOneWidget);
       await tap(tester, find.byTooltip('Adicionar aos favoritos'));
       expect(state.activityFor('0').isFavorite, isTrue);
-      await tap(tester, find.text('Registar visita agora'));
+      await tap(tester, find.text('Estive aqui!'));
       expect(state.activityFor('0').lastVisitedAt!.year, DateTime.now().year);
-      await tester.tap(find.text('Desfazer visita'));
+      await tester.tap(find.text('Desfazer'));
       await tester.pumpAndSettle();
       expect(
         state.activityFor('0').lastVisitedAt,
         state.reviews.first.createdAt,
       );
       expect(state.activityFor('0').isFavorite, isTrue);
-      await tap(tester, find.text('Registar visita agora'));
+      await tap(tester, find.text('Estive aqui!'));
       await tap(tester, find.text('Agora não'));
+      await tap(tester, find.text('Avaliações'));
       await tap(tester, find.text('Editar avaliação'));
       tester.widget<Slider>(find.byType(Slider)).onChanged!(2.5);
       await tester.pumpAndSettle();
       await tap(tester, find.text('Guardar avaliação'));
       expect(state.reviews.length, 5);
       expect(state.entries.first.personalReview!.rating, 2.5);
-      await tester.drag(find.byType(ListView).last, const Offset(0, 2000));
+      await tap(tester, find.text('Resumo'));
       await tester.pumpAndSettle();
-      expect(find.text('Média: 2.5 / 5'), findsOneWidget);
+      expect(find.text('2,5 / 5'), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
-      expect(find.text('2.5'), findsOneWidget);
+      expect(find.text('A tua avaliação: 2,5 / 5'), findsOneWidget);
     },
   );
   testWidgets('new review validates fields and saves repeat experience', (
@@ -88,7 +89,7 @@ void main() {
         matching: find.text('DEM - 3º piso'),
       ),
     );
-    await tap(tester, find.text('Nova avaliação'));
+    await tap(tester, find.text('Avaliar'));
     await tap(tester, find.text('Guardar avaliação'));
     expect(find.text('Escolhe uma opção'), findsNWidgets(4));
     expect(state.reviews.length, 5);
@@ -161,7 +162,7 @@ void main() {
         matching: find.text('DEM - 3º piso'),
       ),
     );
-    await tap(tester, find.text('Nova avaliação'));
+    await tap(tester, find.text('Avaliar'));
     tester.widget<Slider>(find.byType(Slider)).onChanged!(5);
     await tester.pumpAndSettle();
     await tester.pageBack();
@@ -218,13 +219,14 @@ void main() {
           matching: find.text('Nome de Teste'),
         ),
       );
-      await tap(tester, find.text('Registar visita agora'));
+      await tap(tester, find.text('Estive aqui!'));
       expect(state.visitsFor('5').length, 1);
-      await tap(tester, find.text('Avaliar esta visita'));
+      await tap(tester, find.text('Avaliar experiência'));
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(state.visitsFor('5').length, 1);
       expect(state.reviewForVisit(state.visitsFor('5').single.id), isNull);
+      await tap(tester, find.text('Visitas'));
       await tap(tester, find.byTooltip('Avaliar visita'));
       await tester.pageBack();
       await tester.pumpAndSettle();
@@ -252,6 +254,7 @@ void main() {
           matching: find.text('DEM - 3º piso'),
         ),
       );
+      await tap(tester, find.text('Visitas'));
       await tap(tester, find.byTooltip('Remover visita'));
       expect(
         find.text('A avaliação associada também será removida.'),

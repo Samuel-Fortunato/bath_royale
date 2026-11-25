@@ -69,19 +69,52 @@ class ProfilePage extends StatelessWidget {
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
                 child: Text(
-                  'Guarda os teus tronos preferidos com a estrela. ⭐',
+                  'Guarda os teus tronos preferidos com o coração. ♥',
                 ),
               ),
             for (final entry in favourites)
               Card(
                 child: ListTile(
-                  leading: const Icon(Icons.star),
+                  leading: const Icon(Icons.favorite),
                   title: Text(entry.bathroom.name),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => open(entry.bathroom.id),
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class SettingsPage extends StatelessWidget {
+  const SettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Definições')),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                SwitchListTile(
+                  title: const Text('Modo escuro'),
+                  value: state.darkMode,
+                  onChanged: (_) => state.toggleTheme(),
+                ),
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('Os teus dados são guardados neste dispositivo.'),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
