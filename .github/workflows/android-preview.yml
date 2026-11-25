@@ -4,20 +4,14 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      publish_prerelease:
-        description: Publish a GitHub pre-release with a direct APK download
-        type: boolean
-        default: false
 
 permissions:
   contents: read
 
+# Every successful build gets its own publication; newer pushes cannot cancel it.
 concurrency:
-  # Publication requests must not share a running or pending slot with previews.
-  # A unique publication group also preserves multiple explicit requests.
-  group: android-preview-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && inputs.publish_prerelease && format('publish-{0}', github.run_id) || 'routine' }}
-  cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && inputs.publish_prerelease) }}
+  group: android-preview-${{ github.run_id }}
+  cancel-in-progress: false
 
 jobs:
   verify-and-build:
@@ -58,6 +52,7 @@ jobs:
       - name: Check formatting
         run: |
           actionlint
+          python3 -m unittest discover -s tool -p "test_publish_preview.py"
           dart format --output=none --set-exit-if-changed lib test tool
       - name: Analyze (only documented Material import debt is accepted)
         run: dart run tool/check_analysis.dart
@@ -90,12 +85,12 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" > "$RUNNER_TEMP/badging.txt"
           grep "^package: name='com.example.bath_royale' versionCode='$PREVIEW_BUILD_NUMBER' versionName='0.1.0-preview.$GITHUB_RUN_NUMBER'" "$RUNNER_TEMP/badging.txt"
           mkdir -p preview
-          cp "$apk" "preview/bath-royale-preview-$PREVIEW_BUILD_NUMBER.apk"
+          cp "$apk" preview/bath-royale.apk
           (cd preview && sha256sum ./*.apk > SHA256SUMS)
           {
             echo "### Android preview $PREVIEW_BUILD_NUMBER"
             echo "Commit: $GITHUB_SHA"
-            echo 'Download the artifact below and extract the APK on your phone.'
+            echo 'Download bath-royale.apk from the repository Releases page.'
             echo 'Install as an update; do not uninstall the existing app.'
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload APK and checksum
@@ -111,7 +106,7 @@ jobs:
         run: rm -f "$RUNNER_TEMP/android-preview-signing/debug.keystore"
 
   prerelease:
-    if: github.event_name == 'workflow_dispatch' && inputs.publish_prerelease && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     needs: verify-and-build
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -122,26 +117,12 @@ jobs:
         with:
           name: bath-royale-preview-${{ needs.verify-and-build.outputs.build_number }}
           path: preview
-      - name: Publish optional phone download
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Publish verified development download
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           BUILD_NUMBER: ${{ needs.verify-and-build.outputs.build_number }}
-        run: |
-          tag="preview-$BUILD_NUMBER"
-          # A retry must not overwrite an already published preview.
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "::error::Release $tag already exists; dispatch a new run instead."
-            exit 1
-          fi
-          cat > "$RUNNER_TEMP/preview-notes.md" <<EOF
-          Android development preview from commit $GITHUB_SHA.
-
-          Transfere o ficheiro APK abaixo e instala-o como atualização, sem desinstalar a aplicação existente, para manter os dados locais.
-
-          Compilação de desenvolvimento, assinada com a chave de teste existente. Não é uma versão de produção.
-          EOF
-          gh release create "$tag" preview/*.apk preview/SHA256SUMS \
-            --target "$GITHUB_SHA" --prerelease --latest=false \
-            --title "Bath Royale — Preview $BUILD_NUMBER" \
-            --notes-file "$RUNNER_TEMP/preview-notes.md"
+        run: python3 tool/publish_preview.py

@@ -2,12 +2,12 @@
 
 ## Download and install from a phone
 
-1. Open [Android preview runs](https://github.com/Samuel-Fortunato/bath_royale/actions/workflows/android-preview.yml) in your phone's browser and sign into GitHub. Select a successful run for `main`.
-2. Under **Artifacts**, download `bath-royale-preview-<number>`. Extract the ZIP in the phone's Files app and open the `.apk` inside. Artifacts expire after 14 days; use a newer successful run if needed.
-3. If Android asks, allow installation from that browser or Files app. Choose **Update** / **Atualizar**. Keep the existing app installed: uninstalling or clearing its storage removes the local SQLite database and settings.
-4. Open Bath Royale and check that your bathrooms, visits, reviews and favourites remain available. You can disable the browser's installation permission afterwards.
+1. Open [Releases](https://github.com/Samuel-Fortunato/bath_royale/releases), select the development pre-release with the highest build number and download **bath-royale.apk** under **Assets**. No GitHub login or ZIP extraction is needed for this public repository. `/releases/latest` excludes pre-releases and must not be used.
+2. Open the APK. If Android asks, allow installation from that browser or Files app. Choose **Update** / **Atualizar**. Keep the existing app installed: uninstalling or clearing storage removes local data.
+3. Optionally verify the download against the accompanying `SHA256SUMS` (`sha256sum -c SHA256SUMS` with both files in the same directory).
+4. Open Bath Royale and check your data. You can disable the installation permission afterwards.
 
-For a direct APK link without extracting a ZIP, a maintainer can choose **Run workflow** on `main` and enable **Publish a GitHub pre-release**. Then open [Releases](https://github.com/Samuel-Fortunato/bath_royale/releases), select the desired preview and download its `.apk` from **Assets**. This repository is public, so published release APKs are public downloads. Automatic push builds only create workflow artifacts. Pre-releases are opt-in, persist until a maintainer deletes them, and are not marked as the latest production release. No pre-release is published as part of initial setup.
+Every successful `main` push or manual build automatically publishes a development pre-release. Releases persist until explicitly removed by a maintainer. They are never marked as the latest stable production release. Actions artifacts remain available for 14 days as an alternative ZIP download.
 
 If Android reports an incompatible app or refuses an update, do **not** uninstall it to get past the error. Check the package, signing certificate and version first. Preview APKs are development/debug builds, with debug capabilities and larger downloads; they are intended for trusted testing, not store distribution.
 
@@ -27,7 +27,9 @@ actionlint
 
 The analysis helper runs `dart analyze --format=machine` across the project and prints all diagnostics. It accepts only the exact bundled-Material import notice in the 20 existing Phase 1 files and the Phase 1.6 redesign regression file (21 explicit paths). New imports, other informational diagnostics, warnings, errors, malformed output and analyzer failures fail CI. Regression tests exercise this policy. Nothing is suppressed in `analysis_options.yaml`; ordinary `flutter analyze` still reports the known debt. Remove the baseline as part of the separate Material migration.
 
-GitHub Actions have immutable commit pins. The build job has only `contents: read`; only the optional pre-release job has `contents: write`. Checkout does not persist credentials. Pub and Gradle downloads are cached using toolchain/package/Gradle input hashes; signing files, app outputs and local data are excluded. Nix uses its standard binary cache. Cold runners can take longer to download the Android toolchain; the build job has a 60-minute timeout. Routine previews (pushes and manual runs without publication) share a concurrency group per branch: a newer run cancels obsolete running and pending previews. Each explicit pre-release publication request has a unique run-ID group with cancellation disabled, protecting its full build-and-publish workflow from routine previews and other publication requests. Publication runs may execute concurrently; this does not guarantee publication or completion order. Workflow artifacts include the APK and `SHA256SUMS` with no additional ZIP compression.
+GitHub Actions have immutable commit pins. The build job has only `contents: read`; only publication has `contents: write`. Checkout does not persist credentials. Dependency caches exclude signing files, app outputs and local data. Builds retain the existing 60-minute timeout. Each workflow run has a unique concurrency group with cancellation disabled: newer pushes cannot cancel another build/publication. Different version codes may finish out of order, so select the highest build number when updating. Manual cancellation can leave a draft; rerun the publication job to resume it.
+
+The publisher verifies the downloaded artifact checksum, creates a unique lightweight `preview-<version_code>` tag at the exact source SHA, and prepares a draft pre-release. It downloads and compares uploaded assets byte for byte before publishing. Existing tags must match the source commit. A partially uploaded draft resumes only if existing assets match; uploads never use overwrite. An already published release succeeds idempotently only when both assets match; mismatches fail without changing it. No releases or tags are automatically deleted. If a full build rerun produces different bytes for the same version, publication fails safely: retry only the failed publication job with the original artifact, or start a new numbered workflow run. The publication job never compiles or receives signing material.
 
 Local commands above assume the development tools are already on PATH (Codex is launched with `direnv exec . codex`). Fall back to `direnv exec . <command>` only when needed. Bubblewrap 0.12.0 is available; keep normal sandboxing enabled.
 
@@ -56,11 +58,10 @@ The repository's Actions workflows can access this secret; review workflow chang
 
 ## Identity and versioning
 
-The application ID stays `com.example.bath_royale`; no suffix or storage schema change is introduced. Each new workflow run uses version name `0.1.0-preview.<run_number>` and version code `1000 + run_number`, so CI previews advance beyond the installed code `1`. Rerunning the same run retains its version code; dispatch a new run for a new numbered preview. The artifact/APK name includes the version code; the run summary records the source commit. Do not reset or rename this workflow's run-number sequence or introduce higher local build numbers without planning a new version-code floor. Future app version changes should update the workflow's version-name base together with `pubspec.yaml`.
+The application ID stays `com.example.bath_royale`; no suffix or storage schema change is introduced. Each new workflow run uses version name `0.1.0-preview.<run_number>` and version code `1000 + run_number`, so CI previews advance beyond the installed code `1`. Rerunning the same run retains its version code; dispatch a new run for a new numbered preview. The artifact name includes the version code; the APK is always `bath-royale.apk`; the run summary records the source commit. Do not reset or rename this workflow's run-number sequence or introduce higher local build numbers without planning a new version-code floor. Future app version changes should update the workflow's version-name base together with `pubspec.yaml`.
 
 Installing an older preview over a newer one may be rejected. Local development uses code `1` by default: after installing CI previews, use a local `--build-number` at least as high as the installed preview if Android rejects a downgrade. Never uninstall to solve a version conflict when local data matters.
 
-Optional release tags are unique `preview-<version_code>` tags pointing at the exact successful build commit. Publishing an already existing tag fails rather than replacing downloads. Start a new manual run to publish a new preview. The pre-release job downloads the already verified artifact; it does not rebuild or receive the signing key.
 
 ## Verification record
 
@@ -73,3 +74,5 @@ Local verification on 2026-11-25: locked package resolution, formatting (36 file
 Workflow refinement on 2026-11-25: routine preview cancellation and isolated publication concurrency were validated locally with actionlint and a concurrency scenario check. The owner waived waiting for hosted CI for this change; its remote outcome is not established by local checks.
 
 An APK with matching identity, signing and an increasing version is eligible for an in-place Android update; actual preservation of this phone's data after installing a CI APK still needs a device update check. No CI APK has been installed on the owner's phone during setup.
+
+Automatic publication update: local actionlint and mocked publication scenarios cover fresh publication, partial drafts, successful retries, conflicting tags/assets, corrupt checksums, incomplete published releases and interrupted uploads. Hosted verification is recorded after deployment.

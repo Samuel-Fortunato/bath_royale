@@ -1,5 +1,7 @@
 # Bath Royale
 
+**[📲 Descarregar APK Android de desenvolvimento](https://github.com/Samuel-Fortunato/bath_royale/releases)** — abre o pré-lançamento pretendido e transfere `bath-royale.apk` nos Assets. [Instruções de instalação](docs/android-previews.md).
+
 Bath Royale is a light-hearted bathroom discovery and rating app, starting with the University of Aveiro. Its goal is to help people find useful facilities, share reviews and build a personal collection, with rankings and community features to follow. See [VISION.md](VISION.md) and [ROADMAP.md](ROADMAP.md) for the intended direction.
 
 ## Current state

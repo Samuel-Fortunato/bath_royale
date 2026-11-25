@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Automatically publish verified Android development APKs and checksums from successful main builds, with exact-commit tags, recoverable drafts and conflict-safe retries; retain Actions artifacts and add direct Releases download guidance.
+
 - Phase 2.1A: add a minimal digest-pinned Supabase PostgreSQL/Auth/PostgREST environment using the optional Nix shell and rootless Podman, loopback-only API ports, private disposable credentials and scoped lifecycle/cleanup commands.
 - Add PostgreSQL migrations for profiles, attributed catalogue/proposals and visual identities, private repeat visits/favourites, optional author-owned reviews, structured tags/comments, grants/RLS, immutable associations and narrow public-projection/moderator operations.
 - Verify 232 assertions on a clean fictional stack through real Auth/API requests and SQL role checks, including cross-user attacks, public privacy, self-approval, invalid content, refresh/logout/expiry and rollback; verify stop/start persistence and measure resources.

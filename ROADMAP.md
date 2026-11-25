@@ -26,12 +26,12 @@ The phases describe intended sequencing, not a fixed specification. Unconfirmed 
 - [x] Verify GitHub Actions using the locked Nix/Flutter/Android environment, formatting, precise Material-deprecation handling and automated tests.
 - [x] Verify an installable APK artifact from an actual successful GitHub Actions run on `main`, with manual dispatch, dependency caching, minimal permissions and 14-day retention.
 - [x] Compare the existing Android installation's identity/certificate with the local development key and configure the approved key as a GitHub Actions secret.
-- [x] Verify predictable preview versioning and APK signing; provide opt-in manual GitHub pre-release distribution.
+- [x] Verify predictable preview versioning and APK signing; provide automatic GitHub development pre-release distribution.
 - [x] Document phone installation, data-preserving update requirements and automatic verified commits/pushes.
 
 See [Android preview operations](docs/android-previews.md). Production signing and store release preparation remain open. This milestone does not start backend implementation.
 
-Verified on 2026-11-25: local formatting, strict analysis, all 40 tests, actionlint, Nix flake checks and Android preview compilation pass. [The first GitHub Actions run](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/45604860872) independently passed the checks, built APK version `0.1.0-preview.1` / code `1001`, verified the existing signing certificate and uploaded the APK/checksum artifact. Optional pre-release publishing is implemented and linted; it has not been invoked. A physical in-place installation of the CI APK remains a separate device check.
+Verified on 2026-11-25: local formatting, strict analysis, all 40 tests, actionlint, Nix flake checks and Android preview compilation pass. [The first GitHub Actions run](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/45604860872) independently passed the checks, built APK version `0.1.0-preview.1` / code `1001`, verified the existing signing certificate and uploaded the APK/checksum artifact. Automatic draft-first publication supersedes the original optional publishing flow; see the operations document for current verification. A physical in-place installation of the CI APK remains a separate device check.
 
 ## Phase 1.6 — Approved UI/UX redesign (before Phase 2)
 
