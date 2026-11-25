@@ -5,21 +5,54 @@
 
   outputs = {nixpkgs, ...}: let
     system = "x86_64-linux";
-    pkgs = nixpkgs.legacyPackages.${system};
-  in {
-    devShells.${system}.default =
-      (pkgs.mkShell.override {stdenv = pkgs.clangStdenv;}) {
-        packages = with pkgs; [
-          flutter
-          cmake
-          ninja
-          pkg-config
-        ];
 
-        buildInputs = with pkgs; [
-          gtk3
-          glib
-        ];
+    pkgs = import nixpkgs {
+      inherit system;
+      config = {
+        allowUnfree = true;
+        android_sdk.accept_license = true;
       };
+    };
+
+    androidComposition = pkgs.androidenv.composeAndroidPackages {
+      platformVersions = ["36"];
+      buildToolsVersions = ["36.0.0"];
+
+      includeNDK = true;
+      ndkVersions = ["28.2.13676358"];
+
+      includeEmulator = false;
+      includeSystemImages = false;
+      includeCmake = false;
+    };
+
+    androidSdk = androidComposition.androidsdk;
+    androidHome = "${androidSdk}/libexec/android-sdk";
+  in {
+    devShells.${system}.default = (pkgs.mkShell.override {stdenv = pkgs.clangStdenv;}) {
+      packages = with pkgs; [
+        flutter
+        cmake
+        ninja
+        pkg-config
+
+        # Android development
+        androidSdk
+        jdk17
+      ];
+
+      buildInputs = with pkgs; [
+        gtk3
+        glib
+      ];
+
+      ANDROID_HOME = androidHome;
+      ANDROID_SDK_ROOT = androidHome;
+      ANDROID_NDK_ROOT = "${androidHome}/ndk/28.2.13676358";
+
+      JAVA_HOME = "${pkgs.jdk17}";
+
+      GRADLE_OPTS = "-Dorg.gradle.project.android.aapt2FromMavenOverride=${androidHome}/build-tools/36.0.0/aapt2";
+    };
   };
 }

@@ -51,3 +51,7 @@ The phases describe intended sequencing, not a fixed specification. Unconfirmed 
 ### Verified data-model milestone
 
 Bathroom entities, individual author-owned reviews and per-user favourites/latest visits are separated in memory. Multiple reviews, latest personal ratings and community means are covered by unit and widget regression tests. Cards and filters retain their existing personal-rating behavior. See [data-model semantics](docs/data-model.md). Details and review forms are now implemented; the remaining Phase 1 milestones remain open.
+
+### Android build verification
+
+The Nix Android environment and Flutter 3.50.1 template migration are verified with a debug APK build (Gradle 9.5.0, AGP 9.3.1, KGP 2.4.20, Java 17). Application ID is unchanged. Device testing, Android release signing/builds and web deployment remain open; this does not complete Phase 5 release preparation.

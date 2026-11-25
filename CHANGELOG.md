@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Align Android with the installed Flutter 3.50.1 templates: Gradle 9.5.0, AGP 9.3.1, KGP 2.4.20 and Java 17 compiler options.
+- Record the existing Nix Android SDK/NDK/Java environment and Nix-provided aapt2 override; preserve application identity and Flutter compatibility flags.
+- Ignore generated Android build directories and verify the debug APK with dependency validation enabled.
+
 - Add responsive bathroom details with community averages, review counts, personal history, individual ratings and dates.
 - Add validated review creation and owner-only editing with existing humorous category descriptions.
 - Add favourite and explicit visit actions in details, with immediate card and filter updates.

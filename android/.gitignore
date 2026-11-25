@@ -12,3 +12,7 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Gradle/Android generated outputs (including root reports)
+**/build/
+.kotlin/
