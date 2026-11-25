@@ -1,97 +1,134 @@
-import 'package:flutter/material.dart';
-
+import 'package:flutter/foundation.dart';
 import 'package:bath_royale/models/bathroom.dart';
-
-List<Bathroom> createSampleBathrooms() => [
-  Bathroom(
-    id: "0",
-    name: "DEM - 3º piso",
-    rating: 4.7,
-    paperAvailability: 2,
-    hygiene: 4,
-    confort: 4,
-    aesthetics: 1,
-    tags: ["nice", "cozy", "dark"],
-    // isFavorite: true,
-    reviewed: true,
-    lastReviewed: DateTime.now(),
-  ),
-  Bathroom(
-    id: "1",
-    name: "CP - Rés do Chão",
-    rating: 1.3,
-    paperAvailability: 1,
-    hygiene: 2,
-    confort: 0,
-    aesthetics: 1,
-    tags: ["grafiti", "wtf", "no like"],
-    // isFavorite: false,
-    reviewed: true,
-    lastReviewed: DateTime.now(),
-  ),
-  Bathroom(
-    id: "2",
-    name: "CP - 2º Piso",
-    rating: 4.1,
-    paperAvailability: 0,
-    hygiene: 3,
-    confort: 2,
-    aesthetics: 4,
-    tags: ["nice", "small", "great view"],
-    // isFavorite: true,
-    reviewed: true,
-    lastReviewed: DateTime.now(),
-  ),
-  Bathroom(
-    id: "3",
-    name: "Biblioteca",
-    rating: 3,
-    paperAvailability: 2,
-    hygiene: 1,
-    confort: 2,
-    aesthetics: 1,
-    tags: ["cozy", "sad but true", "noisy"],
-    // isFavorite: false,
-    reviewed: true,
-    lastReviewed: DateTime.now(),
-  ),
-  Bathroom(
-    id: "4",
-    name: "CP - 3º Piso",
-    rating: 4.1,
-    paperAvailability: 2,
-    hygiene: 3,
-    confort: 2,
-    aesthetics: 4,
-    tags: ["nice", "small", "great view"],
-    // isFavorite: true,
-    reviewed: true,
-    lastReviewed: DateTime.now(),
-  ),
-  Bathroom(id: "5", name: "Nome de Teste"),
-];
+import 'package:bath_royale/models/bathroom_activity.dart';
+import 'package:bath_royale/models/bathroom_entry.dart';
+import 'package:bath_royale/models/review.dart';
+import 'sample_data.dart';
 
 class AppState extends ChangeNotifier {
+  final String currentUserId;
+  final List<Bathroom> allBathrooms;
+  final List<Review> _reviews;
+  final Map<(String, String), BathroomActivity> _activities = {};
+
+  AppState({
+    this.currentUserId = localUserId,
+    List<Bathroom>? bathrooms,
+    List<Review>? reviews,
+    List<BathroomActivity>? activities,
+  }) : allBathrooms = List.unmodifiable(bathrooms ?? sampleBathrooms),
+       _reviews = List.of(
+         reviews ?? (bathrooms == null ? createSampleReviews() : <Review>[]),
+       ) {
+    if (currentUserId.isEmpty ||
+        allBathrooms.any((b) => b.id.isEmpty || b.createdBy.isEmpty) ||
+        allBathrooms.map((b) => b.id).toSet().length != allBathrooms.length ||
+        _reviews.map((r) => r.id).toSet().length != _reviews.length) {
+      throw ArgumentError('Invalid or duplicate identifiers');
+    }
+    for (final review in _reviews) {
+      _requireBathroom(review.bathroomId);
+    }
+    // The original five sample experiences are explicitly seeded as visits.
+    final initialActivities =
+        activities ??
+        (bathrooms == null
+            ? [
+                for (final review in createSampleReviews())
+                  BathroomActivity(
+                    userId: localUserId,
+                    bathroomId: review.bathroomId,
+                    lastVisitedAt: review.createdAt,
+                  ),
+              ]
+            : <BathroomActivity>[]);
+    for (final activity in initialActivities) {
+      _requireBathroom(activity.bathroomId);
+      final key = (activity.userId, activity.bathroomId);
+      if (activity.userId.isEmpty || _activities.containsKey(key)) {
+        throw ArgumentError('Invalid or duplicate personal activity');
+      }
+      _activities[key] = activity;
+    }
+  }
+
+  List<Review> get reviews => List.unmodifiable(_reviews);
+
+  List<BathroomEntry> get entries => [
+    for (final bathroom in allBathrooms)
+      BathroomEntry(
+        bathroom: bathroom,
+        activity: activityFor(bathroom.id),
+        reviews: _reviews.where((r) => r.bathroomId == bathroom.id).toList(),
+      ),
+  ];
+
+  BathroomActivity activityFor(String bathroomId) {
+    _requireBathroom(bathroomId);
+    return _activities[(currentUserId, bathroomId)] ??
+        BathroomActivity(userId: currentUserId, bathroomId: bathroomId);
+  }
+
+  void _requireBathroom(String id) {
+    if (!allBathrooms.any((bathroom) => bathroom.id == id)) {
+      throw ArgumentError.value(id, 'bathroomId', 'Unknown bathroom');
+    }
+  }
+
+  void toggleFavorite(String bathroomId) {
+    final previous = activityFor(bathroomId);
+    _activities[(currentUserId, bathroomId)] = BathroomActivity(
+      userId: currentUserId,
+      bathroomId: bathroomId,
+      isFavorite: !previous.isFavorite,
+      lastVisitedAt: previous.lastVisitedAt,
+    );
+    notifyListeners();
+  }
+
+  /// Records the latest known visit; repeated/older dates do not invent counts.
+  void recordVisit(String bathroomId, {required DateTime visitedAt}) {
+    final previous = activityFor(bathroomId);
+    if (previous.lastVisitedAt != null &&
+        !visitedAt.isAfter(previous.lastVisitedAt!)) {
+      return;
+    }
+    _activities[(currentUserId, bathroomId)] = BathroomActivity(
+      userId: currentUserId,
+      bathroomId: bathroomId,
+      isFavorite: previous.isFavorite,
+      lastVisitedAt: visitedAt,
+    );
+    notifyListeners();
+  }
+
+  /// Local ownership guard, not authentication or a future security boundary.
+  void saveReview(Review review) {
+    _requireBathroom(review.bathroomId);
+    if (review.authorId != currentUserId) {
+      throw StateError('Only the current author can save a review');
+    }
+    final index = _reviews.indexWhere((r) => r.id == review.id);
+    if (index < 0) {
+      _reviews.add(review);
+    } else {
+      final previous = _reviews[index];
+      if (previous.authorId != currentUserId ||
+          previous.bathroomId != review.bathroomId ||
+          previous.createdAt != review.createdAt ||
+          review.updatedAt.isBefore(previous.updatedAt)) {
+        throw StateError(
+          'Review identity is immutable; updates must not go backwards',
+        );
+      }
+      _reviews[index] = review;
+    }
+    notifyListeners();
+  }
+
   bool darkMode = true;
   void toggleTheme() {
     darkMode = !darkMode;
     notifyListeners();
-  }
-
-  AppState() : allBathrooms = createSampleBathrooms() {
-    for (final bathroom in allBathrooms) {
-      bathroom.isFavorite.addListener(notifyListeners);
-    }
-  }
-
-  final List<Bathroom> allBathrooms;
-
-  @override
-  void dispose() {
-    for (final bathroom in allBathrooms) {
-      bathroom.isFavorite.removeListener(notifyListeners);
-      bathroom.isFavorite.dispose();
-    }
-    super.dispose();
   }
 }

@@ -1,0 +1,76 @@
+import 'package:bath_royale/models/bathroom.dart';
+import 'package:bath_royale/models/review.dart';
+
+const localUserId = 'local-user';
+
+const sampleBathrooms = [
+  Bathroom(id: '0', name: 'DEM - 3º piso', createdBy: localUserId),
+  Bathroom(id: '1', name: 'CP - Rés do Chão', createdBy: localUserId),
+  Bathroom(id: '2', name: 'CP - 2º Piso', createdBy: localUserId),
+  Bathroom(id: '3', name: 'Biblioteca', createdBy: localUserId),
+  Bathroom(id: '4', name: 'CP - 3º Piso', createdBy: localUserId),
+  Bathroom(id: '5', name: 'Nome de Teste', createdBy: localUserId),
+];
+
+List<Review> createSampleReviews() => [
+  Review(
+    id: "sample-0",
+    bathroomId: "0",
+    authorId: localUserId,
+    createdAt: DateTime.utc(2026, 1, 1),
+    rating: 4.7,
+    paperAvailability: 2,
+    hygiene: 4,
+    comfort: 4,
+    aesthetics: 1,
+    tags: ["nice", "cozy", "dark"],
+  ),
+  Review(
+    id: "sample-1",
+    bathroomId: "1",
+    authorId: localUserId,
+    createdAt: DateTime.utc(2026, 1, 1),
+    rating: 1.3,
+    paperAvailability: 1,
+    hygiene: 2,
+    comfort: 0,
+    aesthetics: 1,
+    tags: ["grafiti", "wtf", "no like"],
+  ),
+  Review(
+    id: "sample-2",
+    bathroomId: "2",
+    authorId: localUserId,
+    createdAt: DateTime.utc(2026, 1, 1),
+    rating: 4.1,
+    paperAvailability: 0,
+    hygiene: 3,
+    comfort: 2,
+    aesthetics: 4,
+    tags: ["nice", "small", "great view"],
+  ),
+  Review(
+    id: "sample-3",
+    bathroomId: "3",
+    authorId: localUserId,
+    createdAt: DateTime.utc(2026, 1, 1),
+    rating: 3,
+    paperAvailability: 2,
+    hygiene: 1,
+    comfort: 2,
+    aesthetics: 1,
+    tags: ["cozy", "sad but true", "noisy"],
+  ),
+  Review(
+    id: "sample-4",
+    bathroomId: "4",
+    authorId: localUserId,
+    createdAt: DateTime.utc(2026, 1, 1),
+    rating: 4.1,
+    paperAvailability: 2,
+    hygiene: 3,
+    comfort: 2,
+    aesthetics: 4,
+    tags: ["nice", "small", "great view"],
+  ),
+];

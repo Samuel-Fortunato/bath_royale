@@ -1,29 +1,30 @@
-import 'package:bath_royale/models/bathroom.dart';
+import 'package:bath_royale/models/bathroom_entry.dart';
 import 'package:bath_royale/models/bathroom_descriptions.dart';
 import 'package:bath_royale/theme/custom_color_roles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 class WcCard extends StatelessWidget {
-  final Bathroom bathroom;
+  final BathroomEntry entry;
+  final VoidCallback toggleFavorite;
   final VoidCallback onTap;
-  // final VoidCallback toggleFavorite;
 
   const WcCard({
     super.key,
-    required this.bathroom,
+    required this.entry,
+    required this.toggleFavorite,
     required this.onTap,
-    // required this.toggleFavorite,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bathroom = entry.bathroom;
+    final review = entry.personalReview;
     final customColorRoles = Theme.of(context).extension<CustomColorRoles>()!;
-    final stateColor = bathroom.reviewed
-        ? bathroom.colorRating(context)
+    final stateColor = review != null
+        ? review.colorRating(context)
         : Theme.of(context).colorScheme.onSurface;
 
-    // TODO: Not evaluated bathroom Card
     return Card(
       color: stateColor.withValues(alpha: 0.10),
       child: InkWell(
@@ -38,7 +39,7 @@ class WcCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    bathroom.reviewed ? bathroom.emojiRating() : "🚽",
+                    review != null ? review.emojiRating() : "🚽",
                     style: TextTheme.of(context).titleLarge,
                   ),
                   // TODO: spacing based on theme ???
@@ -50,32 +51,29 @@ class WcCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  ValueListenableBuilder(
-                    valueListenable: bathroom.isFavorite,
-                    builder: (context, isFav, _) {
-                      return IconButton(
-                        onPressed: bathroom.toggleFavorite,
-                        icon: Icon(
-                          isFav ? Icons.star : Icons.star_border,
-                          color: customColorRoles.favouriteStar,
-                        ),
-                      );
-                    },
+                  IconButton(
+                    onPressed: toggleFavorite,
+                    icon: Icon(
+                      entry.activity.isFavorite
+                          ? Icons.star
+                          : Icons.star_border,
+                      color: customColorRoles.favouriteStar,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              if (!bathroom.reviewed)
+              if (review == null)
                 Text(
                   "Ainda não avaliada",
                   style: TextTheme.of(context).bodyMedium,
                 ),
-              if (bathroom.reviewed) ...[
+              if (review != null) ...[
                 // RATING ROW
                 Row(
                   children: [
                     RatingBarIndicator(
-                      rating: bathroom.rating,
+                      rating: review.rating,
                       itemCount: 5,
                       itemSize: 18,
                       itemBuilder: (_, _) =>
@@ -83,7 +81,7 @@ class WcCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      bathroom.rating.toStringAsFixed(1),
+                      review.rating.toStringAsFixed(1),
                       style: TextTheme.of(context).bodyMedium,
                     ),
                   ],
@@ -94,10 +92,10 @@ class WcCard extends StatelessWidget {
                   spacing: 12,
                   runSpacing: 4,
                   children: [
-                    infoSpan("Higiene", bathroom.hygieneText),
-                    infoSpan("Confort", bathroom.confortText),
-                    infoSpan("Aesthetics", bathroom.aestheticText),
-                    infoSpan("Papel", bathroom.paperText),
+                    infoSpan("Higiene", review.hygieneText),
+                    infoSpan("Confort", review.comfortText),
+                    infoSpan("Aesthetics", review.aestheticText),
+                    infoSpan("Papel", review.paperText),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -105,7 +103,7 @@ class WcCard extends StatelessWidget {
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
-                  children: bathroom.tags.map((t) {
+                  children: review.tags.map((t) {
                     return Chip(
                       label: Text(t),
                       backgroundColor: stateColor.withValues(alpha: 0.25),

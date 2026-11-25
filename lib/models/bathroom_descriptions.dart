@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:bath_royale/models/bathroom.dart';
+import 'package:bath_royale/models/review.dart';
 import 'package:bath_royale/theme/custom_color_roles.dart';
 
-extension BathroomDescriptions on Bathroom {
+extension ReviewDescriptions on Review {
   // Paper description
   String get paperText {
     switch (paperAvailability) {
@@ -36,8 +36,8 @@ extension BathroomDescriptions on Bathroom {
   }
 
   // Comfort
-  String get confortText {
-    switch (confort) {
+  String get comfortText {
+    switch (comfort) {
       case 0:
         return "🌿 Cagar no mato";
       case 1:

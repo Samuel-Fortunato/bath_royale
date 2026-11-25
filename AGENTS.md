@@ -25,3 +25,10 @@
 ## Changelog
 
 - Maintain CHANGELOG.md with concise summaries of completed changes.
+
+## NixOS environment and terminal output
+
+- Discover executables through PATH and `command -v`; do not assume conventional filesystem locations.
+- Use the existing Nix flake and direnv development environment. If a utility such as Python is missing, use a temporary `nix shell` rather than installing it globally.
+- Do not modify global NixOS or Home Manager configuration.
+- Keep terminal summaries extremely concise.

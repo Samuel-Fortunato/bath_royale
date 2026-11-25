@@ -11,7 +11,7 @@ The phases describe intended sequencing, not a fixed specification. Unconfirmed 
 
 - [x] Audit the existing prototype and fix bugs, including review updates, favourite filtering and unreviewed bathroom presentation.
 - [x] Investigate the Flutter 3.50 Material deprecation; document migration considerations.
-- [ ] Separate bathroom entities from individual reviews and define local ownership and visit semantics.
+- [x] Separate bathroom entities from individual reviews and define local ownership and visit semantics.
 - [ ] Implement bathroom details.
 - [ ] Create and edit reviews while preserving the rating descriptions.
 - [ ] Create bathrooms with appropriate validation.
@@ -47,3 +47,7 @@ The phases describe intended sequencing, not a fixed specification. Unconfirmed 
 - [ ] Develop branding.
 - [ ] Complete a privacy and security review.
 - [ ] Prepare and launch a public beta.
+
+### Verified data-model milestone
+
+Bathroom entities, individual author-owned reviews and per-user favourites/latest visits are separated in memory. Multiple reviews, latest personal ratings and community means are covered by unit and widget regression tests. Cards and filters retain their existing personal-rating behavior. See [data-model semantics](docs/data-model.md). Review/visit forms, new pages and the remaining Phase 1 milestones remain open.

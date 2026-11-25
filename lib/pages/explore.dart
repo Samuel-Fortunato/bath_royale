@@ -1,4 +1,4 @@
-import 'package:bath_royale/models/bathroom.dart';
+import 'package:bath_royale/models/bathroom_entry.dart';
 import 'package:bath_royale/models/bathroom_filters.dart';
 import 'package:bath_royale/widgets/wc_card.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +16,7 @@ class ExplorePage extends StatefulWidget {
 class _ExplorePageState extends State<ExplorePage> {
   Set<BathroomFilter> activeFilters = {};
 
-  List<Bathroom> applyFilters(List<Bathroom> list) {
+  List<BathroomEntry> applyFilters(List<BathroomEntry> list) {
     for (final filter in bathroomFilters) {
       if (activeFilters.contains(filter)) {
         list = list.where(filter.test).toList();
@@ -65,7 +65,7 @@ class _ExplorePageState extends State<ExplorePage> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
-    final filteredWCs = applyFilters(appState.allBathrooms);
+    final filteredWCs = applyFilters(appState.entries);
 
     return Column(
       children: [
@@ -91,11 +91,10 @@ class _ExplorePageState extends State<ExplorePage> {
           child: ListView.builder(
             itemCount: filteredWCs.length,
             itemBuilder: (context, i) => WcCard(
-              bathroom: filteredWCs[i],
+              entry: filteredWCs[i],
+              toggleFavorite: () =>
+                  appState.toggleFavorite(filteredWCs[i].bathroom.id),
               onTap: () {},
-              /* toggleFavorite: () {
-                filteredWCs[i].toggleFavorite();
-              }, */
             ),
           ),
         ),
