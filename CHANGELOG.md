@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Phase 2.1B: parameterize the rootless backend lifecycle for isolated source/destination installations, independently generated runtime credentials and loopback-only ports.
+- Add logical schema/data/Auth identity exports, private checksummed manifests, transactional fail-fast restore, exact row/structural comparisons and foreign-key revalidation before fixture mutations.
+- Verify original-password/UUID login, new refresh sessions, source-token rejection, independent restart and 226 destination authorization assertions with signup disabled and the source stopped/preserved.
+- Document local migration commands, measurements, corrections and managed-exit differences; object storage, ARM, production hardening and Phase 2.1C remain unverified. Preserve Flutter behavior.
+
 - Verify hosted publication and a publication-only retry for preview 1015; independently download and validate its APK checksum, package, version and existing signing certificate.
 - Automatically publish verified Android development APKs and checksums from successful main builds, with exact-commit tags, recoverable drafts and conflict-safe retries; retain Actions artifacts and add direct Releases download guidance.
 

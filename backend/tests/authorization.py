@@ -5,7 +5,7 @@ import secrets
 import time
 import uuid
 
-from poc import ROOT, STATE, request, secure_write, sql
+from poc import AUTH_PORT, REST_PORT, ROOT, STATE, request, secure_write, sql
 
 COUNT = 0
 ONE = "10000000-0000-4000-8000-000000000001"
@@ -20,7 +20,7 @@ def check(condition, label):
 
 
 def api(path, method="GET", body=None, user=None, expected=200):
-    status, result = request(55432, "/" + path, method, body, user and user["access_token"])
+    status, result = request(REST_PORT, "/" + path, method, body, user and user["access_token"])
     check(
         status == expected,
         method + " " + path.split("?")[0] + " expected " + str(expected) + ", got " + str(status),
@@ -29,7 +29,7 @@ def api(path, method="GET", body=None, user=None, expected=200):
 
 
 def reject(path, method, body=None, user=None):
-    status, _ = request(55432, "/" + path, method, body, user and user["access_token"])
+    status, _ = request(REST_PORT, "/" + path, method, body, user and user["access_token"])
     check(
         status in (400, 401, 403, 404, 409),
         "reject " + method + " " + path.split("?")[0] + ", got " + str(status),
@@ -38,7 +38,7 @@ def reject(path, method, body=None, user=None):
 
 def login(account):
     status, result = request(
-        55431,
+        AUTH_PORT,
         "/token?grant_type=password",
         "POST",
         {"email": account["email"], "password": account["password"]},
@@ -64,11 +64,13 @@ def review(visit, bathroom=ONE, **overrides):
     return value
 
 
-def verify():
+def verify(existing_only=False):
     global COUNT
     COUNT = 0
     # Accounts persist privately; tokens exist only in process memory.
     path = STATE / "accounts.json"
+    if existing_only and not path.exists():
+        raise RuntimeError("Migrated accounts required; signup disabled")
     if not path.exists():
         accounts = [
             {
@@ -79,8 +81,8 @@ def verify():
         ]
         secure_write(path, json.dumps(accounts))
     accounts = json.loads(path.read_text())
-    for account in accounts:
-        status, result = request(55431, "/signup", "POST", account)
+    for account in [] if existing_only else accounts:
+        status, result = request(AUTH_PORT, "/signup", "POST", account)
         check(status in (200, 422), "fictional signup or existing account")
         if status == 200:
             check("access_token" in result, "local auto-confirm signup session")
@@ -110,7 +112,7 @@ def verify():
     reject("profiles", "POST", {"username": "anonymous"})
     reject("moderators", "GET")
     reject("users", "GET")
-    status, _ = request(55432, "/users", token=a["access_token"])
+    status, _ = request(REST_PORT, "/users", token=a["access_token"])
     check(status == 404, "auth schema absent from API")
     print("PASS: fictional Auth signup/login; anonymous grants and public catalogue")
 
@@ -286,7 +288,7 @@ def verify():
     reject("favourites", "POST", {"bathroom_id": pid}, a)
     # User-editable JWT metadata must not be an authority source.
     status, _ = request(
-        55431,
+        AUTH_PORT,
         "/user",
         "PUT",
         {"data": {"role": "service_role", "is_admin": True}},
@@ -412,7 +414,7 @@ def verify():
     payload["role"] = "service_role"
     parts[1] = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
     check(
-        request(55432, "/visits", token=".".join(parts))[0] == 401,
+        request(REST_PORT, "/visits", token=".".join(parts))[0] == 401,
         "forged JWT rejected",
     )
     print("PASS: public projection/joins exclude private data; spoofed JWT rejected")
@@ -535,24 +537,26 @@ def verify():
     # Refresh, global logout, revoked refresh and bounded residual JWT lifetime.
     for session in [a, b]:
         status, refreshed = request(
-            55431,
+            AUTH_PORT,
             "/token?grant_type=refresh_token",
             "POST",
             {"refresh_token": session["refresh_token"]},
         )
         check(status == 200 and "access_token" in refreshed, "session refresh")
         api("visits", user=refreshed)
-        status, _ = request(55431, "/logout?scope=global", "POST", token=refreshed["access_token"])
+        status, _ = request(
+            AUTH_PORT, "/logout?scope=global", "POST", token=refreshed["access_token"]
+        )
         check(status == 204, "global logout")
         status, _ = request(
-            55431,
+            AUTH_PORT,
             "/token?grant_type=refresh_token",
             "POST",
             {"refresh_token": refreshed["refresh_token"]},
         )
         check(status in (400, 401), "logged-out refresh revoked")
         check(
-            request(55431, "/user", token=refreshed["access_token"])[0] in (401, 403),
+            request(AUTH_PORT, "/user", token=refreshed["access_token"])[0] in (401, 403),
             "Auth rejects revoked session",
         )
         # PostgREST validates JWT signature/expiry; logout alone does not revoke an issued JWT.
@@ -564,7 +568,7 @@ def verify():
     deadline = time.monotonic() + 100
     progress_at = time.monotonic() + 45
     while time.monotonic() < deadline:
-        if all(request(55432, "/visits", token=s["access_token"])[0] == 401 for s in [a, b]):
+        if all(request(REST_PORT, "/visits", token=s["access_token"])[0] == 401 for s in [a, b]):
             break
         if time.monotonic() >= progress_at:
             print("Waiting for 60-second JWT expiry plus PostgREST clock-skew tolerance...")

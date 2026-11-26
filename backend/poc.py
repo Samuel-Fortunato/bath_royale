@@ -12,7 +12,12 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "bath-royale-poc"
+INSTANCE = os.environ.get("POC_INSTANCE", "source")
+if INSTANCE not in ("source", "destination"):
+    raise RuntimeError("POC_INSTANCE must be source or destination")
+PROJECT = "bath-royale-poc" + ("-destination" if INSTANCE == "destination" else "")
+AUTH_PORT, REST_PORT = (55441, 55442) if INSTANCE == "destination" else (55431, 55432)
+STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / PROJECT
 SERVICES = ["db", "auth", "rest"]
 
 
@@ -35,7 +40,7 @@ def sql(statement):
             "podman",
             "exec",
             "-i",
-            "bath-royale-poc-db",
+            PROJECT + "-db",
             "psql",
             "-X",
             "-qAt",
@@ -65,7 +70,7 @@ def initialize():
     path = STATE / "secrets.json"
     if not path.exists():
         try:
-            run(["podman", "volume", "inspect", "bath-royale-poc-db-data"])
+            run(["podman", "volume", "inspect", PROJECT + "-db-data"])
         except RuntimeError:
             pass
         else:
@@ -95,6 +100,7 @@ def initialize():
 
 
 def compose(*args):
+    os.environ.update(POC_PROJECT=PROJECT, AUTH_PORT=str(AUTH_PORT), REST_PORT=str(REST_PORT))
     return run(
         [
             "podman-compose",
@@ -103,7 +109,7 @@ def compose(*args):
             "-f",
             str(ROOT / "backend/compose.yml"),
             "-p",
-            "bath-royale-poc",
+            PROJECT,
             *args,
         ]
     )
@@ -141,7 +147,7 @@ def wait_for(check, label):
 
 def bindings():
     for service in SERVICES:
-        result = json.loads(run(["podman", "inspect", "bath-royale-poc-" + service]))[0]
+        result = json.loads(run(["podman", "inspect", PROJECT + "-" + service]))[0]
         ports = result["NetworkSettings"].get("Ports") or {}
         for entries in ports.values():
             for entry in entries or []:
@@ -178,17 +184,45 @@ def migrate():
             + digest
             + "');\ncommit;"
         )
-    run(["podman", "kill", "--signal", "SIGUSR1", "bath-royale-poc-rest"])
+    run(["podman", "kill", "--signal", "SIGUSR1", PROJECT + "-rest"])
     print("PASS: ordered transactional migrations and checksum validation")
 
 
-def start():
+def start(migrations=True):
     values = initialize()
     if run(["podman", "info", "--format", "{{.Host.Security.Rootless}}"]) != "true":
         raise RuntimeError("Rootless Podman required")
     compose("config")  # Validate without printing the expanded, secret-bearing configuration.
     compose("up", "-d", "db")
-    wait_for(lambda: sql("select 1") == "1", "PostgreSQL")
+    # The image briefly exposes a temporary Unix-socket server during init.
+    # Wait for its final TCP server before changing bootstrap roles.
+    wait_for(
+        lambda: bool(
+            run(
+                [
+                    "podman",
+                    "exec",
+                    PROJECT + "-db",
+                    "pg_isready",
+                    "-h",
+                    "127.0.0.1",
+                    "-U",
+                    "postgres",
+                ]
+            )
+        ),
+        "PostgreSQL TCP",
+    )
+    wait_for(
+        lambda: (
+            sql(
+                "select count(*) from pg_roles where rolname in "
+                "('supabase_auth_admin','authenticator')"
+            )
+            == "2"
+        ),
+        "PostgreSQL roles",
+    )
     # Runtime role wiring belongs to the local environment, not application migrations.
     sql(
         "alter role supabase_auth_admin password '" + values["AUTH_DB_PASSWORD"] + "';\n"
@@ -199,10 +233,11 @@ def start():
     )
     compose("up", "-d")
     bindings()
-    wait_for(lambda: request(55431, "/health")[0] == 200, "Auth")
-    wait_for(lambda: request(55432, "/")[0] == 200, "PostgREST")
-    migrate()
-    print("Ready: Auth 127.0.0.1:55431; database API 127.0.0.1:55432")
+    wait_for(lambda: request(AUTH_PORT, "/health")[0] == 200, "Auth")
+    wait_for(lambda: request(REST_PORT, "/")[0] == 200, "PostgREST")
+    if migrations:
+        migrate()
+    print(f"Ready: Auth 127.0.0.1:{AUTH_PORT}; database API 127.0.0.1:{REST_PORT}")
 
 
 def main():
@@ -237,7 +272,7 @@ def main():
         compose("down", "-v")
         for name in ["secrets.json", "compose.env", "accounts.json"]:
             (STATE / name).unlink(missing_ok=True)
-        print("Removed only bath-royale-poc containers/network/volumes and known credential files")
+        print("Removed only " + PROJECT + " containers/network/volumes and known credential files")
     elif command == "status":
         for service in SERVICES:
             print(
@@ -247,7 +282,7 @@ def main():
                     [
                         "podman",
                         "inspect",
-                        "bath-royale-poc-" + service,
+                        PROJECT + "-" + service,
                         "--format",
                         "{{.State.Status}}",
                     ]
@@ -255,7 +290,7 @@ def main():
             )
         bindings()
     elif command == "measure":
-        containers = ["bath-royale-poc-" + s for s in SERVICES]
+        containers = [PROJECT + "-" + s for s in SERVICES]
         stats_command = [
             "podman",
             "stats",
@@ -285,7 +320,7 @@ def main():
                     "--no-stream",
                     "--format",
                     "{{.Name}} memory={{.MemUsage}}",
-                    *["bath-royale-poc-" + s for s in SERVICES],
+                    *[PROJECT + "-" + s for s in SERVICES],
                 ]
             )
         )
@@ -305,9 +340,7 @@ def main():
                         "podman",
                         "image",
                         "inspect",
-                        json.loads(run(["podman", "inspect", "bath-royale-poc-" + service]))[0][
-                            "Image"
-                        ],
+                        json.loads(run(["podman", "inspect", PROJECT + "-" + service]))[0]["Image"],
                         "--format",
                         "{{.Size}}",
                     ]
@@ -318,7 +351,7 @@ def main():
                 [
                     "podman",
                     "exec",
-                    "bath-royale-poc-db",
+                    PROJECT + "-db",
                     "du",
                     "-sh",
                     "/var/lib/postgresql/data",

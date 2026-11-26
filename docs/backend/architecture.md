@@ -94,3 +94,5 @@ Reserve public contributor profiles separately from auth email/private preferenc
 ## Phase 2.1A implementation boundary
 
 The isolated [local PoC](local-poc.md) implements server-side profiles, catalogue/proposals, private visits/favourites, author-owned reviews, structured snapshots/comments, column grants, RLS and narrowly scoped public-projection/approval functions. It uses fictional Auth accounts and direct database API tests. The public projection exposes no dates, private visit IDs or Auth fields. Server codepoint/emoji bounds are deliberately conservative and are documented separately from Flutter grapheme validation. Production rules remain open; no local model/repository/sync/auth UI has changed. Independent restore and actual managed exit gates remain Phase 2.1B/2.1C.
+
+Phase 2.1B subsequently verifies the [independent local migration rehearsal](local-migration.md), preserving identities and authorization. This does not verify managed migration or change any proposed Flutter integration boundary. Phase 2.1C remains separately authorized work.

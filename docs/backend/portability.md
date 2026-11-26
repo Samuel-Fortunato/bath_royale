@@ -117,4 +117,10 @@ Formatting (44 Dart files unchanged), strict analysis with only the existing exa
 
 ## Phase 2.1A local evidence
 
-See [the runnable environment, exact image pins, authorization evidence and measured resources](local-poc.md). Rootless PostgreSQL/Auth/PostgREST, clean initialization, ordinary stop/start persistence, fictional A/B sessions and server authorization are verified. This is one local installation: **no independent full-stack restore, unchanged-password migration or actual managed-Free exit was performed**. Those are separate Phase 2.1B/2.1C acceptance gates. No cloud project or public service was created.
+See [the runnable environment, exact image pins, authorization evidence and measured resources](local-poc.md). Rootless PostgreSQL/Auth/PostgREST, clean initialization, ordinary stop/start persistence, fictional A/B sessions and server authorization are verified. At Phase 2.1A this was one local installation: no independent full-stack restore, unchanged-password migration or actual managed-Free exit had been performed. That was the Phase 2.1A boundary; Phase 2.1B evidence follows below. No cloud project or public service was created.
+
+## Phase 2.1B local-to-local evidence
+
+The [independent migration rehearsal](local-migration.md) now verifies logical export/restore into a separately initialized installation, original-password A/B login with unchanged UUIDs, fresh refresh sessions, rejection of source access/refresh credentials, exact data/structural comparisons, independent restart and the repeated authorization matrix with the source stopped. Roles/extensions/Auth schema are independently bootstrapped from the same pins and checked; only application schema/data and required Auth identities cross the export boundary. Sessions are excluded.
+
+This updates the **local** Export/Login/Independent-restore evidence only: the table's actual managed-export/restore, ancillary-flow and cutover requirements remain unpassed. No object storage is selected; object portability remains untested. Phase 2.1C still requires explicit authorization and real managed-Free evidence.

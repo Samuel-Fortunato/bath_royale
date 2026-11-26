@@ -1,6 +1,6 @@
 # Phase 2.1A — Local Supabase proof of concept
 
-This isolated environment contains **fictional prototype data only**. Supabase/PostgreSQL is accepted for this bounded PoC. Production hosting remains conditional on Phase 2.1B's independent full-stack restore and Phase 2.1C's actual managed-Free exit rehearsal, including unchanged-password login. Neither gate is passed by these local tests. No Flutter authentication, networking, synchronization, account association or SQLite change is included.
+This isolated environment contains **fictional prototype data only**. Supabase/PostgreSQL is accepted for this bounded PoC. Production hosting remains conditional on Phase 2.1B's independent full-stack restore and Phase 2.1C's actual managed-Free exit rehearsal, including unchanged-password login. Phase 2.1A alone passes neither gate; the subsequent [Phase 2.1B rehearsal](local-migration.md) supplies independent local restore evidence, while Phase 2.1C remains unverified. No Flutter authentication, networking, synchronization, account association or SQLite change is included.
 
 ## Run locally
 
@@ -83,7 +83,7 @@ Logout globally revokes the user's refresh sessions and Auth rejects the revoked
 
 During development the first expiry assertion allowed only 75 seconds and failed; it now accounts for the pinned implementation's skew. An initial guessed Auth image tag was unavailable; the selected tag was then read directly from the official pinned release and resolved to the digest above. The sandbox blocked Podman's per-user runtime and Flutter telemetry writes; host execution using the existing rootless/Nix environment succeeded, with no system-level blocker or configuration change. No tokens/secrets were printed during diagnosis.
 
-Phase 2.1B must still export/restore the full selected stack into an independent target with unchanged-password login; Phase 2.1C must still rehearse the actual managed-Free exit. Storage/object portability, ARM, production hardening/email/erasure/moderation, Flutter integration, provenance/upload gates, durable synchronization and concurrency/conflict behavior remain unverified or deferred. The local catalogue fixtures do not constitute a production seed.
+The subsequent [Phase 2.1B rehearsal](local-migration.md) verifies independent local restore with unchanged-password login; Phase 2.1C must still rehearse the actual managed-Free exit. Storage/object portability, ARM, production hardening/email/erasure/moderation, Flutter integration, provenance/upload gates, durable synchronization and concurrency/conflict behavior remain unverified or deferred. The local catalogue fixtures do not constitute a production seed.
 
 ### Recorded results — 2026-11-25
 
@@ -94,3 +94,5 @@ Phase 2.1B must still export/restore the full selected stack into an independent
 - Uncompressed image sizes: database **1,270,450,762 bytes**, Auth **63,011,989 bytes**, API **21,557,876 bytes**; approximately **1.36 GB** combined before layer sharing. PostgreSQL data files used **42 MiB**, including initialization/WAL; the application database size was **10,849,427 bytes**. Allow additional space for writable layers, Nix tools/cache, upgrades and later export copies. This reduced PoC does not need the complete upstream service set.
 - Extension inventory from the selected database: `pg_stat_statements:1.11`, `pgcrypto:1.3`, `plpgsql:1.0`, `supabase_vault:0.3.1`, `uuid-ossp:1.1`. Application SQL adds no extra extension dependency beyond the supplied UUID/Auth facilities.
 - **105 Flutter tests passed**, with unchanged Flutter source/dependencies/SQLite; formatting (44 files unchanged), the exact existing Material-import analysis gate and Linux/Android debug builds passed. Python Ruff lint/format, Compose parsing, Nix flake evaluation and actionlint passed. No hosted compilation result is inferred from these checks.
+
+Phase 2.1B parameterizes the existing lifecycle with `POC_INSTANCE=source|destination` (source remains the default). See [local migration](local-migration.md) for isolated resource names, ports, export scope and explicit destination cleanup. `test` still resets fictional fixtures; use the migration command for preservation-first verification.

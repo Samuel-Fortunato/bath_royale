@@ -145,11 +145,13 @@ Verified locally on 2026-11-25: formatting, strict analysis (existing exact Mate
 
 Verified on 2026-11-25: **232 assertions on a clean fictional stack**; PostgreSQL 17.6, Auth v2.198.0 and PostgREST v14.18 pinned by digest. All 105 Flutter tests, formatting, strict analysis, Linux/Android debug builds, Python lint/format, Compose parsing, effective loopback/rootless checks, actionlint, Nix flake evaluation and documentation links pass. Stop/start preserved fixture UUIDs/counts, migration history and credentials. Approximate idle usage: 90–140 MB RAM, 0.35% of one CPU core over a 10-second sample, 1.36 GB uncompressed images and 42 MiB database files. See [commands, evidence, limitations and failed-check corrections](docs/backend/local-poc.md). Logout revokes refresh/Auth sessions; issued API JWTs remain usable for their 60-second lifetime plus up to 30 seconds of PostgREST clock skew. Server codepoint limits are deliberately stricter than Flutter grapheme limits, with explicit Unicode tests. No system configuration change or cloud project; Flutter/local persistence remain unchanged. Hosted CI is reported after push without waiting.
 
-### Phase 2.1B — Independent local full-stack portability rehearsal
+### Phase 2.1B — Independent local full-stack portability rehearsal (completed)
 
-- [ ] Export database/Auth/configuration and any enabled object fixtures; restore into an independent self-hosted target without shared volumes/source access.
-- [ ] Verify unchanged-password login, identity/content/constraint/RLS preservation, refreshed sessions and the repeated authorization matrix.
-- [ ] Record exact versions, exports/checksums, timing, resource needs and failed checks. This local rehearsal alone cannot prove the managed exit.
+- [x] Export database/Auth/configuration and any enabled object fixtures; restore into an independent self-hosted target without shared volumes/source access.
+- [x] Verify unchanged-password login, identity/content/constraint/RLS preservation, refreshed sessions and the repeated authorization matrix.
+- [x] Record exact versions, exports/checksums, timing, resource needs and failed checks. This local rehearsal alone cannot prove the managed exit.
+
+Verified locally on 2026-11-26: independent rootless installations, logical schema/data/Auth identity export with private checksums, exact row/inventory comparisons and foreign-key revalidation, original-password A/B login with unchanged UUIDs, new refresh sessions, rejection of still-unexpired source JWTs and source refresh sessions, independent destination restart, and 226 authorization assertions with signup disabled. Source stopped and preserved. See [commands, measurements, corrections and limits](docs/backend/local-migration.md). Object storage is unselected/untested; managed exit, ARM and production readiness remain unverified. No Flutter backend integration or cloud resources.
 
 ### Phase 2.1C — Actual managed-Free exit rehearsal (later explicit authorization)
 
