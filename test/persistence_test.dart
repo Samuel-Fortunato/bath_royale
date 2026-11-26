@@ -7,12 +7,12 @@ import 'package:bath_royale/models/review.dart';
 import 'package:bath_royale/models/visit.dart';
 
 void main() {
-  test('v4 fresh data and comments survive snapshots without reseeding', () {
+  test('fresh data and comments survive actions without reseeding', () {
     final store = LocalStore(sqlite3.openInMemory());
     addTearDown(store.close);
     final state = AppState.restore(store);
     addTearDown(state.dispose);
-    expect(store.database.userVersion, 4);
+    expect(store.database.userVersion, 5);
     expect(
       state.reviews.where((r) => r.comment != null).length,
       greaterThan(2),
@@ -116,15 +116,11 @@ void main() {
       expect(app.reviewForVisit(visit.id)!.tags.map((t) => t.label), ['teste']);
       expect(app.reviewForVisit(visit.id)!.rating, 0);
       expect(app.visits.length, 7);
-      store.save(
-        LocalData(
-          bathrooms: [],
-          visits: [],
-          reviews: [],
-          favourites: [],
-          darkMode: false,
-        ),
-      );
+      store.transaction(() {
+        for (final table in ['reviews', 'visits', 'favourites', 'bathrooms']) {
+          store.database.execute('DELETE FROM $table');
+        }
+      });
       app.dispose();
       store.close();
       store = LocalStore(sqlite3.open(path));
@@ -144,27 +140,21 @@ void main() {
     db.userVersion = 1;
     final store = LocalStore(db);
     addTearDown(store.close);
-    expect(db.userVersion, 4);
+    expect(db.userVersion, 5);
     expect(store.load()!.bathrooms.single.id, 'b');
     expect(store.load()!.darkMode, isTrue);
   });
 
-  test('failed snapshot transaction retains original records', () {
+  test('failed incremental transaction retains original records', () {
     final store = LocalStore(sqlite3.openInMemory());
     addTearDown(store.close);
     final app = AppState.restore(store);
     addTearDown(app.dispose);
-    final original = app.localData;
     expect(
-      () => store.save(
-        LocalData(
-          bathrooms: [],
-          visits: original.visits,
-          reviews: original.reviews,
-          favourites: [],
-          darkMode: false,
-        ),
-      ),
+      () => store.transaction(() {
+        store.database.execute('DELETE FROM reviews');
+        store.database.execute("UPDATE visits SET bathroom='missing'");
+      }),
       throwsA(isA<SqliteException>()),
     );
     expect(store.load()!.bathrooms.length, 6);

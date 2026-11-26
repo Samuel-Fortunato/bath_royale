@@ -39,13 +39,13 @@ void main() {
     final store = LocalStore(db);
     addTearDown(store.close);
     final data = store.load()!;
-    expect(db.userVersion, 4);
+    expect(db.userVersion, 5);
     expect(data.reviews.single.tags.first.emoji, '👩🏽‍💻');
     expect(data.reviews.single.tags.first.label, 'Tecnologia');
     expect(data.reviews.single.comment, isNull);
     expect(data.bathrooms.single.emoji, '👑');
     expect(data.darkMode, false);
-    store.save(data);
+    store.initialize(data);
     expect(store.load()!.reviews.single.tags, data.reviews.single.tags);
     expect(db.select('PRAGMA foreign_key_check'), isEmpty);
   });
@@ -84,7 +84,7 @@ void main() {
     final store = LocalStore(db);
     addTearDown(store.close);
     final data = store.load()!;
-    expect(db.userVersion, 4);
+    expect(db.userVersion, 5);
     expect(data.bathrooms.first.emoji, '📚');
     expect(data.bathrooms.first.createdBy, 'original');
     expect(data.visits.map((v) => v.id), ['v', 'unreviewed']);
@@ -104,7 +104,7 @@ void main() {
       other.emoji,
       const Bathroom(id: 'other', name: 'Outro', createdBy: 'original').emoji,
     );
-    store.save(data);
+    store.initialize(data);
     expect(store.load()!.bathrooms.last.emoji, other.emoji);
     expect(store.load()!.bathrooms.last.accent, other.accent);
   });

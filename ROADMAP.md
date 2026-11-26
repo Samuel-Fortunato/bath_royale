@@ -165,11 +165,26 @@ Verified on 2026-11-26: explicit Auth settings booleans confirm signup enabled a
 - [ ] Resolve production email delivery, target architecture/resources, backup/restore ownership, recovery objectives and running-cost limits without requiring paid subscriptions, domains or new hardware.
 - [ ] Obtain production hosting acceptance only after successful exit evidence and remaining product decisions.
 
-### Phase 2.2 — Local repository and durable synchronization foundation
+### Phase 2.2A — Local repository, incremental persistence and provenance
 
-- [ ] Introduce only the small repository/data-source/session/coordinator boundaries; preserve Provider and existing local UX.
-- [ ] Replace snapshot writes with incremental SQLite transactions; add provenance, account namespaces, durable outbox, revisions, tombstones and pull checkpoints with non-destructive migrations.
-- [ ] Verify offline mutations, crash/retry/idempotency, conflicts, late commits during pagination, deletion safety and fictional/unknown-data upload exclusion.
+- [x] Add one BathroomRepository at the state action boundary; retain Provider/ChangeNotifier/SQLite and existing UX.
+- [x] Replace ordinary snapshots with targeted atomic transactions; commit before observable mutation success and retain exact failed input for explicit retry.
+- [x] Upgrade distributed v4 non-destructively to v5; persist conservative provenance and exclude demo/unclassified legacy from the necessary future-upload gate.
+- [x] Verify migration/initialization, incremental footprints, read/notification purity, atomicity/rollback/retry, restart and provenance with all existing regressions and requested builds.
+
+Verified locally on 2026-11-26: **114 Flutter tests pass** (all 105 existing regressions plus nine targeted repository/migration tests); formatting, strict analysis with the unchanged exact Material-import allowlist, Linux debug and Android debug APK builds pass. All **25 backend regressions pass** in the locked backend shell, including a temporary Unix-socket-only PostgreSQL test; no preserved installation or managed project was touched. Read/notification purity and per-action write footprints are checked with SQLite change counts/audit triggers; injected failures prove rollback, unchanged committed state, completion ordering and retry without duplicates. Distributed v4 fixtures retain exact original column values and gain conservative provenance. Earlier validation attempts exposed cache sandbox access, three brace lints and a misplaced await in discard handling; these were corrected before the final passing runs. See [storage semantics and limits](docs/storage.md). Pending failed input remains memory-only until retry; no durable outbox, account or synchronization work is complete. Hosted CI is reported after push without waiting.
+
+### Phase 2.2B — Account namespaces, durable outbox and client synchronization foundation
+
+- [ ] Add non-destructive account namespaces and durable outbox transactions with stable operation identity; retain guest use and exclude fictional/unknown data.
+- [ ] Introduce only needed data-source/session/coordinator boundaries and client revision/tombstone/checkpoint storage; verify account isolation, offline/restart/retry behavior.
+
+### Phase 2.2C — Server synchronization protocol and end-to-end verification
+
+- [ ] Implement server idempotency, revision/conflict/deletion semantics and scoped pull checkpoints under server-enforced ownership/privacy.
+- [ ] Verify end-to-end synchronization, late commits during pagination, crash/retry/idempotency, conflicts and fictional/unknown-data exclusion before account/publication rollout.
+
+Only 2.2A is authorized in the current session. No account UI, cloud mutations, outbox processing, server sync commands or changes to the preserved backend environments are included.
 
 ### Phase 2.3 — Optional accounts and private data association
 

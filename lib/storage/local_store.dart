@@ -5,6 +5,7 @@ import '../models/bathroom_activity.dart';
 import '../models/review.dart';
 import '../models/tag_presentation.dart';
 import '../models/visit.dart';
+import '../models/provenance.dart';
 
 class LocalData {
   final List<Bathroom> bathrooms;
@@ -31,7 +32,7 @@ class LocalStore {
         throw StateError('Database integrity check failed');
       }
       final version = database.userVersion;
-      if (version > 4) {
+      if (version > 5) {
         throw StateError('Database was created by a newer application');
       }
       transaction(() {
@@ -84,10 +85,32 @@ class LocalStore {
           }
           database.userVersion = 4;
         }
+        if (version < 5) {
+          for (final table in [
+            'bathrooms',
+            'visits',
+            'reviews',
+            'favourites',
+          ]) {
+            database.execute(
+              "ALTER TABLE $table ADD COLUMN provenance TEXT NOT NULL DEFAULT 'unclassified_legacy' CHECK(provenance IN ('demo','unclassified_legacy','user_created','remote'))",
+            );
+          }
+          // Stable seed identities remain fictional even after local edits.
+          database.execute(
+            "UPDATE bathrooms SET provenance='demo' WHERE id IN ('0','1','2','3','4','5')",
+          );
+          for (final table in ['visits', 'reviews', 'favourites']) {
+            database.execute(
+              "UPDATE $table SET provenance='demo' WHERE bathroom IN (SELECT id FROM bathrooms WHERE provenance='demo')",
+            );
+          }
+          database.userVersion = 5;
+        }
+        if (database.select('PRAGMA foreign_key_check').isNotEmpty) {
+          throw StateError('Broken database references');
+        }
       });
-      if (database.select('PRAGMA foreign_key_check').isNotEmpty) {
-        throw StateError('Broken database references');
-      }
     } catch (_) {
       database.close();
       rethrow;
@@ -185,57 +208,142 @@ CREATE TABLE favourites (user TEXT NOT NULL CHECK(length(user)>0), bathroom TEXT
     );
   }
 
-  /// Bounded local prototype: replace a consistent snapshot in one transaction.
-  void save(LocalData data) => transaction(() {
-    for (final table in ['reviews', 'visits', 'favourites', 'bathrooms']) {
-      database.execute('DELETE FROM $table');
-    }
+  /// Only first-run fixtures use this bulk path; the marker commits with them.
+  void initialize(LocalData data) => transaction(() {
+    if (load() != null) return;
     for (final b in data.bathrooms) {
-      database.execute('INSERT INTO bathrooms VALUES(?,?,?,?,?,?)', [
-        b.id,
-        b.name,
-        b.name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase(),
-        b.createdBy,
-        b.emoji,
-        b.accent,
-      ]);
+      insertBathroom(b, provenance: Provenance.demo);
     }
     for (final v in data.visits) {
-      database.execute('INSERT INTO visits VALUES(?,?,?,?)', [
-        v.id,
-        v.bathroomId,
-        v.userId,
-        v.visitedAt.microsecondsSinceEpoch,
-      ]);
+      insertVisit(v);
     }
     for (final r in data.reviews) {
-      database
-          .execute('INSERT INTO reviews VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)', [
-            r.id,
-            r.visitId,
-            r.bathroomId,
-            r.authorId,
-            r.createdAt.microsecondsSinceEpoch,
-            r.updatedAt.microsecondsSinceEpoch,
-            r.rating,
-            r.paperAvailability,
-            r.hygiene,
-            r.comfort,
-            r.aesthetics,
-            jsonEncode(r.tags),
-            r.comment,
-          ]);
+      writeReview(r, isNew: true);
     }
     for (final f in data.favourites.where((f) => f.isFavorite)) {
-      database.execute('INSERT INTO favourites VALUES(?,?)', [
-        f.userId,
-        f.bathroomId,
+      setFavourite(f.userId, f.bathroomId, true);
+    }
+    setDarkMode(data.darkMode);
+    database.execute('INSERT INTO metadata VALUES(1,1)');
+  });
+
+  void insertBathroom(Bathroom b, {required Provenance provenance}) {
+    database.execute('INSERT INTO bathrooms VALUES(?,?,?,?,?,?,?)', [
+      b.id,
+      b.name,
+      b.name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase(),
+      b.createdBy,
+      b.emoji,
+      b.accent,
+      provenance.value,
+    ]);
+  }
+
+  void updateBathroom(Bathroom b) {
+    database.execute(
+      'UPDATE bathrooms SET name=?,normalized_name=?,emoji=?,accent=? WHERE id=? AND creator=?',
+      [
+        b.name,
+        b.name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase(),
+        b.emoji,
+        b.accent,
+        b.id,
+        b.createdBy,
+      ],
+    );
+    if (database.updatedRows != 1) {
+      throw StateError('Bathroom identity changed');
+    }
+  }
+
+  Provenance bathroomProvenance(String id) => Provenance.fromValue(
+    database.select('SELECT provenance FROM bathrooms WHERE id=?', [
+          id,
+        ]).single['provenance']
+        as String,
+  );
+
+  void insertVisit(Visit v) {
+    database.execute('INSERT INTO visits VALUES(?,?,?,?,?)', [
+      v.id,
+      v.bathroomId,
+      v.userId,
+      v.visitedAt.microsecondsSinceEpoch,
+      bathroomProvenance(v.bathroomId).child.value,
+    ]);
+  }
+
+  void writeReview(Review r, {required bool isNew}) {
+    final content = [
+      r.updatedAt.microsecondsSinceEpoch,
+      r.rating,
+      r.paperAvailability,
+      r.hygiene,
+      r.comfort,
+      r.aesthetics,
+      jsonEncode(r.tags),
+      r.comment,
+    ];
+    if (isNew) {
+      final origin = Provenance.fromValue(
+        database.select('SELECT provenance FROM visits WHERE id=?', [
+              r.visitId,
+            ]).single['provenance']
+            as String,
+      );
+      database.execute(
+        'INSERT INTO reviews (id,visit,bathroom,author,created,updated,rating,paper,hygiene,comfort,aesthetics,tags,comment,provenance) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        [
+          r.id,
+          r.visitId,
+          r.bathroomId,
+          r.authorId,
+          r.createdAt.microsecondsSinceEpoch,
+          ...content,
+          origin.child.value,
+        ],
+      );
+    } else {
+      database.execute(
+        'UPDATE reviews SET updated=?,rating=?,paper=?,hygiene=?,comfort=?,aesthetics=?,tags=?,comment=? WHERE id=? AND visit=? AND bathroom=? AND author=? AND created=? AND updated<=?',
+        [
+          ...content,
+          r.id,
+          r.visitId,
+          r.bathroomId,
+          r.authorId,
+          r.createdAt.microsecondsSinceEpoch,
+          r.updatedAt.microsecondsSinceEpoch,
+        ],
+      );
+      if (database.updatedRows != 1) {
+        throw StateError('Review identity changed');
+      }
+    }
+  }
+
+  void removeVisit(String id) {
+    database.execute('DELETE FROM reviews WHERE visit=?', [id]);
+    database.execute('DELETE FROM visits WHERE id=?', [id]);
+  }
+
+  void setFavourite(String user, String bathroom, bool value) {
+    if (value) {
+      database.execute(
+        'INSERT INTO favourites VALUES(?,?,?) ON CONFLICT(user,bathroom) DO NOTHING',
+        [user, bathroom, bathroomProvenance(bathroom).child.value],
+      );
+    } else {
+      database.execute('DELETE FROM favourites WHERE user=? AND bathroom=?', [
+        user,
+        bathroom,
       ]);
     }
-    database.execute('UPDATE settings SET dark_mode=? WHERE id=1', [
-      data.darkMode ? 1 : 0,
-    ]);
-    database.execute('INSERT OR IGNORE INTO metadata VALUES(1,1)');
-  });
+  }
+
+  void setDarkMode(bool value) => database.execute(
+    'UPDATE settings SET dark_mode=? WHERE id=1',
+    [value ? 1 : 0],
+  );
   void close() => database.close();
 }

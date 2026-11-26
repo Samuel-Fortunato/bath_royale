@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:bath_royale/models/bathroom.dart';
 import 'package:bath_royale/models/bathroom_activity.dart';
@@ -7,11 +8,19 @@ import 'package:bath_royale/models/visit.dart';
 import 'sample_data.dart';
 import 'package:uuid/uuid.dart';
 import '../storage/local_store.dart';
+import '../storage/bathroom_repository.dart';
 
 class AppState extends ChangeNotifier {
   final String currentUserId;
-  final LocalStore? store;
+  final BathroomRepository? repository;
+  void Function()? _pendingWrite;
+  void Function()? _pendingApply;
   Object? storageError;
+  Completer<void>? _pendingCompletion;
+
+  /// UI success continuations wait here if the local transaction needs retry.
+  Future<void> get persistenceComplete =>
+      _pendingCompletion?.future ?? Future.value();
   final _visitInteraction = Stopwatch();
   Visit? _lastRegistered;
   static String newEntityId() => const Uuid().v4();
@@ -25,10 +34,11 @@ class AppState extends ChangeNotifier {
   );
 
   static AppState restore(LocalStore store) {
-    final data = store.load();
+    final repository = BathroomRepository(store);
+    final data = repository.load();
     final state = data == null
         ? AppState(
-            store: store,
+            repository: repository,
             visits: [
               for (final r in createSampleReviews())
                 Visit(
@@ -53,29 +63,54 @@ class AppState extends ChangeNotifier {
             ],
           )
         : AppState(
-            store: store,
+            repository: repository,
             bathrooms: data.bathrooms,
             visits: data.visits,
             reviews: data.reviews,
             activities: data.favourites,
             darkMode: data.darkMode,
           );
-    if (data == null) store.save(state.localData);
+    try {
+      if (data == null) repository.initialize(state.localData);
+    } catch (_) {
+      state.dispose();
+      rethrow;
+    }
     return state;
   }
 
-  @override
-  void notifyListeners() {
-    try {
-      store?.save(localData);
-      storageError = null;
-    } catch (error) {
-      storageError = error;
+  // A single failed action retains its exact payload/IDs until explicit retry.
+  // Observable domain state always represents committed data.
+  void _mutate(void Function() write, void Function() apply) {
+    if (_pendingWrite != null) {
+      throw StateError('Retry pending storage action first');
     }
-    super.notifyListeners();
+    _pendingCompletion = Completer<void>();
+    _pendingWrite = write;
+    _pendingApply = apply;
+    retryStorage();
   }
 
-  void retryStorage() => notifyListeners();
+  void retryStorage() {
+    final write = _pendingWrite;
+    if (write == null) return;
+    try {
+      write();
+    } catch (error) {
+      storageError = error;
+      notifyListeners(); // Error notification only; no successful mutation.
+      return;
+    }
+    final apply = _pendingApply!;
+    _pendingWrite = null;
+    _pendingApply = null;
+    storageError = null;
+    apply();
+    _pendingCompletion!.complete();
+    _pendingCompletion = null;
+    notifyListeners();
+  }
+
   final List<Bathroom> _bathrooms;
 
   List<Bathroom> get allBathrooms => List.unmodifiable(_bathrooms);
@@ -85,7 +120,7 @@ class AppState extends ChangeNotifier {
 
   AppState({
     this.currentUserId = localUserId,
-    this.store,
+    this.repository,
     this.darkMode = true,
     List<Bathroom>? bathrooms,
     List<Review>? reviews,
@@ -183,9 +218,32 @@ class AppState extends ChangeNotifier {
       emoji: emoji,
       accent: accent,
     );
-    _bathrooms.add(bathroom);
-    notifyListeners();
+    _mutate(
+      () => repository?.createBathroom(bathroom),
+      () => _bathrooms.add(bathroom),
+    );
     return bathroom;
+  }
+
+  void updateBathroom(Bathroom bathroom) {
+    final index = _bathrooms.indexWhere((b) => b.id == bathroom.id);
+    if (index < 0 || _bathrooms[index].createdBy != bathroom.createdBy) {
+      throw StateError('Bathroom identity is immutable');
+    }
+    final error = validateBathroomName(bathroom.name);
+    if (normalizeName(_bathrooms[index].name) != normalizeName(bathroom.name) &&
+        error != null) {
+      throw ArgumentError(error);
+    }
+    if (!Bathroom.emojis.contains(bathroom.emoji) ||
+        bathroom.accent < 0 ||
+        bathroom.accent >= Bathroom.accentNames.length) {
+      throw ArgumentError('Invalid identity');
+    }
+    _mutate(
+      () => repository?.updateBathroom(bathroom),
+      () => _bathrooms[index] = bathroom,
+    );
   }
 
   List<Review> get reviews => List.unmodifiable(_reviews);
@@ -239,12 +297,19 @@ class AppState extends ChangeNotifier {
 
   void toggleFavorite(String bathroomId) {
     final previous = activityFor(bathroomId);
-    _activities[(currentUserId, bathroomId)] = BathroomActivity(
+    final activity = BathroomActivity(
       userId: currentUserId,
       bathroomId: bathroomId,
       isFavorite: !previous.isFavorite,
     );
-    notifyListeners();
+    _mutate(
+      () => repository?.setFavourite(
+        currentUserId,
+        bathroomId,
+        activity.isFavorite,
+      ),
+      () => _activities[(currentUserId, bathroomId)] = activity,
+    );
   }
 
   String newVisitId() => newEntityId();
@@ -279,11 +344,12 @@ class AppState extends ChangeNotifier {
       visitedAt: visitedAt,
     );
     _validateNewVisit(visit);
-    _visits.add(visit);
-    _lastRegistered = visit;
-    _visitInteraction.reset();
-    _visitInteraction.start();
-    notifyListeners();
+    _mutate(() => repository?.recordVisit(visit), () {
+      _visits.add(visit);
+      _lastRegistered = visit;
+      _visitInteraction.reset();
+      _visitInteraction.start();
+    });
     return visit;
   }
 
@@ -293,9 +359,12 @@ class AppState extends ChangeNotifier {
       (v) => v.id == visitId && v.userId == currentUserId,
     );
     if (matches.isEmpty || reviewForVisit(visitId) != null) return false;
-    _visits.remove(matches.single);
-    notifyListeners();
-    return true;
+    final visit = matches.single;
+    _mutate(
+      () => repository?.deleteVisit(visitId),
+      () => _visits.remove(visit),
+    );
+    return storageError == null;
   }
 
   void deleteVisit(String visitId, {bool deleteReview = false}) {
@@ -305,9 +374,11 @@ class AppState extends ChangeNotifier {
     if (matches.isEmpty) throw StateError('Visit not found');
     final review = reviewForVisit(visitId);
     if (review != null && !deleteReview) throw StateError('Visit has a review');
-    if (review != null) _reviews.remove(review);
-    _visits.remove(matches.single);
-    notifyListeners();
+    final visit = matches.single;
+    _mutate(() => repository?.deleteVisit(visitId), () {
+      if (review != null) _reviews.remove(review);
+      _visits.remove(visit);
+    });
   }
 
   /// Local ownership guard, not authentication or a future security boundary.
@@ -332,10 +403,7 @@ class AppState extends ChangeNotifier {
         _reviews.any((r) => r.visitId == review.visitId && r.id != review.id)) {
       throw StateError('Invalid review visit');
     }
-    if (index < 0) {
-      if (newVisit != null) _visits.add(newVisit);
-      _reviews.add(review);
-    } else {
+    if (index >= 0) {
       final previous = _reviews[index];
       if (previous.authorId != currentUserId ||
           previous.bathroomId != review.bathroomId ||
@@ -346,14 +414,24 @@ class AppState extends ChangeNotifier {
           'Review identity is immutable; updates must not go backwards',
         );
       }
-      _reviews[index] = review;
     }
-    notifyListeners();
+    _mutate(
+      () =>
+          repository?.saveReview(review, newVisit: newVisit, isNew: index < 0),
+      () {
+        if (index < 0) {
+          if (newVisit != null) _visits.add(newVisit);
+          _reviews.add(review);
+        } else {
+          _reviews[index] = review;
+        }
+      },
+    );
   }
 
   bool darkMode;
   void toggleTheme() {
-    darkMode = !darkMode;
-    notifyListeners();
+    final value = !darkMode;
+    _mutate(() => repository?.setDarkMode(value), () => darkMode = value);
   }
 }

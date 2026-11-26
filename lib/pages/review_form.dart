@@ -129,7 +129,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     if (_tagError != null) _tagFocus.requestFocus();
   }
 
-  void _save() {
+  void _save() async {
     if (_rating == null ||
         [_hygiene, _comfort, _aesthetics, _paper].contains(null)) {
       return;
@@ -179,6 +179,8 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         ),
         newVisit: visit,
       );
+      await state.persistenceComplete;
+      if (!mounted) return;
       setState(() => _allowPop = true);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) Navigator.of(context).pop();

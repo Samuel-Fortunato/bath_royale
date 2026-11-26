@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Phase 2.2A: introduce the local BathroomRepository boundary and targeted atomic SQLite actions, removing snapshot writes from notifications. Commit before observable success, retain failed payloads/identities for explicit retry and delay UI success continuations until persistence completes.
+- Upgrade v4 to v5 transactionally without resetting content; persist demo/legacy/user-created/remote provenance with conservative inheritance and a default-deny future-upload gate. Preserve local visibility, rating semantics and UI.
+- Add nine migration/repository regressions; verify all 114 Flutter and 25 backend tests, formatting, unchanged strict-analysis gate and Linux/Android debug builds. Split remaining work into 2.2B (namespaces/outbox/client) and 2.2C (server protocol/end-to-end).
+
 - Extract the verified managed migration scripts into independent private export, fresh disposable restore and preservation verification tooling; retain CLI filtering/TLS, transactional import, explicit compatibility policy and source ACL reconciliation. Add offline regressions and usage; preserve the historical rehearsal evidence without repeating live operations.
 
 - Phase 2.1C: verify the actual managed-Free exit into a third isolated self-hosted target, with exact identity/content/hash and application authorization preservation, original-password login, session isolation and restart checks; preserve all environments and private checksummed evidence.

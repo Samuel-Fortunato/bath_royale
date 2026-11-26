@@ -61,6 +61,8 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
       setState(() => _inviting = true);
       try {
         final visit = state.recordVisit(bathroomId, visitedAt: DateTime.now());
+        await state.persistenceComplete;
+        if (!mounted || !context.mounted) return;
         HapticFeedback.lightImpact();
         final choice = await showModalBottomSheet<String>(
           context: context,

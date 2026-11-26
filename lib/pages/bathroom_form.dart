@@ -16,6 +16,7 @@ class BathroomFormPage extends StatefulWidget {
 class _BathroomFormPageState extends State<BathroomFormPage> {
   String _emoji = '🚽';
   int _accent = 0;
+  bool _saving = false;
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController();
 
@@ -25,14 +26,17 @@ class _BathroomFormPageState extends State<BathroomFormPage> {
     super.dispose();
   }
 
-  void _save() {
-    if (!_form.currentState!.validate()) return;
+  void _save() async {
+    if (_saving || !_form.currentState!.validate()) return;
+    _saving = true;
     final state = context.read<AppState>();
     final bathroom = state.createBathroom(
       _name.text,
       emoji: _emoji,
       accent: _accent,
     );
+    await state.persistenceComplete;
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) => ChangeNotifierProvider.value(
