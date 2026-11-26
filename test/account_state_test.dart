@@ -12,30 +12,24 @@ import 'package:bath_royale/sync/sync_store.dart';
 
 void main() {
   test(
-    'device scope hides retained guest draft when authentication overtakes editing',
+    'device scope refuses writable guest selection without opening its file',
     () async {
       final auth = FakeAuthSession();
+      var opens = 0;
       final scope = AccountStateScope.device(
         auth: auth,
-        openStore: (n) async =>
-            LocalStore(sqlite3.openInMemory(), namespace: n),
+        openStore: (n) async {
+          opens++;
+          return LocalStore(sqlite3.openInMemory(), namespace: n);
+        },
       );
-      await scope.select(const DataNamespace.guest());
-      final release = scope.state!.retainDraft();
-      auth.change(
-        SessionIdentity(
-          DataNamespace.account('environment', 'subject'),
-          DateTime.now().millisecondsSinceEpoch + 60000,
-        ),
-      );
-      expect(scope.isAccessible, isFalse);
       await expectLater(
-        scope.select(auth.current!.namespace),
+        scope.select(const DataNamespace.guest()),
         throwsStateError,
       );
-      auth.logout();
-      expect(scope.isAccessible, isTrue);
-      release();
+      expect(opens, 0);
+      expect(scope.state, isNull);
+      expect(scope.isAccessible, isFalse);
       scope.dispose();
       auth.dispose();
     },

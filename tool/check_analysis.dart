@@ -14,6 +14,7 @@ const materialImportBaseline = {
   'lib/pages/explore.dart',
   'lib/pages/home.dart',
   'lib/pages/profile.dart',
+  'lib/pages/authentication.dart',
   'lib/pages/rankings.dart',
   'lib/pages/review_form.dart',
   'lib/theme/custom_color_roles.dart',

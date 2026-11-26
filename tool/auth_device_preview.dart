@@ -21,7 +21,7 @@ AuthConfiguration devicePreviewConfiguration(String endpoint, String key) {
   if (endpoint != 'https://localhost:55474' || key != 'local-device-client') {
     throw ArgumentError('Only the isolated USB development backend is allowed');
   }
-  return AuthConfiguration(
+  return AuthConfiguration.localAlpha(
     endpoint,
     key,
   ); // Release HTTPS validation unchanged.

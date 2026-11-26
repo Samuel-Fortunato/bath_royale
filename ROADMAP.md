@@ -2,6 +2,29 @@
 
 The phases describe intended sequencing, not a fixed specification. Unconfirmed details are proposals and may change with product decisions and implementation findings. Check items only when implemented and verified.
 
+## Current priority — Usable private alpha
+
+The owner has reprioritized delivery to a small group of friends. Phase A1 below supersedes the optional writable guest/embedded Profile authentication decisions in the historical Phase 2.3B entries. Existing completed foundations remain available; later roadmap items do not authorize implementation.
+
+### Phase A1 — Simplified authentication
+
+- [x] Replace writable guest startup with an account gate and dedicated sign-in/registration screens; move Profile account management to that flow. Require an authenticated local identity for bathrooms, visits, reviews and favourites.
+- [x] Preserve the original guest files without opening, deleting, uploading or associating them; retain account SQLite files, secure sessions, offline local access and logout/relogin isolation. No schema reset.
+- [x] Disable mandatory email confirmation exclusively in the isolated local alpha Auth instance. Keep the ordinary production configuration and confirmation/recovery flow available; clearly disclose unavailable local-alpha password recovery.
+- [x] Validate Portuguese forms, password visibility, busy states and visible incorrect-credential feedback, including small screens/large text/keyboard. Verify registration without confirmation, restoration, offline access and account isolation.
+- [x] Prepare and verify the private signed Android APK with the existing package/certificate and previously installed code 1023; verify Android and Linux releases.
+- [ ] Install A1 in place after rechecking the connected phone: currently no device is listed by ADB. Never uninstall or clear data.
+- [ ] Owner physical acceptance: Android Keystore restart, actual offline/reconnection behavior, logout/relogin, A/B isolation, keyboard and retained data.
+
+Unauthenticated shared-catalogue browsing is an approved requirement **when that catalogue exists**. There is no shared catalogue in A1. No-config public builds display an unavailable-account explanation; they do not expose the former guest writer. Existing guest data remains archived on-device and is not shown or imported into new accounts. A1 does not create public profiles or upload domain data. See [the A1 decisions, verification and limitations](docs/backend/authentication-roadmap.md).
+
+### Private alpha release gates and subsequent scope
+
+- [ ] Restrict registration **on the server** before distributing a remotely connected private alpha. Approve the invite/allowlist mechanism and test direct API bypass attempts. APK secrecy and client controls are not access control. The current local listener is USB/loopback only; no managed-project change is authorized.
+- [ ] Approve the next bounded A2 scope before implementing it. Shared catalogue, synchronization/consent, guest-data association and public identity remain deferred; historical Phase 2.3C is unstarted.
+- [ ] Resolve outstanding owner UI/UX feedback: Explore's **+** is unclear; make its purpose/discoverability explicit. Empty states confuse missing catalogue, fresh account, filters, collection and offline availability. Fictional examples need clearer presentation distinct from genuine shared content, without copying them into accounts. Record proposed changes for review; do not claim phone acceptance.
+- [ ] Before real users or production data, replace experimental reset permissions with non-destructive migrations and verify privacy, deletion, recovery, production email verification/delivery, hosting and backup requirements.
+
 ## Phase 0 — Development environment (completed)
 
 - [x] Configure the project Nix flake and direnv integration.

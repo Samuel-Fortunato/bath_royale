@@ -6,17 +6,23 @@ import 'package:bath_royale/auth/production_auth.dart';
 import 'package:bath_royale/auth/restoration_guard.dart';
 import 'package:bath_royale/sync/auth_session.dart';
 import 'production_auth_test.dart' show MemoryVault;
+import 'package:bath_royale/state/account_state_scope.dart';
+import 'package:bath_royale/storage/local_store.dart';
+import 'package:bath_royale/models/review.dart';
+import 'package:sqlite3/sqlite3.dart' show sqlite3;
 import '../tool/auth_device_preview.dart';
 
 void main() {
   test(
-    'isolated real registration, confirmation, recovery, rotation and logout',
+    'isolated real signup, invalid login, persistence, account isolation and lifecycle',
     () async {
       final vault = MemoryVault();
       final directory = Directory.systemTemp.createTempSync('bath-real-auth-');
       addTearDown(() => directory.deleteSync(recursive: true));
       final deviceDirectory = Platform.environment['BATH_DEVICE_TLS_DIRECTORY'];
       final gateway = deviceDirectory != null;
+      final confirmationRequired =
+          Platform.environment['BATH_REAL_AUTH_CONFIRMATION'] == '1';
       if (gateway) {
         final defines =
             jsonDecode(File('$deviceDirectory/defines.json').readAsStringSync())
@@ -28,10 +34,15 @@ void main() {
         addTearDown(() => HttpOverrides.global = previous);
       }
       final config = gateway
-          ? devicePreviewConfiguration(
-              'https://localhost:55474',
-              'local-device-client',
-            )
+          ? (confirmationRequired
+                ? AuthConfiguration(
+                    'https://localhost:55474',
+                    'local-device-client',
+                  )
+                : devicePreviewConfiguration(
+                    'https://localhost:55474',
+                    'local-device-client',
+                  ))
           : AuthConfiguration(
               'http://127.0.0.1:55471',
               'local-client',
@@ -98,21 +109,86 @@ void main() {
 
       await auth.restore();
       await auth.register(email, password);
-      expect(auth.current, isNull, reason: auth.message);
-      expect(auth.message, contains('Consulta'));
-      await auth.login(email, password);
-      expect(auth.message, contains('Confirma'));
-      // Direct local Auth has /verify rather than gateway /auth/v1/verify.
-      final confirmation = Uri.parse(await link());
-      await auth.confirm(email, mappedLink(confirmation), recovery: false);
+      if (confirmationRequired) {
+        expect(auth.current, isNull, reason: auth.message);
+        expect(auth.message, contains('Consulta'));
+        await auth.login(email, password);
+        expect(auth.message, contains('Confirma'));
+        final confirmation = Uri.parse(await link());
+        await auth.confirm(email, mappedLink(confirmation), recovery: false);
+      }
+
       expect(auth.current, isNotNull, reason: auth.message);
       await auth.login(email, password);
       expect(auth.current, isNotNull, reason: auth.message);
       final identity = auth.current!.namespace;
+      AccountStateScope openScope(ProductionAuth selected) =>
+          AccountStateScope.device(
+            auth: selected,
+            openStore: (n) async => LocalStore(
+              sqlite3.open('${directory.path}/${n.fileName}'),
+              namespace: n,
+            ),
+          );
+      var scope = openScope(auth);
+      await scope.select(identity);
+      expect(scope.state!.allBathrooms, isEmpty);
+      final bathroom = scope.state!.createBathroom('Trono A fictício');
+      final visit = scope.state!.recordVisit(
+        bathroom.id,
+        visitedAt: DateTime.utc(2026, 11, 26),
+      );
+      scope.state!.saveReview(
+        Review(
+          id: 'real-a-review',
+          visitId: visit.id,
+          bathroomId: bathroom.id,
+          authorId: identity.subject,
+          createdAt: visit.visitedAt,
+          rating: 4.2,
+          paperAvailability: 2,
+          hygiene: 3,
+          comfort: 4,
+          aesthetics: 2,
+        ),
+      );
+      scope.state!.toggleFavorite(bathroom.id);
+      scope.dispose();
+      await auth.logout();
+      await auth.login(email, 'Incorrect-fictional-password');
+      expect(auth.current, isNull);
+      expect(auth.message, contains('incorretos'));
+      await auth.login(email, password);
+      expect(auth.current!.namespace, identity);
+      // Register a second fictional account, with no access to A's local data.
+      if (!confirmationRequired) {
+        await auth.logout();
+        await auth.register('second-$email', password);
+        expect(auth.current, isNotNull, reason: auth.message);
+        expect(auth.current!.namespace, isNot(identity));
+        scope = openScope(auth);
+        await scope.select(auth.current!.namespace);
+        expect(scope.state!.allBathrooms, isEmpty);
+        expect(scope.state!.visits, isEmpty);
+        expect(scope.state!.reviews, isEmpty);
+        scope.state!.createBathroom('Trono B fictício');
+        scope.dispose();
+        await auth.logout();
+        await auth.login(email, password);
+      }
+
       auth.dispose();
       auth = make();
       await auth.restore();
       expect(auth.current!.namespace, identity);
+      scope = openScope(auth);
+      await scope.select(identity);
+      expect(scope.state!.allBathrooms.single.id, bathroom.id);
+      expect(scope.state!.visits.single.id, visit.id);
+      expect(scope.state!.reviews.single.rating, 4.2);
+      expect(scope.state!.activityFor(bathroom.id).isFavorite, isTrue);
+      expect(scope.state!.repository!.syncContext, isNull);
+      scope.dispose();
       final beforeRotation = vault.values[config.storageKey];
       await auth.renew();
       expect(vault.values[config.storageKey], isNot(beforeRotation));
@@ -136,6 +212,14 @@ void main() {
       await auth.login(email, password);
       await auth.logout();
       expect(vault.values, isEmpty);
+      if (!confirmationRequired) {
+        if (!config.passwordRecoveryAvailable) {
+          await auth.recover(email);
+          expect(auth.message, contains('não está disponível'));
+        }
+        auth.dispose();
+        return;
+      }
       await Future<void>.delayed(const Duration(seconds: 2));
       await auth.recover(email);
       final listing = await mail('messages') as Map;

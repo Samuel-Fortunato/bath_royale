@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:convert';
 import 'package:bath_royale/auth/production_auth.dart';
-import 'package:bath_royale/pages/profile.dart';
+import 'package:bath_royale/pages/authentication.dart';
+import 'package:bath_royale/pages/home.dart';
+import 'package:bath_royale/theme/theme.dart';
 import 'production_auth_test.dart'
     show MemoryGuard, MemoryVault, DelayedLoginClient, fixtureSession;
-import 'package:supabase/supabase.dart' show AuthResponse, Session;
+import 'package:supabase/supabase.dart'
+    show AuthResponse, AuthException, Session;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart' hide Session;
@@ -33,6 +37,258 @@ class SequenceClient extends DelayedLoginClient {
 }
 
 void main() {
+  testWidgets(
+    'A1 gate preserves legacy bytes and account records across logout and restart',
+    (tester) async {
+      final directory = Directory.systemTemp.createTempSync('bath-a1-upgrade-');
+      addTearDown(() => directory.deleteSync(recursive: true));
+      final legacyFile = File('${directory.path}/legacy.sqlite3');
+      final legacy = LocalStore(sqlite3.open(legacyFile.path));
+      final old = AppState.restore(legacy);
+      old.createBathroom('Trono anterior');
+      old.toggleFavorite(old.allBathrooms.last.id);
+      old.dispose();
+      legacy.close();
+      final original = legacyFile.readAsBytesSync();
+      final vault = MemoryVault();
+      final first = fixtureSession();
+      final second = Session.fromJson({
+        ...first.toJson(),
+        'user': {
+          ...first.user.toJson(),
+          'id': '22222222-2222-4222-8222-222222222222',
+          'email': 'second@example.invalid',
+        },
+      })!;
+      final config = AuthConfiguration.localAlpha(
+        'https://localhost:55474',
+        'local-device-client',
+      );
+      final auth = ProductionAuth(
+        config,
+        vault,
+        restorationGuard: vault.guard,
+        client: SequenceClient([
+          AuthResponse(session: first),
+          AuthResponse(session: second),
+          AuthResponse(session: first),
+        ]),
+      );
+      var opens = 0;
+      Future<LocalStore> open(DataNamespace n) async {
+        expect(n.isAccount, isTrue, reason: 'Guest file must never open in A1');
+        opens++;
+        return LocalStore(
+          sqlite3.open('${directory.path}/${n.fileName}'),
+          namespace: n,
+        );
+      }
+
+      await tester.pumpWidget(
+        AuthenticatedBootstrap(createAuth: () => auth, openStore: open),
+      );
+      await tester.pumpAndSettle();
+      expect(opens, 0);
+      expect(find.byType(HomePage), findsNothing);
+      await auth.login('first@example.invalid', 'password');
+      await tester.pumpAndSettle();
+      var state = tester.element(find.byType(HomePage)).read<AppState>();
+      expect(state.allBathrooms, isEmpty);
+      final bathroom = state.createBathroom('Trono da conta A');
+      final visit = state.recordVisit(
+        bathroom.id,
+        visitedAt: DateTime.utc(2026, 11, 26),
+      );
+      state.toggleFavorite(bathroom.id);
+      state.saveReview(
+        Review(
+          id: 'a1-review',
+          visitId: visit.id,
+          bathroomId: bathroom.id,
+          authorId: state.currentUserId,
+          createdAt: visit.visitedAt,
+          rating: 4.5,
+          paperAvailability: 2,
+          hygiene: 4,
+          comfort: 3,
+          aesthetics: 2,
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Profile presents navigation to the dedicated flow, with no embedded form.
+      await tester.tap(find.text('Perfil'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AuthenticationPanel), findsNothing);
+      await tester.tap(find.text('A minha conta'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AuthenticationPage), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await auth.logout();
+      await tester.pumpAndSettle();
+      expect(find.byType(HomePage), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Entrar'), findsOneWidget);
+      await auth.login('second@example.invalid', 'password');
+      await tester.pumpAndSettle();
+      state = tester.element(find.byType(HomePage)).read<AppState>();
+      expect(state.allBathrooms, isEmpty);
+      expect(state.visits, isEmpty);
+      expect(state.reviews, isEmpty);
+      state.createBathroom('Trono da conta B');
+      await auth.logout();
+      await auth.login('first@example.invalid', 'password');
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(const SizedBox.shrink());
+      final restored = ProductionAuth(
+        config,
+        vault,
+        restorationGuard: vault.guard,
+        client: DelayedLoginClient(),
+      );
+      await tester.pumpWidget(
+        AuthenticatedBootstrap(createAuth: () => restored, openStore: open),
+      );
+      await tester.pumpAndSettle();
+      state = tester.element(find.byType(HomePage)).read<AppState>();
+      expect(state.allBathrooms.single.id, bathroom.id);
+      expect(state.visits.single.id, visit.id);
+      expect(state.reviews.single.rating, 4.5);
+      expect(state.activityFor(bathroom.id).isFavorite, isTrue);
+      expect(state.repository!.syncContext, isNull);
+      expect(legacyFile.readAsBytesSync(), original);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'local alpha shows loading and visible invalid-credential feedback',
+    (tester) async {
+      final client = DelayedLoginClient();
+      final vault = MemoryVault();
+      final auth = ProductionAuth(
+        AuthConfiguration.localAlpha(
+          'https://localhost:55474',
+          'local-device-client',
+        ),
+        vault,
+        restorationGuard: vault.guard,
+        client: client,
+      );
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: auth,
+          child: const MaterialApp(home: AuthenticationPage()),
+        ),
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Email'),
+        'friend@example.com',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Palavra-passe'),
+        'wrong-password',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Entrar'));
+      await tester.pump();
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Entrar'))
+            .onPressed,
+        isNull,
+      );
+      client.response.completeError(
+        const AuthException(
+          'Invalid login credentials',
+          code: 'invalid_credentials',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Email ou palavra-passe incorretos.').hitTestable(),
+        findsOneWidget,
+      );
+      expect(auth.current, isNull);
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+      await tester.ensureVisible(find.text('Esqueci-me da palavra-passe'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Esqueci-me da palavra-passe'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining(
+          'A recuperação da palavra-passe não está disponível',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Enviar instruções'), findsNothing);
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text('Email ou palavra-passe incorretos.'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+      auth.dispose();
+    },
+  );
+
+  for (final width in [320.0, 390.0]) {
+    for (final dark in [false, true]) {
+      testWidgets(
+        'dedicated alpha auth at $width px dark=$dark with keyboard and large text',
+        (tester) async {
+          tester.view.physicalSize = Size(width, 800);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final vault = MemoryVault();
+          final auth = ProductionAuth(
+            AuthConfiguration.localAlpha(
+              'https://localhost:55474',
+              'local-device-client',
+            ),
+            vault,
+            restorationGuard: vault.guard,
+          );
+          await tester.pumpWidget(
+            ChangeNotifierProvider.value(
+              value: auth,
+              child: MaterialApp(
+                theme: dark ? AppTheme.darkTheme : AppTheme.lightTheme,
+                builder: (context, child) => MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: const TextScaler.linear(1.5),
+                    viewInsets: const EdgeInsets.only(bottom: 250),
+                  ),
+                  child: child!,
+                ),
+                home: const AuthenticationPage(),
+              ),
+            ),
+          );
+          await tester.ensureVisible(find.text('Criar conta'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Criar conta'));
+          await tester.pumpAndSettle();
+          expect(find.textContaining('sem confirmar o email'), findsOneWidget);
+          expect(find.textContaining('Já recebi'), findsNothing);
+          await tester.ensureVisible(
+            find.widgetWithText(FilledButton, 'Criar conta'),
+          );
+          await tester.pumpAndSettle();
+          expect(
+            find.widgetWithText(FilledButton, 'Criar conta').hitTestable(),
+            findsOneWidget,
+          );
+          await tester.ensureVisible(find.byTooltip('Mostrar palavra-passe'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.byTooltip('Mostrar palavra-passe'));
+          await tester.pump();
+          expect(find.byTooltip('Ocultar palavra-passe'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          await tester.pumpWidget(const SizedBox.shrink());
+          auth.dispose();
+        },
+      );
+    }
+  }
+
   testWidgets(
     'a failed stale store open follows the latest rapid account change',
     (tester) async {
@@ -74,7 +330,7 @@ void main() {
       await auth.login('second@example.invalid', 'password');
       gate.completeError(StateError('old account file failed'));
       await tester.pumpAndSettle();
-      expect(opened, ['', first.user.id, second.user.id]);
+      expect(opened, [first.user.id, second.user.id]);
       expect(find.widgetWithText(AppBar, 'Explorar'), findsOneWidget);
       expect(find.textContaining('ficheiros foram preservados'), findsNothing);
       expect(auth.current!.namespace.subject, second.user.id);
@@ -115,6 +371,7 @@ void main() {
       expect(find.byType(TextField), findsNWidgets(2));
       expect(find.text('Código ou ligação do email'), findsNothing);
       await tester.ensureVisible(find.text('Esqueci-me da palavra-passe'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Esqueci-me da palavra-passe'));
       await tester.pump();
       expect(find.byType(TextField), findsOneWidget);
@@ -194,7 +451,7 @@ void main() {
   });
 
   testWidgets(
-    'configured startup retries a failed account store and returns to guest',
+    'configured startup retries a failed account store and returns to authentication',
     (tester) async {
       final vault = MemoryVault();
       final config = AuthConfiguration('https://example.test', 'client');
@@ -232,7 +489,8 @@ void main() {
       expect(find.widgetWithText(AppBar, 'Explorar'), findsOneWidget);
       await auth.logout();
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(AppBar, 'Explorar'), findsOneWidget);
+      expect(find.widgetWithText(AppBar, 'Explorar'), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Entrar'), findsOneWidget);
       expect(auth.current, isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -293,7 +551,10 @@ void main() {
           ),
         ),
       );
-      expect(find.textContaining('sem criar uma conta'), findsOneWidget);
+      expect(
+        find.textContaining('Os dados anteriores estão preservados'),
+        findsOneWidget,
+      );
       await tester.tap(find.text('Entrar'));
       await tester.pump();
       expect(
@@ -341,34 +602,20 @@ void main() {
       auth.dispose();
     },
   );
-  testWidgets(
-    'startup displays loading, preserves failures and retries with isolated storage',
-    (tester) async {
-      final pending = Completer<LocalStore>();
-      var attempts = 0;
-      await tester.pumpWidget(
-        StorageBootstrap(
-          openStore: () {
-            attempts++;
-            if (attempts == 1) return pending.future;
-            return Future.value(LocalStore(sqlite3.openInMemory()));
-          },
-        ),
-      );
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      pending.completeError(StateError('unavailable'));
-      await tester.pumpAndSettle();
-      expect(
-        find.textContaining('ficheiros foram preservados'),
-        findsOneWidget,
-      );
-      await tester.tap(find.text('Tentar novamente'));
-      await tester.pumpAndSettle();
-      expect(find.widgetWithText(AppBar, 'Explorar'), findsOneWidget);
-      expect(attempts, 2);
-      await tester.pumpWidget(const SizedBox.shrink());
-    },
-  );
+  testWidgets('unconfigured previews expose no writable personal identity', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: AuthenticationUnavailablePage()),
+    );
+    expect(
+      find.textContaining('dados anteriores continuam guardados'),
+      findsOneWidget,
+    );
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('Explorar'), findsNothing);
+  });
   for (final reviewEditor in [false, true]) {
     testWidgets(
       '${reviewEditor ? 'review' : 'bathroom'} draft survives session loss and blocks replacement',

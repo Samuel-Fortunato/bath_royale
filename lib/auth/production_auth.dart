@@ -32,8 +32,29 @@ class PlatformCredentialVault implements CredentialVault {
 class AuthConfiguration {
   final Uri endpoint;
   final String clientKey;
+  // Presentation/capability policy only. The server decides confirmation.
+  final bool emailConfirmationRequired;
+  final bool passwordRecoveryAvailable;
   AuthConfiguration(String url, this.clientKey, {bool localTest = false})
-    : endpoint = Uri.parse(url) {
+    : emailConfirmationRequired = true,
+      passwordRecoveryAvailable = true,
+      endpoint = Uri.parse(url) {
+    _validate(localTest);
+  }
+
+  /// No ordinary dart-define can enable local alpha policy for a managed host.
+  AuthConfiguration.localAlpha(String url, this.clientKey)
+    : emailConfirmationRequired = false,
+      passwordRecoveryAvailable = false,
+      endpoint = Uri.parse(url) {
+    if (url != 'https://localhost:55474' ||
+        clientKey != 'local-device-client') {
+      throw ArgumentError('Isolated USB alpha endpoint required');
+    }
+    _validate(false);
+  }
+
+  void _validate(bool localTest) {
     if (endpoint.userInfo.isNotEmpty ||
         endpoint.query.isNotEmpty ||
         endpoint.fragment.isNotEmpty ||
@@ -63,6 +84,7 @@ class AuthConfiguration {
       }
     }
   }
+
   String get environment => endpoint.toString().replaceAll(RegExp(r'/$'), '');
   String get storageKey => 'bath-auth:${Uri.encodeComponent(environment)}';
 }
@@ -106,6 +128,11 @@ class ProductionAuth extends ChangeNotifier implements AuthSession {
   bool busy = false;
   bool storageBlocked = false;
   String? message;
+  void clearMessage() {
+    message = null;
+    notifyListeners();
+  }
+
   bool _disposed = false;
   Timer? _timer;
   Future<void> _tail = Future.value();
@@ -258,6 +285,11 @@ class ProductionAuth extends ChangeNotifier implements AuthSession {
   });
 
   Future<void> recover(String email) => _run(() async {
+    if (!configuration.passwordRecoveryAvailable) {
+      message =
+          'A recuperação da palavra-passe não está disponível nesta alfa local.';
+      return;
+    }
     await client.resetPasswordForEmail(email.trim());
     message =
         'Se o endereço tiver uma conta, receberás instruções. Podes introduzir o código do email aqui.';

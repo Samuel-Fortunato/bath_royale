@@ -1,4 +1,6 @@
-# Production authentication and device lifecycle — Phase 2.3B
+# Production authentication and device lifecycle — Phase 2.3B foundation
+
+**Current behavior is Phase A1:** [simplified authentication decisions and verification](authentication-roadmap.md). A1 replaces optional guest/embedded Profile startup with a dedicated account gate, preserves the unopened original guest file, and changes only the isolated local alpha to immediate registration with recovery clearly unavailable. The production confirmation/recovery implementation below is retained. The following Phase 2.3B narrative is historical where it describes writable guest fallback, logout to guest or embedded Profile forms.
 
 Email/password authentication is optional. With no backend configuration the original guest bootstrap opens the original database without contacting a server or secure storage. Profile exposes account controls when configured. Authentication does **not** back up domain data, associate guest records, authorize synchronization, create an outbox, open public cache snapshots or create a public profile. No synchronization coordinator is constructed.
 

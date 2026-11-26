@@ -102,6 +102,49 @@ class RevokedClient extends DelayedLoginClient {
 
 void main() {
   test(
+    'alpha policy cannot target production or disable default confirmation',
+    () async {
+      final production = AuthConfiguration(
+        'https://production.example',
+        'sb_publishable_example',
+      );
+      expect(production.emailConfirmationRequired, isTrue);
+      expect(production.passwordRecoveryAvailable, isTrue);
+      expect(
+        () => AuthConfiguration.localAlpha(
+          'https://production.example',
+          'local-device-client',
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => AuthConfiguration.localAlpha(
+          'https://localhost:55474',
+          'sb_publishable_example',
+        ),
+        throwsArgumentError,
+      );
+      final local = AuthConfiguration.localAlpha(
+        'https://localhost:55474',
+        'local-device-client',
+      );
+      expect(local.emailConfirmationRequired, isFalse);
+      final vault = MemoryVault();
+      final auth = ProductionAuth(
+        local,
+        vault,
+        restorationGuard: vault.guard,
+        client: DelayedLoginClient(),
+      );
+      await auth.recover('friend@example.invalid');
+      expect(auth.message, contains('não está disponível'));
+      expect(auth.current, isNull);
+      expect(vault.values, isEmpty);
+      auth.dispose();
+    },
+  );
+
+  test(
     'failed logout denies restart restoration until explicit authentication',
     () async {
       final vault = MemoryVault();

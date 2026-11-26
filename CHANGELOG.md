@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Verify 196 Flutter regressions, real HTTPS immediate-registration and confirmation/recovery variants, 25 offline backend tests, strict analysis and private Android/Linux/public-target Android releases. Prepare signed private A1 APK code 1023; installation awaits a connected ADB device.
+- Phase A1: replace writable guest startup and embedded Profile forms with a dedicated email/password account flow; preserve archived guest files and isolated account data across logout/relogin and restarts, with offline access after authentication.
+- Add visible Portuguese credential errors, form validation, password visibility, loading states and explicit unavailable-recovery guidance for the isolated local alpha. Enable immediate signup only on that local server; retain production confirmation/recovery and strict TLS/key validation.
+- Record the private-alpha priority, future server registration restrictions and deferred Explore +, empty-state and fictional-content feedback. Keep A2, shared catalogue/synchronization and managed Supabase changes unstarted.
+
 - Prepare the authorized SM A166B for manual Phase 2.3B acceptance: verify signing compatibility, install the private Auth release in place with existing code 1023, and leave isolated HTTPS/Auth/Mailpit/USB services running. Owner authentication and data-preservation acceptance remain pending.
 - Add a loopback phone inbox helper that copies correctly mapped confirmation/recovery links without consuming tokens, logging messages or using a public service.
 

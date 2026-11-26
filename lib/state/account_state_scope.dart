@@ -6,16 +6,18 @@ import '../sync/namespace.dart';
 import '../sync/sync_store.dart';
 import 'app_state.dart';
 
-/// Explicit offline test context, never constructed by normal bootstrap.
+/// Owns the authenticated device state or an explicitly injected test context.
 /// Owns one selected state/connection; identity events alone never open stores,
 /// associate guest data, authorize an outbox or execute synchronization.
 class AccountStateScope extends ChangeNotifier {
   final bool offlineAccess;
+  final bool accountOnly;
   final AuthSession auth;
   final Future<LocalStore> Function(DataNamespace) openStore;
   final int Function() now;
   AccountStateScope.forTesting({
     this.offlineAccess = false,
+    this.accountOnly = false,
     required this.auth,
     required this.openStore,
     required this.now,
@@ -30,6 +32,7 @@ class AccountStateScope extends ChangeNotifier {
          auth: auth,
          openStore: openStore,
          offlineAccess: true,
+         accountOnly: true,
          now: () => DateTime.now().millisecondsSinceEpoch,
        );
 
@@ -74,6 +77,11 @@ class AccountStateScope extends ChangeNotifier {
     SyncWriteContext? synchronizationForTesting,
   }) async {
     _guardReplacement();
+    if (accountOnly && !namespace.isAccount) {
+      throw StateError(
+        'Device access requires an account; legacy files are preserved',
+      );
+    }
     if (synchronizationForTesting != null &&
         (!namespace.isAccount ||
             synchronizationForTesting.namespace != namespace)) {
