@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a guarded read-only managed-project preflight with verified TLS, private credential-file validation and no-email Auth readiness checks; record Phase 2.1C preparation without passing the managed exit gate.
+
 - Phase 2.1B: parameterize the rootless backend lifecycle for isolated source/destination installations, independently generated runtime credentials and loopback-only ports.
 - Add logical schema/data/Auth identity exports, private checksummed manifests, transactional fail-fast restore, exact row/structural comparisons and foreign-key revalidation before fixture mutations.
 - Verify original-password/UUID login, new refresh sessions, source-token rejection, independent restart and 226 destination authorization assertions with signup disabled and the source stopped/preserved.

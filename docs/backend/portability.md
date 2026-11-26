@@ -124,3 +124,7 @@ See [the runnable environment, exact image pins, authorization evidence and meas
 The [independent migration rehearsal](local-migration.md) now verifies logical export/restore into a separately initialized installation, original-password A/B login with unchanged UUIDs, fresh refresh sessions, rejection of source access/refresh credentials, exact data/structural comparisons, independent restart and the repeated authorization matrix with the source stopped. Roles/extensions/Auth schema are independently bootstrapped from the same pins and checked; only application schema/data and required Auth identities cross the export boundary. Sessions are excluded.
 
 This updates the **local** Export/Login/Independent-restore evidence only: the table's actual managed-export/restore, ancillary-flow and cutover requirements remain unpassed. No object storage is selected; object portability remains untested. Phase 2.1C still requires explicit authorization and real managed-Free evidence.
+
+## Phase 2.1C authorized preflight
+
+The owner has now created and authorized a dedicated managed Free fictional-data project. [Managed migration evidence](cloud-migration.md) records credential-file checks, Auth v2.199.0 and outstanding CA/confirmation preparation. No managed database export or restore has succeeded yet; all managed-exit acceptance rows above remain unpassed. Earlier no-cloud statements describe their original milestones.

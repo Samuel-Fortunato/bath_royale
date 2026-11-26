@@ -153,9 +153,10 @@ Verified on 2026-11-25: **232 assertions on a clean fictional stack**; PostgreSQ
 
 Verified locally on 2026-11-26: independent rootless installations, logical schema/data/Auth identity export with private checksums, exact row/inventory comparisons and foreign-key revalidation, original-password A/B login with unchanged UUIDs, new refresh sessions, rejection of still-unexpired source JWTs and source refresh sessions, independent destination restart, and 226 authorization assertions with signup disabled. Source stopped and preserved. See [commands, measurements, corrections and limits](docs/backend/local-migration.md). Object storage is unselected/untested; managed exit, ARM and production readiness remain unverified. No Flutter backend integration or cloud resources.
 
-### Phase 2.1C — Actual managed-Free exit rehearsal (later explicit authorization)
+### Phase 2.1C — Actual managed-Free exit rehearsal (authorized; preflight in progress)
 
-- [ ] Create a managed test project only under a later explicit task; repeat the real managed-Free-to-independent-self-hosted export/restore and unchanged-password login before production users.
+- [x] Owner created and authorized the dedicated fictional-data managed Free test project.
+- [ ] Complete verified-TLS/no-email preflight, then real managed-Free-to-independent-self-hosted export/restore, original-password login and authorization checks. See [current evidence and preparation](docs/backend/cloud-migration.md); the exit gate remains unpassed.
 - [ ] Resolve production email delivery, target architecture/resources, backup/restore ownership, recovery objectives and running-cost limits without requiring paid subscriptions, domains or new hardware.
 - [ ] Obtain production hosting acceptance only after successful exit evidence and remaining product decisions.
 
