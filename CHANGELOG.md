@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Harden Phase 2.3B restoration with a non-secret durable denial before refresh/logout/credential replacement; fail closed on missing or failed guard storage, retain secure-only tokens, and require one fresh login for pre-hardening sessions without altering account data.
+- Fix disposed-controller submission and idle renewal churn; recover failed account-store opens and rapid identity changes while preserving draft guards. Separate private Profile authentication flows and show email instead of UUID.
+- Verify 189 ordinary Flutter regressions (178 retained plus 11 new), real Auth directly and over the private TLS gateway, strict analysis, offline backend/preview checks and configured Android/Linux release builds. Physical device acceptance remains open.
+- Prepare a private USB/HTTPS Android release target and reproducible in-place testing procedure with the existing package/signing certificate and compatible version codes. Keep public GitHub previews guest-only and Phase 2.3C unstarted.
+
 - Phase 2.3B: add optional official Supabase email/password authentication, secure Android Keystore/Linux Secret Service session persistence, code/link confirmation, recovery and password change through private Profile controls.
 - Restore isolated account data offline without startup network authorization; retain account databases and committed work on logout to original guest. Guard editors/failed commits, refresh rotation, superseded requests and credential-storage failures. Keep all domain synchronization, guest association and public-profile creation disabled.
 - Retain all 170 ordinary Flutter regressions and add eight focused auth/device/UI tests. Verify real adapter confirmation/recovery/refresh rotation and an actual isolated Linux keyring write/read/delete probe.

@@ -43,7 +43,7 @@ Linux builds require a working Linux desktop toolchain. Android production and w
 
 Pushes to `main` and manual runs execute formatting, strict analysis, tests and an optimized universal Android release APK build in the locked Nix environment. Every successful main build automatically publishes a [development pre-release](https://github.com/Samuel-Fortunato/bath_royale/releases) with `bath-royale.apk` and `SHA256SUMS`. Actions artifacts remain available for 14 days.
 
-On your phone, download the APK from the highest-numbered pre-release, open it and choose **Atualizar**. Keep the existing app installed. The package and existing preview certificate remain unchanged; physical update/data preservation still requires owner verification. See [installation, signing, versioning and CI details](docs/android-previews.md). Production store signing remains separate; Phase 2.3B has not started.
+On your phone, download the APK from the highest-numbered pre-release, open it and choose **Atualizar**. Keep the existing app installed. The package and existing preview certificate remain unchanged; physical update/data preservation still requires owner verification. See [installation, signing, versioning and CI details](docs/android-previews.md). Production store signing remains separate. Public previews remain guest-only; use the [private Auth device-testing procedure](docs/android-auth-device-testing.md) for a local configured release. Phase 2.3C remains unstarted.
 
 See [AGENTS.md](AGENTS.md) for development and Git practices.
 

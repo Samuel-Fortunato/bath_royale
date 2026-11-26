@@ -225,6 +225,18 @@ This maintenance milestone does not start Phase 2.3B or production signing. See 
 
 See [production authentication](docs/backend/production-authentication.md). The owner approved email/password, secure persistent sessions, offline account access and isolated local retention after logout. Domain account views remain local-only; remote cache composition, private synchronization, guest association and public identity remain unapproved. No managed or preserved migration/sync installation was accessed. Phase 2.3C remains unstarted.
 
+### Phase 2.3B follow-up — Authentication hardening and device-test preparation
+
+- [x] Reproduce revoked-session restoration after failed secure deletion, disposed submission controllers, non-due renewal churn and missing failed-open retry; add targeted regressions and durable fail-closed restoration permission without placing secrets outside platform storage.
+- [x] Separate private Profile authentication flows, show private email without UUIDs, preserve draft/failed-write guards and recover latest-account/guest selection after store failures.
+- [x] Prepare an isolated USB/HTTPS release target and [device procedure](docs/android-auth-device-testing.md), preserving the package, preview certificate, installed version-code compatibility and guest-only public workflow.
+- [x] Verify all 189 ordinary Flutter tests (all 178 retained plus 11 focused additions), locked dependencies, formatting, unchanged strict analyzer baseline, 25 offline backend tests, Ruff, actionlint and five preview-tooling tests. Real Auth passes directly and through the local TLS gateway; separate certificate/hostname/route checks pass. Standard configured Android release and private HTTPS Android/Linux release targets build; private APK package/certificate/code/AOT verified.
+- [ ] Physical Android update/data preservation, Keystore/restart/offline/revocation and phone flow acceptance; actual Linux desktop keyring lock/unlock. Connected ADB device is unauthorized; no physical acceptance is inferred.
+
+Executed on 2026-11-26. The private APK uses local build-only code 1 and was not installed or published. The isolated Auth backend is stopped with independent data retained; no managed/preserved migration/sync backend was accessed. Local OpenSSL source-build attempts were cancelled in favour of the locked binary cache; early test-only import/override errors were corrected before the final passing checks.
+
+See the [review findings and storage limitations](docs/backend/production-authentication.md#hardening-review-of-commit-871634d). Upgrading the pre-hardening session requires one fresh login; guest/account data remains intact. No private synchronization, guest association, public identity, managed-project access or deployment is included. Phase 2.3C remains unstarted.
+
 ### Phase 2.3C — Consent, explicit association and private synchronization (not started)
 
 - [ ] Approve separate private-history/favourites synchronization consent and explicit guest-data association; preview only eligible genuine data and verify duplicate association/isolation/atomic retry.

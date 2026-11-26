@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase/supabase.dart';
 import '../sync/auth_session.dart';
 import '../sync/namespace.dart';
+import 'restoration_guard.dart';
 
 abstract interface class CredentialVault {
   Future<String?> read(String key);
@@ -71,11 +72,15 @@ class AuthConfiguration {
 class ProductionAuth extends ChangeNotifier implements AuthSession {
   final AuthConfiguration configuration;
   final CredentialVault vault;
+  final RestorationGuard restorationGuard;
+  String? privateEmail;
+  bool needsPasswordChange = false;
   final GoTrueClient client;
   final int Function() now;
   ProductionAuth(
     this.configuration,
     this.vault, {
+    this.restorationGuard = const PlatformRestorationGuard(),
     GoTrueClient? client,
     int Function()? now,
   }) : client =
@@ -137,6 +142,7 @@ class ProductionAuth extends ChangeNotifier implements AuthSession {
 
   void _publish(Session session) {
     if (_disposed || _active != _scheduled) return;
+    privateEmail = session.user.email;
     _identity = SessionIdentity(
       DataNamespace.account(configuration.environment, session.user.id),
       (session.expiresAt ?? 0) * 1000,
@@ -146,50 +152,84 @@ class ProductionAuth extends ChangeNotifier implements AuthSession {
     notifyListeners();
   }
 
-  Future<void> _persist(Session session) async {
+  void _forget(SessionStatus status) {
+    _identity = null;
+    privateEmail = null;
+    needsPasswordChange = false;
+    _status = status;
+    _generation++;
+  }
+
+  Future<void> _setRestoration(bool allowed) =>
+      restorationGuard.setAllowed(configuration.environment, allowed);
+
+  Future<void> _persist(Session session, {bool? recovery}) async {
     if (_disposed || _active != _scheduled) return;
     try {
-      await vault.write(configuration.storageKey, jsonEncode(session.toJson()));
+      await _setRestoration(false);
+      if (_disposed || _active != _scheduled) return;
+      final changingPassword = recovery ?? needsPasswordChange;
+      await vault.write(
+        configuration.storageKey,
+        jsonEncode({
+          ...session.toJson(),
+          'bath_password_recovery': changingPassword,
+        }),
+      );
+      if (_disposed || _active != _scheduled) return;
+      await _setRestoration(true);
+      needsPasswordChange = changingPassword;
       storageBlocked = false;
     } catch (_) {
       storageBlocked = true;
-      // A rotated token must not leave an older reusable token on disk.
+      // The guard remains denied even if secure storage cannot be changed.
       try {
         await vault.delete(configuration.storageKey);
       } catch (_) {}
-      _identity = null;
-      _status = SessionStatus.invalidated;
-      _generation++;
+      _forget(SessionStatus.invalidated);
       rethrow;
     }
   }
 
   Future<void> restore() => _run(() async {
-    String? stored;
     try {
-      stored = await vault.read(configuration.storageKey);
+      final allowed = await restorationGuard.isAllowed(
+        configuration.environment,
+      );
+      if (_disposed || _active != _scheduled) return;
+      if (!allowed) {
+        _forget(SessionStatus.invalidated);
+        await vault.delete(configuration.storageKey);
+        storageBlocked = false;
+        message = 'Entra novamente na conta para continuar.';
+        return;
+      }
+      final stored = await vault.read(configuration.storageKey);
+      if (_disposed || _active != _scheduled) return;
       storageBlocked = false;
+      if (stored == null) {
+        _forget(SessionStatus.unauthenticated);
+      } else {
+        await client.setInitialSession(
+          stored,
+        ); // No network, even for expired JWTs.
+        final session = client.currentSession;
+        if (session == null) throw StateError('Missing session');
+        needsPasswordChange =
+            (jsonDecode(stored) as Map)['bath_password_recovery'] == true;
+        _publish(session);
+      }
     } catch (_) {
       storageBlocked = true;
+      _forget(SessionStatus.invalidated);
       rethrow;
+    } finally {
+      if (!_disposed) {
+        _timer ??= Timer.periodic(const Duration(seconds: 15), (_) {
+          renew();
+        });
+      }
     }
-    if (_disposed || _active != _scheduled) return;
-    if (stored == null) {
-      _identity = null;
-      _status = SessionStatus.unauthenticated;
-      _generation++;
-    }
-    if (stored != null) {
-      await client.setInitialSession(
-        stored,
-      ); // No network, even for expired JWTs.
-      final session = client.currentSession;
-      if (session == null) throw StateError('Missing session');
-      _publish(session);
-    }
-    _timer ??= Timer.periodic(const Duration(seconds: 15), (_) {
-      renew();
-    });
   });
 
   Future<void> login(String email, String password) => _run(() async {
@@ -198,7 +238,7 @@ class ProductionAuth extends ChangeNotifier implements AuthSession {
       email: email.trim(),
       password: password,
     );
-    await _persist(response.session!);
+    await _persist(response.session!, recovery: false);
     _publish(response.session!);
   });
 
@@ -209,7 +249,7 @@ class ProductionAuth extends ChangeNotifier implements AuthSession {
       password: password,
     );
     if (response.session != null) {
-      await _persist(response.session!);
+      await _persist(response.session!, recovery: false);
       _publish(response.session!);
     } else {
       message =
@@ -225,6 +265,7 @@ class ProductionAuth extends ChangeNotifier implements AuthSession {
 
   Future<void> confirm(String email, String code, {required bool recovery}) =>
       _run(() async {
+        if (storageBlocked) throw StateError('Unlock credential storage first');
         final link = Uri.tryParse(code.trim());
         final hash = link?.queryParameters['token'];
         if (hash != null &&
@@ -244,16 +285,18 @@ class ProductionAuth extends ChangeNotifier implements AuthSession {
           tokenHash: hash,
           type: recovery ? OtpType.recovery : OtpType.signup,
         );
-        await _persist(response.session!);
+        await _persist(response.session!, recovery: recovery);
         _publish(response.session!);
       });
 
   Future<void> changePassword(String password) => _run(() async {
-    if (status != SessionStatus.authenticated) {
+    if (storageBlocked || status != SessionStatus.authenticated) {
       throw StateError('Reauthenticate first');
     }
     await client.updateUser(UserAttributes(password: password));
-    if (client.currentSession != null) await _persist(client.currentSession!);
+    if (client.currentSession != null) {
+      await _persist(client.currentSession!, recovery: false);
+    }
     message = 'Palavra-passe atualizada.';
   });
 
@@ -263,10 +306,23 @@ class ProductionAuth extends ChangeNotifier implements AuthSession {
   }
 
   Future<void> _renew() {
-    if (busy || _identity == null) return Future.value();
+    if (_disposed ||
+        storageBlocked ||
+        busy ||
+        _identity == null ||
+        _identity!.expiresAt > now() + 30000) {
+      return Future.value();
+    }
     return _run(() async {
       if (_identity == null) return;
       if (_identity!.expiresAt > now() + 30000) return;
+      // Commit denial before a network call can rotate/revoke the secure token.
+      try {
+        await _setRestoration(false);
+      } catch (_) {
+        storageBlocked = true;
+        rethrow; // No request: cannot learn revocation without durable denial.
+      }
       _generation++; // Expiry invalidates pending remote results before await.
       notifyListeners();
       try {
@@ -281,21 +337,31 @@ class ProductionAuth extends ChangeNotifier implements AuthSession {
         }
         await _persist(response.session!);
         _publish(response.session!);
-      } on AuthException catch (error) {
-        if ({
-          'refresh_token_not_found',
-          'refresh_token_already_used',
-          'session_not_found',
-          'session_expired',
-          'bad_jwt',
-          'user_banned',
-          'user_not_found',
-        }.contains(error.code)) {
-          _identity = null;
-          _status = SessionStatus.invalidated;
-          _generation++;
+      } catch (error) {
+        if (error is AuthException &&
+            {
+              'refresh_token_not_found',
+              'refresh_token_already_used',
+              'session_not_found',
+              'session_expired',
+              'bad_jwt',
+              'user_banned',
+              'user_not_found',
+            }.contains(error.code)) {
+          _forget(SessionStatus.invalidated);
           try {
             await vault.delete(configuration.storageKey);
+          } catch (_) {
+            storageBlocked = true;
+            rethrow;
+          }
+        } else if (_identity != null &&
+            !storageBlocked &&
+            !_disposed &&
+            _active == _scheduled) {
+          // Transient network failure preserves restartable offline access.
+          try {
+            await _setRestoration(true);
           } catch (_) {
             storageBlocked = true;
             rethrow;
@@ -307,11 +373,17 @@ class ProductionAuth extends ChangeNotifier implements AuthSession {
   }
 
   Future<void> logout() => _run(() async {
-    // Delete must succeed before reporting logout; no plaintext fallback.
-    await vault.delete(configuration.storageKey);
-    _identity = null;
-    _status = SessionStatus.unauthenticated;
-    _generation++;
+    // Denial must commit first. A failed deletion remains a failed logout,
+    // but can no longer restore credentials after process death.
+    try {
+      await _setRestoration(false);
+      await vault.delete(configuration.storageKey);
+      storageBlocked = false;
+    } catch (_) {
+      storageBlocked = true;
+      rethrow;
+    }
+    _forget(SessionStatus.unauthenticated);
     notifyListeners();
     // Local credentials are already removed; unavailable server cannot block guest return.
     try {

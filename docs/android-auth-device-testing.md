@@ -1,0 +1,121 @@
+# Private Android authentication preview
+
+The ordinary GitHub APK is intentionally **guest-only**: its `lib/main.dart` build has no `SUPABASE_URL` or `SUPABASE_PUBLISHABLE_KEY`. Do not add a development endpoint, CA, signing material or Auth credentials to that workflow or publish the APK described here. Backend deployment and public email delivery remain separate approval gates. This procedure uses only the independent `bath-royale-poc-auth` installation, fictional accounts, local mail capture and USB. It never needs the existing managed project, a paid service, a domain or a public listener.
+
+## HTTPS without a public deployment
+
+`tool/auth_device_preview.dart` is a separate, explicitly selected entry point. It accepts only `https://localhost:55474` and the placeholder `local-device-client`. The direct isolated Auth server does not require a gateway API key; this placeholder conveys no elevated privilege and must never be substituted for a managed project's secret/service-role key.
+
+The target uses a fresh Dart `SecurityContext` containing only the supplied short-lived localhost certificate. Certificate trust, hostname and expiry validation stay enabled; there is no `badCertificateCallback`, HTTP exception or OS-wide CA installation. See Dart's [custom trusted certificate support](https://api.dart.dev/dart-io/HttpClient-class.html) and [SecurityContext](https://api.dart.dev/dart-io/SecurityContext-class.html). The public certificate alone enters the APK. Its private key stays on the development computer outside the checkout. The ordinary app entry point never imports this target or changes its platform TLS trust.
+
+`tool/auth_device_proxy.py` terminates TLS exclusively on computer loopback port 55474 and proxies `/auth/v1/` to the independent Auth listener on 127.0.0.1:55471. It exposes no REST/database endpoint and prints no requests or tokens. `adb reverse` carries the phone's localhost connection over USB. Unplugging USB or removing that forwarding disconnects Auth. This is a local transport test, not evidence of production HTTPS or email delivery.
+
+## Prepare the computer and phone
+
+Use the locked Nix/direnv development environment and keep normal sandboxing. Commands below assume tools are already on PATH; use `direnv exec . <command>` if needed. OpenSSL, when absent, is provided temporarily from the committed flake input. No global NixOS/Home Manager change is needed.
+
+1. Connect the phone by USB, enable USB debugging and accept the computer's authorization prompt. `adb devices -l` must report `device`, not `unauthorized`. If multiple devices are attached, set `ANDROID_SERIAL` to the chosen serial for every command.
+2. Preserve the existing installation and its data. Android updates require the same package/certificate and a version code at least as large as the installed one. See [Android signing](https://developer.android.com/studio/publish/app-signing) and [versioning](https://developer.android.com/studio/publish/versioning).
+3. Point `PREVIEW_KEYSTORE` at the original development key or its secure backup. A GitHub secret cannot be downloaded to recover a lost private key. Never generate a replacement to work around a certificate mismatch.
+
+```sh
+adb devices -l
+export PREVIEW_KEYSTORE=/path/to/original/debug.keystore
+python3 tool/verify_preview.py key "$PREVIEW_KEYSTORE"
+device_dir=$(mktemp -d /tmp/bath-auth-device.XXXXXXXX)
+installed_apk=$(adb shell pm path com.example.bath_royale | python3 -c 'import sys; print(next(s.strip().removeprefix("package:") for s in sys.stdin if s.startswith("package:") and s.strip().endswith("/base.apk")))')
+adb pull "$installed_apk" "$device_dir/installed.apk"
+"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$device_dir/installed.apk"
+device_code=$(adb shell dumpsys package com.example.bath_royale | python3 -c 'import re,sys; m=re.search(r"versionCode=(\d+)",sys.stdin.read()); assert m, "Installed version missing"; print(m[1])')
+```
+
+Check that the installed certificate SHA-256 is exactly:
+
+```text
+4f5c38685c8304dca2708d9627e0287a82f3058c4c2293c42bb980d05bea37fc
+```
+
+The key verifier checks the same fingerprint. If either fails, stop and recover the matching key; do not uninstall or clear storage. The build below deliberately **reuses the installed code** with a distinct version name. Equal version codes support in-place updates and allow returning to an ordinary CI preview with an equal or higher code. Choosing an arbitrarily huge code would block future lower-numbered CI previews. Do not use `adb install -d` to bypass version checks. Our build-only verification uses code 1, which is not evidence that code 1 is compatible with the phone's current preview.
+
+## Start the isolated backend and TLS gateway
+
+```sh
+POC_INSTANCE=auth nix develop .#backend --offline --no-write-lock-file --command python3 backend/poc.py start
+nix shell --inputs-from . nixpkgs#openssl --command python3 tool/auth_device_proxy.py prepare "$device_dir"
+adb reverse tcp:55474 tcp:55474
+python3 tool/auth_device_proxy.py serve "$device_dir"
+```
+
+Leave the gateway running in that terminal. In another terminal, reuse the same `device_dir`, `device_code` and `PREVIEW_KEYSTORE` values. `prepare` refuses to overwrite existing certificates/configuration or place credentials inside the checkout. Files are private, the certificate lasts seven days, and `defines.json` contains only the local URL, placeholder client key and public certificate. This temporary shell uses the committed flake input and may fetch its locked packages from the Nix cache. Add `--offline` only when they are already cached; do not install the utility globally.
+
+The backend remains rootless, with independent state/credentials/volumes/network and loopback-only bindings. Confirmation remains required; Mailpit is available **on the computer** at `http://127.0.0.1:55473`. Do not expose Auth or Mailpit to the LAN. Starting/stopping this instance does not select a managed Supabase project.
+
+## Build, verify and install locally
+
+```sh
+flutter pub get --enforce-lockfile
+BATH_DEVICE_TLS_DIRECTORY="$device_dir" flutter test --no-pub test/device_preview_test.dart
+BATH_REAL_AUTH=1 BATH_DEVICE_TLS_DIRECTORY="$device_dir" flutter test --no-pub test/real_auth_test.dart
+flutter build apk --release --no-pub --target tool/auth_device_preview.dart \
+  --dart-define-from-file="$device_dir/defines.json" \
+  --build-number "$device_code" --build-name "0.1.0-auth-local.$device_code"
+python3 tool/verify_preview.py apk build/app/outputs/flutter-apk/app-release.apk \
+  "$device_code" "0.1.0-auth-local.$device_code"
+cp build/app/outputs/flutter-apk/app-release.apk "$device_dir/bath-royale-auth.apk"
+adb install -r "$device_dir/bath-royale-auth.apk"
+```
+
+The verifier checks `com.example.bath_royale`, exact version, existing certificate, non-debuggable universal AOT payload and absence of the debug kernel. Never upload this private APK to GitHub Releases or replace the ordinary public preview. Build from a reviewed commit and record its SHA, version, certificate and checksum with your test notes. Installing with `-r` preserves app storage; actual preservation still needs the checks below. If installation fails, stop without uninstalling. To return to the public preview, first finish/cancel editors and log out, then install the guest-only APK with the same certificate and an equal or higher code.
+
+For Linux compilation of the same device target:
+
+```sh
+flutter build linux --release --no-pub --target tool/auth_device_preview.dart \
+  --dart-define-from-file="$device_dir/defines.json"
+```
+
+Use a working unlocked desktop Secret Service when executing it. This build command alone does not verify the desktop keyring lifecycle.
+
+## Exercise the flows
+
+Use new fictional emails such as `device-trono@example.com` and passwords used nowhere else. Profile now separates login, registration, confirmation, recovery-code validation and password change. Private email identifies the selected account; account UUIDs are not presented as profile information. The email is sent privately to the isolated Auth service; no public profile or domain records are uploaded.
+
+The direct Auth service's captured verification links start with `http://127.0.0.1:55471/verify?`. Before pasting one into the app, replace **only that prefix** with `https://localhost:55474/auth/v1/verify?`, retaining the token/query exactly. This maps the direct test server to the local gateway origin accepted by the adapter. Do not open the link in the browser first: that can consume the token. Use the newest matching confirmation/recovery message. Never paste tokens into logs, issues or test reports. A template containing a numeric OTP can instead be used directly with the matching email.
+
+Record pass/fail separately for each physical check:
+
+| Check | Expected behavior |
+| --- | --- |
+| In-place update | Existing guest bathrooms, visits, reviews, favourites and theme remain; fictional sample labels remain accurate. |
+| Registration/confirmation | Login is rejected before confirmation; confirmation opens an empty isolated account. Guest records are not imported. |
+| Secure restart | Force-stop/reopen restores the selected account and private email, without password entry. |
+| Offline expiry/reconnection | Remove forwarding with `adb reverse --remove tcp:55474`, wait beyond the local 60-second JWT lifetime, force-stop/reopen and use local account data. Restore forwarding; renewal resumes without visible state churn every 15 seconds. |
+| Logout/relogin | Logout returns to the original guest file; restarting stays guest. Relogin restores the original account's committed local data. |
+| Second fictional account | Log out, register/confirm another account, verify it starts empty and cannot see the first account or guest records. |
+| Recovery | Request recovery, copy the newest email token/link, validate it, choose a new password, then log out and log in with it. Recovery intent survives account-tree replacement and restart. |
+| Drafts/failed commits | Finish/cancel editors before switching. After auth loss, reauthenticate to the original account to recover retained work; another account cannot see it. Memory-only drafts cannot survive process death. |
+| Screen/keyboard | Check password visibility, keyboard, small screen, large text and all flows without overflow or inaccessible actions. |
+| Remote revocation | Revoke only the fictional test account's Auth session in the isolated backend; the next due renewal hides its account. Restart must not restore that invalidated identity. |
+| Secure-storage failures | Verify real platform behavior only in a controlled test setup. Automated failure injection covers failed deletion/write/guard access; it does not prove Android Keystore behavior. Do not wipe the app/key store to simulate an error on a data-preservation installation. |
+
+For a controlled fictional revocation, the following touches only the explicitly named isolated container (replace the fictional email if necessary):
+
+```sh
+podman exec bath-royale-poc-auth-db psql -X -U supabase_admin -d postgres \
+  -v ON_ERROR_STOP=1 -c "DELETE FROM auth.sessions WHERE user_id IN (SELECT id FROM auth.users WHERE email = 'device-trono@example.com');"
+```
+
+Environment isolation uses the complete configured URL. This local target has its own environment namespace and must not be pointed at another backend by editing its fixed URL. General account/environment separation also has automated regressions; physical multi-environment acceptance remains open.
+
+## Stop and record limits
+
+Stop the gateway with Ctrl-C, then:
+
+```sh
+adb reverse --remove tcp:55474
+POC_INSTANCE=auth nix develop .#backend --offline --no-write-lock-file --command python3 backend/poc.py stop
+```
+
+Keep the isolated backend data and the original signing-key backup. Remove the private temporary device directory only when its test APK/certificate are no longer needed. Regenerating a certificate requires rebuilding the local target; it does not require clearing phone data.
+
+At this milestone, the release builds and local TLS trust/hostname checks are verified on the development computer. A connected phone is reported **unauthorized** by ADB: no installation, physical Keystore/restart, guest-data preservation, USB-forwarded Auth, phone email/recovery UX or real storage-failure behavior is claimed. Linux desktop keyring locking/unlocking and cross-process acceptance also remain open. Private synchronization, guest association, public identity and Phase 2.3C are not started.

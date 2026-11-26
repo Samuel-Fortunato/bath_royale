@@ -102,7 +102,9 @@ class _StorageBootstrapState extends State<StorageBootstrap> {
 }
 
 class AuthenticatedBootstrap extends StatefulWidget {
-  const AuthenticatedBootstrap({super.key});
+  final ProductionAuth Function()? createAuth;
+  final Future<LocalStore> Function(DataNamespace)? openStore;
+  const AuthenticatedBootstrap({super.key, this.createAuth, this.openStore});
   @override
   State<AuthenticatedBootstrap> createState() => _AuthenticatedBootstrapState();
 }
@@ -123,21 +125,24 @@ class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap> {
 
   Future<void> load() async {
     try {
-      final configuration = AuthConfiguration(
-        const String.fromEnvironment('SUPABASE_URL'),
-        const String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY'),
-      );
-      auth = ProductionAuth(configuration, const PlatformCredentialVault());
+      auth =
+          widget.createAuth?.call() ??
+          ProductionAuth(
+            AuthConfiguration(
+              const String.fromEnvironment('SUPABASE_URL'),
+              const String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY'),
+            ),
+            const PlatformCredentialVault(),
+          );
       scope = AccountStateScope.device(
         auth: auth!,
-        openStore: (n) => openLocalStore(namespace: n),
-      );
-      await auth!.restore();
-      await scope!.select(
-        auth!.current?.namespace ?? const DataNamespace.guest(),
+        openStore: widget.openStore ?? (n) => openLocalStore(namespace: n),
       );
       auth!.addListener(select);
-      if (mounted) setState(() => loading = false);
+      await auth!.restore();
+      if (!mounted) return;
+      setState(() => loading = false);
+      await select();
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -150,25 +155,62 @@ class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap> {
   }
 
   Future<void> select() async {
-    if (selecting || auth!.busy || !mounted) return;
-    final target = auth!.current?.namespace ?? const DataNamespace.guest();
-    if (scope!.state?.repository?.store.namespace == target) return;
+    if (selecting || loading || auth!.busy || !mounted) return;
     selecting = true;
     try {
-      final selected = await scope!.select(target);
-      error = null;
-      if (!selected) {
-        // A session event overtook the open; select the latest identity next.
-        Future<void>.delayed(Duration.zero, select);
+      while (mounted && !auth!.busy) {
+        final target = auth!.current?.namespace ?? const DataNamespace.guest();
+        if (scope!.state?.repository?.store.namespace == target) {
+          error = null;
+          break;
+        }
+        final generation = auth!.generation;
+        try {
+          if (await scope!.select(target)) {
+            error = null;
+          }
+        } catch (_) {
+          error = scope!.state?.hasUncommittedWork == true
+              ? 'Entra na conta original para terminar ou cancelar o editor e tentar guardar novamente. Os dados continuam na origem.'
+              : 'Não foi possível abrir os dados locais. Os ficheiros foram preservados. Tenta novamente ou volta ao modo convidado.';
+          if (generation == auth!.generation) break;
+        }
+        if (generation == auth!.generation) break;
+        // A session event overtook even a failed open. Follow the latest
+        // identity rather than dropping its notification while selecting.
       }
-    } catch (_) {
-      error =
-          'Volta ao modo convidado ou entra na conta original para terminar ou cancelar o editor e tentar guardar novamente. Os dados continuam na origem.';
     } finally {
       selecting = false;
       if (mounted) setState(() {});
     }
   }
+
+  Widget recovery() => ListenableBuilder(
+    listenable: auth!,
+    builder: (context, _) => MaterialApp(
+      home: Scaffold(
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              if (error != null) Text(error!),
+              AuthenticationPanel(
+                canTransition: scope?.state?.hasUncommittedWork != true,
+              ),
+              FilledButton(
+                onPressed: selecting || auth!.busy ? null : select,
+                child: const Text('Tentar novamente'),
+              ),
+              TextButton(
+                onPressed: auth!.busy ? null : auth!.logout,
+                child: const Text('Voltar a convidado'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 
   @override
   void dispose() {
@@ -182,6 +224,9 @@ class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap> {
   @override
   Widget build(BuildContext context) {
     if (guestOnly) return const StorageBootstrap();
+    if (!loading && auth != null && scope != null && scope!.state == null) {
+      return ChangeNotifierProvider.value(value: auth!, child: recovery());
+    }
     if (loading || scope?.state == null) {
       return MaterialApp(
         home: Scaffold(
@@ -210,24 +255,7 @@ class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap> {
           textDirection: TextDirection.ltr,
           children: [
             AccountStateProvider.device(scope: scope!, child: const MainApp()),
-            if (!scope!.isAccessible)
-              MaterialApp(
-                home: Scaffold(
-                  body: SafeArea(
-                    child: ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        if (error != null) Text(error!),
-                        const AuthenticationPanel(),
-                        TextButton(
-                          onPressed: auth!.busy ? null : auth!.logout,
-                          child: const Text('Voltar a convidado'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+            if (!scope!.isAccessible) recovery(),
           ],
         ),
       ),

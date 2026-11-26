@@ -11,6 +11,8 @@ Every successful `main` push or manual build automatically publishes a developme
 
 If Android reports an incompatible app or refuses an update, do **not** uninstall it to get past the error. Check the package, signing certificate and version first. Preview APKs are optimized universal release builds (ARM32, ARM64 and x86_64), without debugging enabled. They retain the existing development certificate and are intended for trusted testing, independently of production store signing.
 
+For authentication testing, use the separate [private Android Auth device procedure](android-auth-device-testing.md). The ordinary public workflow intentionally supplies no backend defines and stays guest-only; local Auth APKs are never published by it.
+
 ## Reproducible verification
 
 [The workflow](../.github/workflows/android-preview.yml) runs automatically on pushes to `main` and manually on `main`. It uses Ubuntu 24.04 and `nix develop --no-write-lock-file` with the committed `flake.lock`, rather than a separate Flutter setup action. The shared development shell supplies Flutter 3.50.1 / Dart 3.14.0, Java 17, Android platforms 35/36, build tools 36.0.0, NDK 28.2.13676358 and CMake 3.22.1. Gradle 9.5.0, AGP 9.3.1 and KGP 2.4.20 remain pinned in the Android project. `flutter pub get --enforce-lockfile` refuses package-lock drift.

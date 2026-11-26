@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:bath_royale/auth/production_auth.dart';
 import 'package:bath_royale/pages/profile.dart';
-import 'production_auth_test.dart' show MemoryVault;
+import 'production_auth_test.dart'
+    show MemoryGuard, MemoryVault, DelayedLoginClient, fixtureSession;
+import 'package:supabase/supabase.dart' show AuthResponse, Session;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqlite3/sqlite3.dart';
+import 'package:sqlite3/sqlite3.dart' hide Session;
 import 'package:provider/provider.dart';
 import 'package:bath_royale/state/account_state_scope.dart';
 import 'package:bath_royale/state/app_state.dart';
@@ -17,13 +20,268 @@ import 'package:bath_royale/main.dart';
 import 'package:bath_royale/models/review.dart';
 import 'package:bath_royale/storage/local_store.dart';
 
+class SequenceClient extends DelayedLoginClient {
+  final List<AuthResponse> responses;
+  SequenceClient(this.responses);
+  @override
+  Future<AuthResponse> signInWithPassword({
+    String? email,
+    String? phone,
+    required String password,
+    String? captchaToken,
+  }) async => responses.removeAt(0);
+}
+
 void main() {
+  testWidgets(
+    'a failed stale store open follows the latest rapid account change',
+    (tester) async {
+      final vault = MemoryVault();
+      final first = fixtureSession();
+      final second = Session.fromJson({
+        ...first.toJson(),
+        'user': {
+          ...first.user.toJson(),
+          'id': '22222222-2222-4222-8222-222222222222',
+          'email': 'second@example.invalid',
+        },
+      })!;
+      final client = SequenceClient([
+        AuthResponse(session: first),
+        AuthResponse(session: second),
+      ]);
+      final auth = ProductionAuth(
+        AuthConfiguration('https://example.test', 'client'),
+        vault,
+        restorationGuard: vault.guard,
+        client: client,
+      );
+      final gate = Completer<LocalStore>();
+      final opened = <String>[];
+      await tester.pumpWidget(
+        AuthenticatedBootstrap(
+          createAuth: () => auth,
+          openStore: (namespace) async {
+            opened.add(namespace.subject);
+            if (namespace.subject == first.user.id) return gate.future;
+            return LocalStore(sqlite3.openInMemory(), namespace: namespace);
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+      await auth.login('first@example.invalid', 'password');
+      await tester.pump();
+      await auth.login('second@example.invalid', 'password');
+      gate.completeError(StateError('old account file failed'));
+      await tester.pumpAndSettle();
+      expect(opened, ['', first.user.id, second.user.id]);
+      expect(find.widgetWithText(AppBar, 'Explorar'), findsOneWidget);
+      expect(find.textContaining('ficheiros foram preservados'), findsNothing);
+      expect(auth.current!.namespace.subject, second.user.id);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'authentication flows stay separate and show private email without UUID',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 1100);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final vault = MemoryVault();
+      final config = AuthConfiguration('https://example.test', 'client');
+      final auth = ProductionAuth(
+        config,
+        vault,
+        restorationGuard: vault.guard,
+        client: DelayedLoginClient(),
+      );
+      Widget panel() => ChangeNotifierProvider.value(
+        value: auth,
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.5)),
+            child: child!,
+          ),
+          home: const Scaffold(
+            body: SingleChildScrollView(child: AuthenticationPanel()),
+          ),
+        ),
+      );
+      await tester.pumpWidget(panel());
+      expect(find.byType(TextField), findsNWidgets(2));
+      expect(find.text('Código ou ligação do email'), findsNothing);
+      await tester.ensureVisible(find.text('Esqueci-me da palavra-passe'));
+      await tester.tap(find.text('Esqueci-me da palavra-passe'));
+      await tester.pump();
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('Enviar instruções'), findsOneWidget);
+      expect(find.text('Palavra-passe'), findsNothing);
+      await tester.ensureVisible(
+        find.text('Já tenho um código de recuperação'),
+      );
+      await tester.tap(find.text('Já tenho um código de recuperação'));
+      await tester.pump();
+      expect(find.byType(TextField), findsNWidgets(2));
+      expect(find.text('Validar recuperação'), findsNWidgets(2));
+      await tester.ensureVisible(find.text('Voltar a entrar'));
+      await tester.tap(find.text('Voltar a entrar'));
+      await tester.pump();
+      await tester.ensureVisible(
+        find.text('Já tenho um código de confirmação'),
+      );
+      await tester.tap(find.text('Já tenho um código de confirmação'));
+      await tester.pump();
+      expect(
+        find.widgetWithText(FilledButton, 'Confirmar email'),
+        findsOneWidget,
+      );
+      expect(find.text('Validar recuperação'), findsNothing);
+      vault.guard.values[config.environment] = true;
+      vault.values[config.storageKey] = jsonEncode({
+        ...fixtureSession().toJson(),
+        'bath_password_recovery': true,
+      });
+      await auth.restore();
+      // A real account selection remounts this panel. Recovery intent must survive.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(panel());
+      expect(find.text('fiction@example.invalid'), findsOneWidget);
+      expect(find.textContaining(fixtureSession().user.id), findsNothing);
+      expect(find.text('Nova palavra-passe'), findsOneWidget);
+      expect(
+        find.widgetWithText(FilledButton, 'Guardar palavra-passe'),
+        findsOneWidget,
+      );
+      expect(find.byType(TextField), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      auth.dispose();
+    },
+  );
+
+  testWidgets('periodic renewal is quiet while the session is valid', (
+    tester,
+  ) async {
+    final client = DelayedLoginClient();
+    final vault = MemoryVault();
+    final auth = ProductionAuth(
+      AuthConfiguration('https://example.test', 'client'),
+      vault,
+      restorationGuard: vault.guard,
+      client: client,
+    );
+    await auth.restore();
+    client.response.complete(
+      AuthResponse(
+        session: fixtureSession()
+          ..expiresAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600,
+      ),
+    );
+    await auth.login('fiction@example.invalid', 'password');
+    auth.message = 'Mensagem a preservar';
+    final generation = auth.generation;
+    var notifications = 0;
+    auth.addListener(() => notifications++);
+    await tester.pump(const Duration(seconds: 45));
+    expect(auth.message, 'Mensagem a preservar');
+    expect(auth.generation, generation);
+    expect(notifications, 0);
+    auth.dispose();
+  });
+
+  testWidgets(
+    'configured startup retries a failed account store and returns to guest',
+    (tester) async {
+      final vault = MemoryVault();
+      final config = AuthConfiguration('https://example.test', 'client');
+      vault.guard.values[config.environment] = true;
+      vault.values[config.storageKey] = jsonEncode(fixtureSession().toJson());
+      final auth = ProductionAuth(
+        config,
+        vault,
+        restorationGuard: vault.guard,
+        client: DelayedLoginClient(),
+      );
+      var fail = true;
+      var accountOpens = 0;
+      await tester.pumpWidget(
+        AuthenticatedBootstrap(
+          createAuth: () => auth,
+          openStore: (namespace) async {
+            if (namespace.isAccount) {
+              accountOpens++;
+              if (fail) throw StateError('disk unavailable');
+            }
+            return LocalStore(sqlite3.openInMemory(), namespace: namespace);
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('ficheiros foram preservados'),
+        findsOneWidget,
+      );
+      fail = false;
+      await tester.tap(find.text('Tentar novamente'));
+      await tester.pumpAndSettle();
+      expect(accountOpens, 2);
+      expect(find.widgetWithText(AppBar, 'Explorar'), findsOneWidget);
+      await auth.logout();
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(AppBar, 'Explorar'), findsOneWidget);
+      expect(auth.current, isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets('authentication completion tolerates a disposed panel', (
+    tester,
+  ) async {
+    final client = DelayedLoginClient();
+    final auth = ProductionAuth(
+      AuthConfiguration('https://example.test', 'client'),
+      MemoryVault(),
+      restorationGuard: MemoryGuard(),
+      client: client,
+    );
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: auth,
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(child: AuthenticationPanel()),
+          ),
+        ),
+      ),
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Email'),
+      'fiction@example.invalid',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Palavra-passe'),
+      'password',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Entrar'));
+    await tester.pump();
+    await tester.pumpWidget(const SizedBox.shrink());
+    client.response.complete(AuthResponse(session: fixtureSession()));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    auth.dispose();
+  });
+
   testWidgets(
     'optional auth controls validate input, hide passwords and block unsafe transitions',
     (tester) async {
       final auth = ProductionAuth(
         AuthConfiguration('https://example.test', 'client'),
         MemoryVault(),
+        restorationGuard: MemoryGuard(),
       );
       await tester.pumpWidget(
         ChangeNotifierProvider.value(
@@ -52,10 +310,18 @@ void main() {
       );
       await tester.tap(find.text('Criar conta'));
       await tester.pump();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Palavra-passe'),
+        'short',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Criar conta'));
+      await tester.pump();
       expect(find.text('Usa pelo menos 8 caracteres.'), findsOneWidget);
       await tester.tap(find.byTooltip('Mostrar palavra-passe'));
       await tester.pump();
       expect(find.byTooltip('Ocultar palavra-passe'), findsOneWidget);
+      await tester.tap(find.text('Voltar a entrar'));
+      await tester.pump();
       await tester.pumpWidget(
         ChangeNotifierProvider.value(
           value: auth,
