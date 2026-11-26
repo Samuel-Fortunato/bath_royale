@@ -95,7 +95,16 @@ def auth_settings(api):
     )
     with urllib.request.urlopen(req, timeout=15) as response:
         result = json.load(response)
-    return {key: result.get(key) for key in ("disable_signup", "mailer_autoconfirm")}
+    return parse_auth_settings(result)
+
+
+def parse_auth_settings(result):
+    """Unknown/missing flags are errors, never evidence that confirmation is off."""
+    require(isinstance(result, dict), "Auth settings must be an object")
+    for key in ("disable_signup", "mailer_autoconfirm"):
+        require(key in result, "Auth settings missing boolean field: " + key)
+        require(type(result[key]) is bool, "Auth settings field must be boolean: " + key)
+    return {key: result[key] for key in ("disable_signup", "mailer_autoconfirm")}
 
 
 def preflight():

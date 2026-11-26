@@ -64,7 +64,7 @@ def review(visit, bathroom=ONE, **overrides):
     return value
 
 
-def verify(existing_only=False):
+def verify(existing_only=False, check_expiry=True):
     global COUNT
     COUNT = 0
     # Accounts persist privately; tokens exist only in process memory.
@@ -564,6 +564,12 @@ def verify(existing_only=False):
         session.clear()
         session.update(refreshed)
     print("PASS: refresh/logout; Auth revocation; issued API JWT remains valid until expiry")
+    if not check_expiry:
+        login(accounts[0])
+        login(accounts[1])
+        print("SKIP: managed long-lived JWT expiry; destination tests retain expiry check")
+        print("PASS: " + str(COUNT) + " authorization/authentication assertions")
+        return
     # PostgREST v14.18 permits 30 seconds of clock skew after exp.
     deadline = time.monotonic() + 100
     progress_at = time.monotonic() + 45

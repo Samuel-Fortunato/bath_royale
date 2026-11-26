@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Phase 2.1C: verify the actual managed-Free exit into a third isolated self-hosted target, with exact identity/content/hash and application authorization preservation, original-password login, session isolation and restart checks; preserve all environments and private checksummed evidence.
+- Require explicit boolean Auth settings and private fictional account reuse; verify 231 managed and 226 destination assertions, document compatibility/default-grant corrections, timings and resources. Production hosting/email/backup decisions remain open.
+
 - Add a guarded read-only managed-project preflight with verified TLS, private credential-file validation and no-email Auth readiness checks; record Phase 2.1C preparation without passing the managed exit gate.
 
 - Phase 2.1B: parameterize the rootless backend lifecycle for isolated source/destination installations, independently generated runtime credentials and loopback-only ports.

@@ -1,13 +1,52 @@
 """Reject unexpected projects and unsafe transport before any managed operation."""
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
 
-from cloud import URL, connection_env, private_json
+from cloud import URL, connection_env, parse_auth_settings, private_json
+from cloud_rehearsal import validate_accounts
 
 
 class CloudPreflightTest(unittest.TestCase):
+    def test_retained_accounts_are_private_and_fictional(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "accounts.json"
+            accounts = [
+                {
+                    "email": "bath-royale-fictional-" + name + "@example.invalid",
+                    "password": "fictional",
+                }
+                for name in ["a", "b"]
+            ]
+            path.write_text(json.dumps(accounts))
+            path.chmod(0o600)
+            self.assertEqual(validate_accounts(path), accounts)
+            path.chmod(0o644)
+            with self.assertRaisesRegex(RuntimeError, "0600"):
+                validate_accounts(path)
+            path.chmod(0o600)
+            accounts[0]["email"] = "unrelated@example.invalid"
+            path.write_text(json.dumps(accounts))
+            with self.assertRaisesRegex(RuntimeError, "Unexpected fictional"):
+                validate_accounts(path)
+
+    def test_auth_settings_require_explicit_booleans(self):
+        valid = {"disable_signup": False, "mailer_autoconfirm": True}
+        self.assertEqual(parse_auth_settings(valid), valid)
+        for key in valid:
+            missing = dict(valid)
+            del missing[key]
+            with self.assertRaisesRegex(RuntimeError, "missing boolean"):
+                parse_auth_settings(missing)
+            for value in (None, 0, 1, "true", "false", [], {}):
+                with self.assertRaisesRegex(RuntimeError, "must be boolean"):
+                    parse_auth_settings({**valid, key: value})
+        self.assertFalse(
+            parse_auth_settings({**valid, "mailer_autoconfirm": False})["mailer_autoconfirm"]
+        )
+
     def test_destination_and_transport_guards(self):
         with tempfile.TemporaryDirectory() as directory:
             cert = Path(directory) / "root.crt"
