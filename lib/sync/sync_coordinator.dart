@@ -1,31 +1,9 @@
 import 'dart:math';
+import 'auth_session.dart';
 import 'namespace.dart';
 import 'sync_store.dart';
 
-class SessionIdentity {
-  final DataNamespace namespace;
-  final int expiresAt;
-  const SessionIdentity(this.namespace, this.expiresAt);
-}
-
-/// Implementations must increment generation for logout, switch and renewal.
-abstract interface class AuthSession {
-  SessionIdentity? get current;
-  int get generation;
-}
-
-class FakeAuthSession implements AuthSession {
-  SessionIdentity? _current;
-  @override
-  SessionIdentity? get current => _current;
-  int _generation = 0;
-  @override
-  int get generation => _generation;
-  void change(SessionIdentity? identity) {
-    _current = identity;
-    _generation++;
-  }
-}
+export 'auth_session.dart';
 
 enum RemoteFailureKind {
   transport,
@@ -85,12 +63,14 @@ class SyncCoordinator {
     }
   }
   bool _valid(int generation) =>
+      !store.local.isClosed &&
       auth.generation == generation &&
       auth.current?.namespace == store.namespace &&
       auth.current!.expiresAt > now();
 
   Future<void> synchronize() async {
-    if (_running ||
+    if (store.local.isClosed ||
+        _running ||
         _executionLocks[auth] == true ||
         !store.namespace.isAccount) {
       return;
@@ -138,7 +118,8 @@ class SyncCoordinator {
   }
 
   Future<void> refreshPublicCatalogue() async {
-    if (_running ||
+    if (store.local.isClosed ||
+        _running ||
         _executionLocks[auth] == true ||
         store.namespace.kind != 'public') {
       return;
@@ -172,13 +153,17 @@ class SyncCoordinator {
         batchSize,
         session,
       );
-      if (generation != null && !_valid(generation)) return;
+      if (store.local.isClosed || (generation != null && !_valid(generation))) {
+        return;
+      }
       if (page.changes.length > batchSize) {
         throw StateError('Remote exceeded pull limit');
       }
       store.applyPull(feed, page.changes, page.checkpoint);
     } on RemoteFailure catch (error) {
-      if (generation != null && !_valid(generation)) return;
+      if (store.local.isClosed || (generation != null && !_valid(generation))) {
+        return;
+      }
       switch (error.kind) {
         case RemoteFailureKind.unavailableAuthentication:
           _pausedGeneration = generation;

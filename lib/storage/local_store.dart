@@ -366,5 +366,11 @@ CREATE TABLE favourites (user TEXT NOT NULL CHECK(length(user)>0), bathroom TEXT
     'UPDATE settings SET dark_mode=? WHERE id=1',
     [value ? 1 : 0],
   );
-  void close() => database.close();
+  bool _closed = false;
+  bool get isClosed => _closed;
+  void close() {
+    if (_closed) return;
+    database.close();
+    _closed = true;
+  }
 }

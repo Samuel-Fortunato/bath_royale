@@ -65,8 +65,16 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     _paper = r?.paperAvailability;
   }
 
+  VoidCallback? _releaseDraft;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _releaseDraft ??= context.read<AppState>().retainDraft();
+  }
+
   @override
   void dispose() {
+    _releaseDraft?.call();
     _tagInput.dispose();
     _emojiInput.dispose();
     _comment.dispose();

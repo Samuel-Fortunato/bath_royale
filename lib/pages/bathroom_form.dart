@@ -20,8 +20,16 @@ class _BathroomFormPageState extends State<BathroomFormPage> {
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController();
 
+  VoidCallback? _releaseDraft;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _releaseDraft ??= context.read<AppState>().retainDraft();
+  }
+
   @override
   void dispose() {
+    _releaseDraft?.call();
     _name.dispose();
     super.dispose();
   }

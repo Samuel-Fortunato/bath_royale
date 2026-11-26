@@ -1,0 +1,117 @@
+import 'package:flutter/foundation.dart';
+import '../storage/bathroom_repository.dart';
+import '../storage/local_store.dart';
+import '../sync/auth_session.dart';
+import '../sync/namespace.dart';
+import '../sync/sync_store.dart';
+import 'app_state.dart';
+
+/// Explicit offline test context, never constructed by normal bootstrap.
+/// Owns one selected state/connection; identity events alone never open stores,
+/// associate guest data, authorize an outbox or execute synchronization.
+class AccountStateScope extends ChangeNotifier {
+  final AuthSession auth;
+  final Future<LocalStore> Function(DataNamespace) openStore;
+  final int Function() now;
+  AccountStateScope.forTesting({
+    required this.auth,
+    required this.openStore,
+    required this.now,
+  }) {
+    auth.addListener(_sessionChanged);
+  }
+
+  AppState? _state;
+  AppState? get state => _state;
+  LocalStore? _store;
+  int _selection = 0;
+  bool _disposed = false;
+
+  /// An expired/foreign session hides the retained editor tree. It does not
+  /// discard memory-only work or automatically select another person's data.
+  bool get isAccessible =>
+      !_disposed && _store != null && _matchesSession(_store!.namespace);
+
+  bool _matchesSession(DataNamespace namespace) =>
+      namespace.kind == 'guest' ||
+      (namespace.isAccount &&
+          auth.current?.namespace == namespace &&
+          auth.current!.expiresAt > now());
+
+  void _sessionChanged() {
+    if (!_disposed) notifyListeners();
+  }
+
+  void _guardReplacement() {
+    if (_disposed) throw StateError('Account state scope is disposed');
+    if (_state?.hasUncommittedWork == true) {
+      throw StateError(
+        'Finish the open editor or retry the local commit first',
+      );
+    }
+  }
+
+  /// Selection/logout policy is deliberately test-only. A caller must finish
+  /// editors and retry failed transactions; there is no implicit discard path.
+  /// Optional test queueing is separate from authentication and never inferred.
+  Future<bool> select(
+    DataNamespace namespace, {
+    SyncWriteContext? synchronizationForTesting,
+  }) async {
+    _guardReplacement();
+    if (synchronizationForTesting != null &&
+        (!namespace.isAccount ||
+            synchronizationForTesting.namespace != namespace)) {
+      throw ArgumentError('Synchronization fixture must match account scope');
+    }
+    if (!_matchesSession(namespace)) {
+      throw StateError('A valid matching account session is required');
+    }
+    final selection = ++_selection;
+    if (_store?.namespace == namespace) return true;
+    final generation = auth.generation;
+    final store = await openStore(namespace);
+    AppState? next;
+    try {
+      if (store.namespace != namespace) {
+        throw StateError('Opener returned a different namespace');
+      }
+      if (_disposed ||
+          selection != _selection ||
+          generation != auth.generation ||
+          !_matchesSession(namespace)) {
+        store.close();
+        return false;
+      }
+      _guardReplacement(); // An editor may have opened during the await.
+      next = namespace.isAccount
+          ? AppState.restoreAccountForTesting(
+              BathroomRepository(store, syncContext: synchronizationForTesting),
+            )
+          : AppState.restore(store);
+    } catch (_) {
+      next?.dispose();
+      store.close();
+      rethrow;
+    }
+    final previousState = _state;
+    final previousStore = _store;
+    _state = next;
+    _store = store;
+    previousState?.dispose();
+    previousStore?.close();
+    notifyListeners();
+    return true;
+  }
+
+  @override
+  void dispose() {
+    _guardReplacement();
+    _disposed = true;
+    _selection++;
+    auth.removeListener(_sessionChanged);
+    _state?.dispose();
+    _store?.close();
+    super.dispose();
+  }
+}

@@ -192,11 +192,33 @@ Verified locally on 2026-11-26: **144 ordinary Flutter tests pass** (all 142 ret
 
 Only the new independent rootless `bath-royale-poc-sync` installation on loopback ports 55461/55462 was used; it is stopped with private credentials, volumes and network retained. No managed project or preserved migration installation was accessed. Initial checks exposed a pre-existing fixture favourite conflict, an unnecessary import, a Nix-shell PYTHONPATH invocation issue and a never-public deletion-marker leak; fixtures/invocation/code were corrected before the final successful runs. The transport also rejects an intentionally mismatched subject/token response. PostgreSQL codepoint/emoji constraints remain stricter than Flutter grapheme validation: the precise Unicode compatibility gate is documented without changing user-facing semantics. Private-history consent, production Auth/account association, public metadata/moderation, log/tombstone retention/compaction, erasure, conflict resolution and exporting the new protocol metadata remain deferred. Hosted CI is reported after push without waiting.
 
-### Phase 2.3 — Optional accounts and private data association
+### Phase 2.3A — Offline account integration foundation
 
-- [ ] Implement the approved sign-in/session storage and logout/account-switch policy, retaining fully usable guest mode.
-- [ ] Preview and explicitly associate only eligible genuine local data; test duplicate association and account isolation.
-- [ ] Implement opt-in private history/favourites synchronization only after its privacy policy is approved and server-enforced ownership tests pass.
+- [x] Extend the existing session boundary with observable unauthenticated/authenticated/expired/invalidated states and generation-safe renewal, switching and logout through injected fake authentication.
+- [x] Prepare isolated account AppState/Provider lifecycles on the existing namespace files, with empty account initialization, retained drafts/failed commits and durable original-account pending operations.
+- [x] Keep identity separate from association/upload/publication/synchronization authorization; leave normal bootstrap guest-only and all production account/sync paths disabled.
+- [x] Verify all ordinary regressions, offline backend tests, exact analyzer baseline, formatting and Linux/Android debug builds; document production boundaries.
+
+See [offline account integration](docs/backend/offline-accounts.md) for implementation, test-only lifecycle semantics, durability and the remaining production gates. No production authentication method, SDK, credential persistence, account-selection or device-data retention policy is selected in 2.3A.
+
+Verified locally on 2026-11-26: **170 ordinary Flutter tests pass** (all 144 existing regressions retained plus 26 new), with the ordinary real-suite placeholder intentionally skipped. Formatting, strict analysis with the **unchanged exact Material-import baseline**, Linux debug and Android debug APK builds pass. All **25 offline backend regressions pass**, including their isolated temporary Unix-socket-only PostgreSQL fixture. Documentation links and Git whitespace checks pass.
+
+Coverage includes guest startup without Auth/networking, empty account initialization, subject/environment isolation, renewal/expiry/invalidation/logout/switching, delayed renewal/open/submit/pull invalidation, identity without transfer consent, preserved guest/pending data, safe Provider route/listener replacement, actual review/bathroom drafts across session loss, and failed pre-commit rollback/retry. Final review also fixed and verified cancellation when reselecting the current guest while an account open is pending. Initial test fixtures omitted required review answers and the first analyzer run exposed test-only protected-member/unused-import/brace diagnostics; these were corrected before the final passing runs. The initial sandboxed Flutter invocation could not write its existing telemetry file; authorized toolchain/cache access allowed all final checks.
+
+No server schema, wire protocol, HTTP transport or remote method contract changed, so the real integration suite was not rerun; its seven passing tests at baseline `321d1ea` remain historical evidence. No managed project, preserved backend installation, dependency or global NixOS configuration was accessed/changed. Session/draft/pre-commit input remains memory-only, committed original-account operations remain durable, and no production retention or consent policy is inferred. **Stop at 2.3A; 2.3B/2.3C are not started.** Hosted CI is reported after push without waiting.
+
+### Phase 2.3B — Production authentication and device lifecycle (not started)
+
+- [ ] Approve production authentication method and email delivery/confirmation/recovery; implement and verify a real session adapter.
+- [ ] Approve and verify secure credential persistence on Android/Linux, account selection/logout, offline account access and device-data retention/removal, including unsaved drafts and failed local commits.
+- [ ] Define account/public-cache view composition and lifecycle before enabling production account views; retain fully functional guest mode.
+
+### Phase 2.3C — Consent, explicit association and private synchronization (not started)
+
+- [ ] Approve separate private-history/favourites synchronization consent and explicit guest-data association; preview only eligible genuine data and verify duplicate association/isolation/atomic retry.
+- [ ] Resolve Unicode grapheme validation compatibility and recoverable validation/conflict UX without changing local draft semantics silently.
+- [ ] Verify portability of the new synchronization metadata (or a safe new epoch); earlier managed migration evidence does not cover it.
+- [ ] Enable opt-in private synchronization only after these gates and server-enforced ownership verification. Public profile creation, attribution and publication policies remain explicit gates for Phase 2.4/2.5.
 
 ### Phase 2.4 — Shared catalogue and reviews
 

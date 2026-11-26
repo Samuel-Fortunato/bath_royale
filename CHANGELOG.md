@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Phase 2.3A: add observable, generation-safe fake session renewal/expiry/invalidation and test-only account AppState/Provider lifecycle management over the existing namespace files; preserve guest-only production startup.
+- Initialize accounts empty, separate identity from synchronization consent, retain editors and failed pre-commit actions during test transitions, and preserve committed original-account pending work across logout/restart. Invalidate delayed work targeting retired sessions/stores.
+- Verify all 170 ordinary Flutter tests (144 retained plus 26 new), 25 offline backend regressions, unchanged exact analyzer baseline, formatting and Linux/Android debug builds. Split remaining production account milestones and document authentication/email, credentials/device retention, consent/association, view composition, validation/conflicts, Unicode, metadata portability and public identity/publication gates. Production account/sync features remain disabled; real backend integration was not rerun because server/transport contracts are unchanged.
+
 - Phase 2.2C: add authenticated PostgreSQL synchronization commands with durable immutable receipts, verified causal dependencies, shared compound revisions, CAS/conflicts and atomic visit/review tombstones; retain existing authorization and publication restrictions.
 - Add commit-ordered, scoped private/public change feeds, opaque expiring checkpoints and safe full replay; keep never-public identifiers private and preserve pending client drafts.
 - Add the explicitly injected HTTP test adapter with server-subject/compound-response validation and real Auth/API/process-restart/concurrency/race verification in a fourth isolated rootless installation, stopped and preserved afterwards.

@@ -86,3 +86,10 @@ Server revision metadata, canonical remote snapshots/tombstones and opaque scope
 ## Phase 2.2C — Server authority without application rollout
 
 The server derives ownership from Auth, retains immutable associations and relational constraints, and uses revisions for CAS rather than device dates. Review changes advance the parent visit revision; atomic compound creation/deletion acknowledges both entities consistently. Favourite commands set desired booleans. Sync bathroom submissions remain pending proposals and reviews remain private; synchronization cannot approve or publish content. Private state and public allowlisted projections use independent feeds, including visibility removals and terminal tombstones. Local drafts, UI, rating descriptions, rankings and grapheme validation are unchanged. See [server synchronization](backend/server-synchronization.md) for the exact remaining codepoint/grapheme integration gate and deferred product decisions.
+
+
+## Phase 2.3A — Optional account foundation
+
+The normal application still restores the local guest and fictional examples. Only an explicit test context restores account AppState from its `(environment, stable authenticated subject)` file, with empty first-run content and the subject as mutation actor. Email never keys ownership. No guest owner mapping, sample copy, public profile or remote-cache view composition is implemented. Existing entity/review/visit distinctions, provenance, Portuguese workflows, ratings and rankings are unchanged.
+
+Authentication is observable identity/session lifetime, separate from consent to associate/upload private data or publish content. Test account repositories omit outbox authorization by default; existing atomic queueing requires its separate explicit fixture capability. Open editors and failed local commits block test selection/disposal, and session loss retains their original state in memory. Committed original-account work survives restart. See [offline account integration](backend/offline-accounts.md) for lifetime, validation/conflict recovery and remaining production policies.

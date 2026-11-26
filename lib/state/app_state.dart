@@ -18,6 +18,33 @@ class AppState extends ChangeNotifier {
   Object? storageError;
   Completer<void>? _pendingCompletion;
 
+  bool _disposed = false;
+  int _openDrafts = 0;
+  bool get hasUncommittedWork => _openDrafts > 0 || _pendingWrite != null;
+
+  /// Conservatively retain any open editor, including pristine forms.
+  /// The returned release callback is idempotent and belongs to that editor.
+  VoidCallback retainDraft() {
+    _requireAlive();
+    _openDrafts++;
+    var released = false;
+    return () {
+      if (released) return;
+      released = true;
+      _openDrafts--;
+    };
+  }
+
+  void _requireAlive() {
+    if (_disposed) throw StateError('Application state is disposed');
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
   /// UI success continuations wait here if the local transaction needs retry.
   Future<void> get persistenceComplete =>
       _pendingCompletion?.future ?? Future.value();
@@ -35,7 +62,7 @@ class AppState extends ChangeNotifier {
 
   static AppState restore(LocalStore store) {
     if (store.namespace.kind != 'guest') {
-      throw ArgumentError('Application bootstrap is guest-only in Phase 2.2B');
+      throw ArgumentError('Application bootstrap is guest-only');
     }
     final repository = BathroomRepository(store);
     final data = repository.load();
@@ -82,9 +109,35 @@ class AppState extends ChangeNotifier {
     return state;
   }
 
+  /// Offline account restoration is available only to explicit test contexts.
+  /// Authentication does not construct a SyncWriteContext or seed examples.
+  static AppState restoreAccountForTesting(BathroomRepository repository) {
+    if (!repository.store.namespace.isAccount) {
+      throw ArgumentError('Account store required');
+    }
+    final data = repository.load();
+    final state = AppState(
+      currentUserId: repository.store.namespace.subject,
+      repository: repository,
+      bathrooms: data?.bathrooms ?? [],
+      visits: data?.visits ?? [],
+      reviews: data?.reviews ?? [],
+      activities: data?.favourites ?? [],
+      darkMode: data?.darkMode ?? true,
+    );
+    try {
+      if (data == null) repository.initialize(state.localData);
+    } catch (_) {
+      state.dispose();
+      rethrow;
+    }
+    return state;
+  }
+
   // A single failed action retains its exact payload/IDs until explicit retry.
   // Observable domain state always represents committed data.
   void _mutate(void Function() write, void Function() apply) {
+    _requireAlive();
     if (_pendingWrite != null) {
       throw StateError('Retry pending storage action first');
     }
@@ -95,6 +148,7 @@ class AppState extends ChangeNotifier {
   }
 
   void retryStorage() {
+    _requireAlive();
     final write = _pendingWrite;
     if (write == null) return;
     try {
@@ -147,6 +201,14 @@ class AppState extends ChangeNotifier {
                    ]
                  : <Visit>[]),
        ) {
+    if (repository?.store.namespace.isAccount == true &&
+        (currentUserId != repository!.store.namespace.subject ||
+            bathrooms == null ||
+            reviews == null ||
+            visits == null ||
+            activities == null)) {
+      throw ArgumentError('Account state requires explicit data and subject');
+    }
     if (currentUserId.isEmpty ||
         allBathrooms.any((b) => b.id.isEmpty || b.createdBy.isEmpty) ||
         allBathrooms.map((b) => b.id).toSet().length != allBathrooms.length ||
