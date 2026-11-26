@@ -6,6 +6,7 @@ import '../models/review.dart';
 import '../models/tag_presentation.dart';
 import '../models/visit.dart';
 import '../models/provenance.dart';
+import '../sync/namespace.dart';
 
 class LocalData {
   final List<Bathroom> bathrooms;
@@ -25,14 +26,16 @@ class LocalData {
 /// Owns one connection. Tests supply an in-memory or temporary database.
 class LocalStore {
   final Database database;
-  LocalStore(this.database) {
+  final DataNamespace namespace;
+  LocalStore(this.database, {DataNamespace? namespace})
+    : namespace = namespace ?? const DataNamespace.guest() {
     try {
       database.execute('PRAGMA foreign_keys = ON');
       if (database.select('PRAGMA quick_check').single.values.single != 'ok') {
         throw StateError('Database integrity check failed');
       }
       final version = database.userVersion;
-      if (version > 5) {
+      if (version > 6) {
         throw StateError('Database was created by a newer application');
       }
       transaction(() {
@@ -106,6 +109,24 @@ class LocalStore {
             );
           }
           database.userVersion = 5;
+        }
+        if (version < 6) {
+          if (version != 0 && this.namespace.kind != 'guest') {
+            throw StateError('Existing data belongs to the local guest');
+          }
+          database.execute(syncSchemaV6);
+          database.execute('INSERT INTO namespace VALUES(1,?)', [
+            this.namespace.key,
+          ]);
+          if (version == 0 && this.namespace.kind != 'guest') {
+            // Account/public stores start empty; only guest bootstrap seeds fiction.
+            database.execute('INSERT INTO metadata VALUES(1,1)');
+          }
+          database.userVersion = 6;
+        }
+        if (database.select('SELECT scope FROM namespace').single['scope'] !=
+            this.namespace.key) {
+          throw StateError('Database namespace mismatch');
         }
         if (database.select('PRAGMA foreign_key_check').isNotEmpty) {
           throw StateError('Broken database references');

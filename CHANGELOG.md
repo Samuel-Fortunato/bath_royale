@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Phase 2.2B: non-destructively bind distributed v5 data to local guest in schema v6; isolate account subjects/backend environments and shared public catalogue caches in checked namespace files.
+- Add atomic entity/outbox commands with stable IDs, dependencies, explicit favourite values and compound visit/review semantics; keep guest/sample/legacy/cache/theme/notification paths excluded and application uploads disabled.
+- Add fake session/remote boundaries and bounded serialized synchronization with durable acknowledgment/retry/backoff, session invalidation, revision/conflict/draft preservation, tombstones and atomic scoped pull checkpoints. Document memory-only pre-commit failures and deferred server/product requirements.
+- Verify all 142 Flutter regressions (114 retained plus 28 new), 25 offline backend tests, formatting, unchanged strict analyzer baseline and Linux/Android debug builds; preserve UI, rankings and backend installations.
+
 - Phase 2.2A: introduce the local BathroomRepository boundary and targeted atomic SQLite actions, removing snapshot writes from notifications. Commit before observable success, retain failed payloads/identities for explicit retry and delay UI success continuations until persistence completes.
 - Upgrade v4 to v5 transactionally without resetting content; persist demo/legacy/user-created/remote provenance with conservative inheritance and a default-deny future-upload gate. Preserve local visibility, rating semantics and UI.
 - Add nine migration/repository regressions; verify all 114 Flutter and 25 backend tests, formatting, unchanged strict-analysis gate and Linux/Android debug builds. Split remaining work into 2.2B (namespaces/outbox/client) and 2.2C (server protocol/end-to-end).

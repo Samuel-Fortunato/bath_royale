@@ -34,6 +34,9 @@ class AppState extends ChangeNotifier {
   );
 
   static AppState restore(LocalStore store) {
+    if (store.namespace.kind != 'guest') {
+      throw ArgumentError('Application bootstrap is guest-only in Phase 2.2B');
+    }
     final repository = BathroomRepository(store);
     final data = repository.load();
     final state = data == null

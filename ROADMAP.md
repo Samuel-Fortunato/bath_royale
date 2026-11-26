@@ -176,15 +176,17 @@ Verified locally on 2026-11-26: **114 Flutter tests pass** (all 105 existing reg
 
 ### Phase 2.2B — Account namespaces, durable outbox and client synchronization foundation
 
-- [ ] Add non-destructive account namespaces and durable outbox transactions with stable operation identity; retain guest use and exclude fictional/unknown data.
-- [ ] Introduce only needed data-source/session/coordinator boundaries and client revision/tombstone/checkpoint storage; verify account isolation, offline/restart/retry behavior.
+- [x] Add non-destructive account namespaces and durable outbox transactions with stable operation identity; retain guest use and exclude fictional/unknown data.
+- [x] Introduce only needed data-source/session/coordinator boundaries and client revision/tombstone/checkpoint storage; verify account isolation, offline/restart/retry behavior.
+
+Verified locally on 2026-11-26: **142 Flutter tests pass**, retaining all 114 regressions plus 28 synchronization tests; formatting, strict analysis with the unchanged exact Material-import baseline, Linux debug and Android debug APK builds pass. All **25 offline backend regressions pass** in the locked backend shell, including the fresh Unix-socket-only PostgreSQL test. No managed project or preserved installation was accessed. v5 upgrades retain exact original rows/provenance/settings in guest; separate scope-bound files isolate accounts/environments/public cache. Tests cover atomic outbox/compound writes and rollback, pending restart, lost/interrupted acknowledgment and stable-ID deduplication, bounded dependency ordering/backoff, authentication expiry/switch/logout, conflict/draft/deletion persistence, stale resurrection protection and atomic pull/checkpoints. Production bootstrap remains guest-only with no queueing or networking; explicit test contexts exercise account mutations. Pre-commit failures/unsaved UI drafts remain memory-only; committed operations, retries, conflicts and checkpoints are durable. Initial checks exposed missing test timestamps, expected v5 version assertions and brace lints; corrected before the final passing runs. See [implementation, error semantics and server requirements](docs/backend/client-synchronization.md). Hosted CI is reported after push without waiting.
 
 ### Phase 2.2C — Server synchronization protocol and end-to-end verification
 
 - [ ] Implement server idempotency, revision/conflict/deletion semantics and scoped pull checkpoints under server-enforced ownership/privacy.
 - [ ] Verify end-to-end synchronization, late commits during pagination, crash/retry/idempotency, conflicts and fictional/unknown-data exclusion before account/publication rollout.
 
-Only 2.2A is authorized in the current session. No account UI, cloud mutations, outbox processing, server sync commands or changes to the preserved backend environments are included.
+The owner authorized 2.2B after `dd317f8`; its account/outbox/coordinator paths use explicit test contexts and fake sessions/transport only. No account UI, cloud mutations, application uploads, server sync commands or changes to preserved backend environments are included. Phase 2.2C and production association/publication decisions remain open.
 
 ### Phase 2.3 — Optional accounts and private data association
 

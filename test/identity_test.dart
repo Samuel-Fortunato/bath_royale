@@ -39,7 +39,7 @@ void main() {
     final store = LocalStore(db);
     addTearDown(store.close);
     final data = store.load()!;
-    expect(db.userVersion, 5);
+    expect(db.userVersion, 6);
     expect(data.reviews.single.tags.first.emoji, '👩🏽‍💻');
     expect(data.reviews.single.tags.first.label, 'Tecnologia');
     expect(data.reviews.single.comment, isNull);
@@ -84,7 +84,7 @@ void main() {
     final store = LocalStore(db);
     addTearDown(store.close);
     final data = store.load()!;
-    expect(db.userVersion, 5);
+    expect(db.userVersion, 6);
     expect(data.bathrooms.first.emoji, '📚');
     expect(data.bathrooms.first.createdBy, 'original');
     expect(data.visits.map((v) => v.id), ['v', 'unreviewed']);
