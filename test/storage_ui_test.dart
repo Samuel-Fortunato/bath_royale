@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'package:bath_royale/auth/production_auth.dart';
+import 'package:bath_royale/pages/profile.dart';
+import 'production_auth_test.dart' show MemoryVault;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -15,6 +18,63 @@ import 'package:bath_royale/models/review.dart';
 import 'package:bath_royale/storage/local_store.dart';
 
 void main() {
+  testWidgets(
+    'optional auth controls validate input, hide passwords and block unsafe transitions',
+    (tester) async {
+      final auth = ProductionAuth(
+        AuthConfiguration('https://example.test', 'client'),
+        MemoryVault(),
+      );
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: auth,
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(child: AuthenticationPanel()),
+            ),
+          ),
+        ),
+      );
+      expect(find.textContaining('sem criar uma conta'), findsOneWidget);
+      await tester.tap(find.text('Entrar'));
+      await tester.pump();
+      expect(
+        find.text('Introduz um endereço de email válido.'),
+        findsOneWidget,
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Email'),
+        'test@example.invalid',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Palavra-passe'),
+        'short',
+      );
+      await tester.tap(find.text('Criar conta'));
+      await tester.pump();
+      expect(find.text('Usa pelo menos 8 caracteres.'), findsOneWidget);
+      await tester.tap(find.byTooltip('Mostrar palavra-passe'));
+      await tester.pump();
+      expect(find.byTooltip('Ocultar palavra-passe'), findsOneWidget);
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: auth,
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: AuthenticationPanel(canTransition: false),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Entrar'));
+      await tester.pump();
+      expect(find.textContaining('Termina ou cancela'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+      auth.dispose();
+    },
+  );
   testWidgets(
     'startup displays loading, preserves failures and retries with isolated storage',
     (tester) async {

@@ -14,6 +14,12 @@ class AccountStateProvider extends StatelessWidget {
     required this.child,
   });
 
+  const AccountStateProvider.device({
+    super.key,
+    required this.scope,
+    required this.child,
+  });
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: scope,

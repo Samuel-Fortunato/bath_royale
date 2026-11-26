@@ -1,0 +1,14 @@
+# Used only by POC_INSTANCE=auth. Existing installations keep their configuration.
+services:
+  auth:
+    environment:
+      GOTRUE_MAILER_AUTOCONFIRM: "false"
+      GOTRUE_SMTP_HOST: mail
+      GOTRUE_SMTP_PORT: 1025
+      GOTRUE_SMTP_SENDER_NAME: Bath Royale local test
+      GOTRUE_SMTP_ADMIN_EMAIL: nobody@example.invalid
+      GOTRUE_SMTP_MAX_FREQUENCY: 1s
+  mail:
+    image: docker.io/axllent/mailpit@sha256:798783f7e4bff6d15795e7799221187c263763e434cf3e84f0546e8f4be27962
+    container_name: bath-royale-poc-auth-mail
+    ports: ["127.0.0.1:55473:8025"]

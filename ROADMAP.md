@@ -214,11 +214,16 @@ No server schema, wire protocol, HTTP transport or remote method contract change
 
 This maintenance milestone does not start Phase 2.3B or production signing. See [preview operations](docs/android-previews.md#optimized-preview-maintenance-after-phase-23a).
 
-### Phase 2.3B — Production authentication and device lifecycle (not started)
+### Phase 2.3B — Production authentication and device lifecycle
 
-- [ ] Approve production authentication method and email delivery/confirmation/recovery; implement and verify a real session adapter.
-- [ ] Approve and verify secure credential persistence on Android/Linux, account selection/logout, offline account access and device-data retention/removal, including unsaved drafts and failed local commits.
-- [ ] Define account/public-cache view composition and lifecycle before enabling production account views; retain fully functional guest mode.
+- [x] Implement optional email/password authentication through the official SDK, secure session persistence and a private Profile account interface; retain guest startup with no backend.
+- [x] Implement approved offline local account access, isolated account retention, logout to original guest and guarded draft/failed-write transitions; keep domain synchronization disabled.
+- [x] Verify real registration, required confirmation, recovery and password change with fictional accounts and local email capture in a new isolated installation.
+- [x] Verify formatting, unchanged exact strict analyzer baseline, all 178 ordinary Flutter tests (170 retained plus eight new), one separate real Auth suite, all 25 offline backend tests, Ruff, actionlint and five preview-tooling tests. Linux/Android debug and configured release builds pass; universal release identity/AOT/non-debuggable status and existing preview certificate verified. An isolated Linux platform keyring write/read/delete probe passes.
+- [ ] Owner acceptance of Android Keystore lifecycle and Linux desktop keyring lock/unlock, account offline/reconnection/logout flows and retained drafts on physical devices.
+- [ ] Resolve zero-recurring-cost public email delivery and deploy HTTPS/public client configuration; confirmation remains required.
+
+See [production authentication](docs/backend/production-authentication.md). The owner approved email/password, secure persistent sessions, offline account access and isolated local retention after logout. Domain account views remain local-only; remote cache composition, private synchronization, guest association and public identity remain unapproved. No managed or preserved migration/sync installation was accessed. Phase 2.3C remains unstarted.
 
 ### Phase 2.3C — Consent, explicit association and private synchronization (not started)
 

@@ -1,5 +1,7 @@
 # Backend architecture evaluation
 
+Phase 2.3B adds optional production authentication and approved offline device lifecycle; see [production authentication](production-authentication.md). Earlier guest-only/test-only descriptions below are historical foundation details. Domain synchronization, association and public-profile creation remain disabled.
+
 Assessed 2026-11-25 against baseline `e21ab7a`. This is Phase 2.0 feasibility work. **Proposed** means awaiting an implementation decision; **verified locally** means an executed check; **documented** means an official upstream claim, not a project acceptance result. This Phase 2.0 assessment is retained as design context. The owner subsequently accepted the bounded Phase 2.1A candidate and fictional assumptions; [local PoC implementation and evidence](local-poc.md) now verify schema/Auth/API/authorization. Production Flutter Auth integration remains unimplemented; the Phase 2.2B/2.2C updates below record the scoped client foundation and real local test transport. Session 4D physical-phone acceptance remains pending. Its [hosted Android run](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/45676274279) completed successfully.
 
 ## Recommendation and comparison

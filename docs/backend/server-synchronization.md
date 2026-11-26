@@ -1,5 +1,7 @@
 # Server synchronization protocol — Phase 2.2C
 
+Phase 2.3B adds optional production authentication and approved offline device lifecycle; see [production authentication](production-authentication.md). Earlier guest-only/test-only descriptions below are historical foundation details. Domain synchronization, association and public-profile creation remain disabled.
+
 This protocol is implemented by ordered migration `202611260002_synchronization.sql`, on top of the unchanged Phase 2.1A schema. `HttpRemoteDataSource.forTesting` exercises it through the isolated local Auth/PostgREST APIs. The ordinary Flutter bootstrap remains guest-only. Nothing opens an account database, associates guest history, uploads the existing SQLite file, stores production credentials or enables account UI. Phase 2.3 has not started.
 
 ## Disposable verification environment

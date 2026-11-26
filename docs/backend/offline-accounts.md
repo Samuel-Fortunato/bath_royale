@@ -1,5 +1,7 @@
 # Offline account integration foundation — Phase 2.3A
 
+Phase 2.3B adds optional production authentication and approved offline device lifecycle; see [production authentication](production-authentication.md). Earlier guest-only/test-only descriptions below are historical foundation details. Domain synchronization, association and public-profile creation remain disabled.
+
 Production bootstrap remains `StorageBootstrap` → `AppState.restore` → guest SQLite → Provider. It neither constructs an authentication adapter nor opens an account/cache file, creates an outbox context, schedules synchronization or needs a backend. Existing Portuguese UI, samples, review workflows, ratings and rankings remain unchanged. No login or production account selector is introduced. No authentication SDK or credential package is installed.
 
 ## Session identity and lifetime

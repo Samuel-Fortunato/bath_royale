@@ -1,5 +1,7 @@
 # Local storage
 
+Phase 2.3B adds optional production authentication and approved offline device lifecycle; see [production authentication](backend/production-authentication.md). Earlier guest-only/test-only descriptions below are historical foundation details. Domain synchronization, association and public-profile creation remain disabled.
+
 Current schema is v6. The Phase 2.2A description below retains the guest action/failure semantics; [client synchronization design](backend/client-synchronization.md) describes the optional account/outbox/cache foundation and [Phase 2.2C](backend/server-synchronization.md) specifies the verified server protocol. Application bootstrap remains guest-only.
 
 ## Architecture and durability (Phase 2.2A)

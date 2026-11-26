@@ -10,16 +10,28 @@ import 'app_state.dart';
 /// Owns one selected state/connection; identity events alone never open stores,
 /// associate guest data, authorize an outbox or execute synchronization.
 class AccountStateScope extends ChangeNotifier {
+  final bool offlineAccess;
   final AuthSession auth;
   final Future<LocalStore> Function(DataNamespace) openStore;
   final int Function() now;
   AccountStateScope.forTesting({
+    this.offlineAccess = false,
     required this.auth,
     required this.openStore,
     required this.now,
   }) {
     auth.addListener(_sessionChanged);
   }
+
+  AccountStateScope.device({
+    required AuthSession auth,
+    required Future<LocalStore> Function(DataNamespace) openStore,
+  }) : this.forTesting(
+         auth: auth,
+         openStore: openStore,
+         offlineAccess: true,
+         now: () => DateTime.now().millisecondsSinceEpoch,
+       );
 
   AppState? _state;
   AppState? get state => _state;
@@ -30,13 +42,16 @@ class AccountStateScope extends ChangeNotifier {
   /// An expired/foreign session hides the retained editor tree. It does not
   /// discard memory-only work or automatically select another person's data.
   bool get isAccessible =>
-      !_disposed && _store != null && _matchesSession(_store!.namespace);
+      !_disposed &&
+      _store != null &&
+      _matchesSession(_store!.namespace) &&
+      (!offlineAccess || _store!.namespace.isAccount || auth.current == null);
 
   bool _matchesSession(DataNamespace namespace) =>
       namespace.kind == 'guest' ||
       (namespace.isAccount &&
           auth.current?.namespace == namespace &&
-          auth.current!.expiresAt > now());
+          (offlineAccess || auth.current!.expiresAt > now()));
 
   void _sessionChanged() {
     if (!_disposed) notifyListeners();

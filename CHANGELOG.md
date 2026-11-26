@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Phase 2.3B: add optional official Supabase email/password authentication, secure Android Keystore/Linux Secret Service session persistence, code/link confirmation, recovery and password change through private Profile controls.
+- Restore isolated account data offline without startup network authorization; retain account databases and committed work on logout to original guest. Guard editors/failed commits, refresh rotation, superseded requests and credential-storage failures. Keep all domain synchronization, guest association and public-profile creation disabled.
+- Retain all 170 ordinary Flutter regressions and add eight focused auth/device/UI tests. Verify real adapter confirmation/recovery/refresh rotation and an actual isolated Linux keyring write/read/delete probe.
+- Add a new isolated confirmation-required local Auth/Mailpit environment and real SDK verification; document the unresolved zero-cost email-delivery deployment gate and physical secure-storage/offline acceptance.
+
+
 - Optimize universal Android preview distribution with Flutter release/AOT builds while retaining the package, existing preview certificate, version scheme, APK/checksum assets and automatic pre-releases.
 - Verify hosted preview 1025 and its public checksum/signature/AOT payload: 56,837,558 bytes versus 157,025,741 bytes for debug preview 1024 (63.8037% smaller); local ARM64 comparison 19,805,283 bytes. Physical update/data acceptance remains open.
 - Fail closed on missing/incompatible preview keys; verify non-debuggable APKs, native architectures, AOT payload, identity, version and certificate. Preserve local debug support and keep production signing/authentication separate.

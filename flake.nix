@@ -58,6 +58,7 @@
 
         buildInputs = with pkgs; [
           gtk3
+          libsecret
           glib
         ];
 
