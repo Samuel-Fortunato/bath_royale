@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- A1.1: add welcome startup/logout and separate authentication routes with visible/system back; preserve form destinations on errors and registration drafts on local validation failure.
+- Add field-specific email/password errors, upfront password guidance, email/username autofill, grouped password-manager fields and Next/Done focus actions. Keep short existing-account sign-in and incorrect-credentials feedback.
+- Add a project-local private Android build/compatibility-check/update/USB-forward/launch command and focused navigation, validation, autofill and installer regressions.
+
 - Verify 196 Flutter regressions, real HTTPS immediate-registration and confirmation/recovery variants, 25 offline backend tests, strict analysis and private Android/Linux/public-target Android releases. Prepare signed private A1 APK code 1023; installation awaits a connected ADB device.
 - Phase A1: replace writable guest startup and embedded Profile forms with a dedicated email/password account flow; preserve archived guest files and isolated account data across logout/relogin and restarts, with offline access after authentication.
 - Add visible Portuguese credential errors, form validation, password visibility, loading states and explicit unavailable-recovery guidance for the isolated local alpha. Enable immediate signup only on that local server; retain production confirmation/recovery and strict TLS/key validation.

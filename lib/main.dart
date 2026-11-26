@@ -115,18 +115,22 @@ class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap> {
   Widget recovery() => ListenableBuilder(
     listenable: auth!,
     builder: (context, _) => MaterialApp(
+      key: ValueKey(auth!.current?.namespace),
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: scope?.state?.darkMode == false
           ? ThemeMode.light
           : ThemeMode.dark,
-      home: AuthenticationPage(
-        canTransition:
-            auth!.current == null || scope?.state?.hasUncommittedWork != true,
-        problem: error,
-        retry: error != null && !auth!.busy && !selecting ? select : null,
-      ),
+      home: auth!.current == null && error == null
+          ? WelcomePage(canTransition: true)
+          : AuthenticationPage(
+              canTransition:
+                  auth!.current == null ||
+                  scope?.state?.hasUncommittedWork != true,
+              problem: error,
+              retry: error != null && !auth!.busy && !selecting ? select : null,
+            ),
     ),
   );
 

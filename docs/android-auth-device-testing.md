@@ -169,3 +169,19 @@ The signed private release is `0.1.0-alpha-a1.1023` / code **1023**, reusing the
 ```
 
 A1 installation is currently pending: ADB reports no connected device. Recheck the current phone version/certificate when it reconnects before using `adb install -r`; rebuild with its actual code if it is above 1023. Never uninstall, clear data, force a downgrade or use a replacement signing key. No A1 physical acceptance is claimed by these build/test results. Local Auth and the existing HTTPS gateway are left available; USB forwarding must be restored when the device reconnects. The certificate expires seven days after its original generation; preparing a new certificate then requires a new private build.
+
+## A1.1 local install command
+
+Inside the existing direnv/Nix shell, connect/authorize the phone and keep the isolated Auth backend and TLS gateway running. Reuse the existing private TLS directory (its certificate must still be valid) and original signing key:
+
+```sh
+PREVIEW_KEYSTORE=/home/samuel/.config/.android/debug.keystore python3 tool/install_private_alpha.py --config-dir /tmp/bath-auth-acceptance-0m55gulo
+```
+
+Use `--keystore /path/to/original/key` or `PREVIEW_KEYSTORE` for another existing backup, and `ANDROID_SERIAL` if multiple devices are attached. The command refuses a missing installation or incompatible certificate, reads the installed version code, builds the configured private release, verifies its exact package/version/signature/AOT payload, uses only `adb install -r`, restores `tcp:55474` USB forwarding and launches Bath Royale. It never uninstalls, clears storage, selects a managed project or publishes an APK. Private output stays under ignored `build/`. See the preparation instructions above when a new TLS certificate is needed.
+
+A1.1 physical checks: signed-out startup/logout show welcome; Entrar and Criar conta open separate routes with app-bar/system back to welcome. Short registration passwords show a field error and remain editable; short existing-account passwords are sent to sign-in without applying registration minimums. Wrong credentials keep their existing feedback and destination. Check email autofill/password-manager selection, Next focus movement, Done submission, keyboard scrolling and restored authenticated startup. Android password-manager suggestions depend on the enabled provider and saved credentials; widget tests cannot establish device-provider behavior.
+
+A1.1 verification: 197 ordinary Flutter regressions pass (three opt-in placeholders skipped), strict analysis passes with only the existing exact Material-import baseline, Dart formatting passes, and all nine tooling tests pass. The new tests cover short registration-password retention, separate routes with app-bar/system back, email autofill/Next, grouped autofill, short sign-in reaching the server and visible incorrect credentials; existing lifecycle tests cover restored accounts and welcome on logout/startup. The update-only installer also rejects mismatched certificates before building/installing.
+
+The connected SM A166B accepted `0.1.0-alpha-a11.1023` / code 1023 with the existing verified certificate and package via `adb install -r` (Success). The command restored `tcp:55474` forwarding and Android accepted the launch intent. No uninstall/storage-clear operation was used. Actual Android password-manager suggestions and owner UX acceptance remain separate from automated verification.

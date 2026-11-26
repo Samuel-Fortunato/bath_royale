@@ -38,6 +38,72 @@ class SequenceClient extends DelayedLoginClient {
 
 void main() {
   testWidgets(
+    'welcome routes have visible and system back; registration retains invalid password',
+    (tester) async {
+      final vault = MemoryVault();
+      final auth = ProductionAuth(
+        AuthConfiguration.localAlpha(
+          'https://localhost:55474',
+          'local-device-client',
+        ),
+        vault,
+        restorationGuard: vault.guard,
+        client: DelayedLoginClient(),
+      );
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: auth,
+          child: const MaterialApp(home: WelcomePage()),
+        ),
+      );
+      await tester.tap(find.text('Criar conta'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BackButton), findsOneWidget);
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Email'),
+        'friend@example.com',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Palavra-passe'),
+        'short',
+      );
+      await tester.ensureVisible(
+        find.widgetWithText(FilledButton, 'Criar conta'),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Criar conta'));
+      await tester.pumpAndSettle();
+      expect(find.text('Usa pelo menos 8 caracteres.'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(find.widgetWithText(TextField, 'Palavra-passe'))
+            .controller!
+            .text,
+        'short',
+      );
+      expect(find.widgetWithText(FilledButton, 'Criar conta'), findsOneWidget);
+      expect(auth.busy, isFalse);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byType(WelcomePage), findsOneWidget);
+      await tester.tap(find.text('Entrar'));
+      await tester.pumpAndSettle();
+      final emailField = tester.widget<TextField>(
+        find.widgetWithText(TextField, 'Email'),
+      );
+      expect(emailField.keyboardType, TextInputType.emailAddress);
+      expect(emailField.textInputAction, TextInputAction.next);
+      expect(emailField.autofillHints, contains(AutofillHints.username));
+      expect(find.byType(AutofillGroup), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.byType(WelcomePage), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+      auth.dispose();
+    },
+  );
+
+  testWidgets(
     'A1 gate preserves legacy bytes and account records across logout and restart',
     (tester) async {
       final directory = Directory.systemTemp.createTempSync('bath-a1-upgrade-');
@@ -89,6 +155,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(opens, 0);
+      expect(find.byType(WelcomePage), findsOneWidget);
       expect(find.byType(HomePage), findsNothing);
       await auth.login('first@example.invalid', 'password');
       await tester.pumpAndSettle();
@@ -186,7 +253,7 @@ void main() {
       );
       await tester.enterText(
         find.widgetWithText(TextField, 'Palavra-passe'),
-        'wrong-password',
+        'x',
       );
       await tester.tap(find.widgetWithText(FilledButton, 'Entrar'));
       await tester.pump();
@@ -373,7 +440,7 @@ void main() {
       await tester.ensureVisible(find.text('Esqueci-me da palavra-passe'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Esqueci-me da palavra-passe'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Enviar instruções'), findsOneWidget);
       expect(find.text('Palavra-passe'), findsNothing);
@@ -381,17 +448,17 @@ void main() {
         find.text('Já tenho um código de recuperação'),
       );
       await tester.tap(find.text('Já tenho um código de recuperação'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(find.byType(TextField), findsNWidgets(2));
       expect(find.text('Validar recuperação'), findsNWidgets(2));
       await tester.ensureVisible(find.text('Voltar a entrar'));
       await tester.tap(find.text('Voltar a entrar'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       await tester.ensureVisible(
         find.text('Já tenho um código de confirmação'),
       );
       await tester.tap(find.text('Já tenho um código de confirmação'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(
         find.widgetWithText(FilledButton, 'Confirmar email'),
         findsOneWidget,
@@ -491,6 +558,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.widgetWithText(AppBar, 'Explorar'), findsNothing);
       expect(find.widgetWithText(FilledButton, 'Entrar'), findsOneWidget);
+      expect(find.byType(WelcomePage), findsOneWidget);
       expect(auth.current, isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -556,7 +624,7 @@ void main() {
         findsOneWidget,
       );
       await tester.tap(find.text('Entrar'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(
         find.text('Introduz um endereço de email válido.'),
         findsOneWidget,
@@ -570,19 +638,20 @@ void main() {
         'short',
       );
       await tester.tap(find.text('Criar conta'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(TextField, 'Palavra-passe'),
         'short',
       );
       await tester.tap(find.widgetWithText(FilledButton, 'Criar conta'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(find.text('Usa pelo menos 8 caracteres.'), findsOneWidget);
       await tester.tap(find.byTooltip('Mostrar palavra-passe'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(find.byTooltip('Ocultar palavra-passe'), findsOneWidget);
       await tester.tap(find.text('Voltar a entrar'));
-      await tester.pump();
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(
         ChangeNotifierProvider.value(
           value: auth,
@@ -596,7 +665,7 @@ void main() {
         ),
       );
       await tester.tap(find.text('Entrar'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(find.textContaining('Termina ou cancela'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
       auth.dispose();

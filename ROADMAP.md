@@ -18,6 +18,12 @@ The owner has reprioritized delivery to a small group of friends. Phase A1 below
 
 Unauthenticated shared-catalogue browsing is an approved requirement **when that catalogue exists**. There is no shared catalogue in A1. No-config public builds display an unavailable-account explanation; they do not expose the former guest writer. Existing guest data remains archived on-device and is not shown or imported into new accounts. A1 does not create public profiles or upload domain data. See [the A1 decisions, verification and limitations](docs/backend/authentication-roadmap.md).
 
+### A1.1 — Authentication UX corrections
+
+- [x] Add welcome on signed-out startup/logout, separate sign-in/registration routes, visible/system back, field validation, upfront registration requirements and email/password autofill/focus actions.
+- [x] Retain authenticated restoration, incorrect-credentials feedback, local-validation drafts and secure request handling; add focused regressions and a documented update-only private installer.
+- [ ] Owner phone acceptance of keyboard/password-manager suggestions and welcome/back behavior.
+
 ### Private alpha release gates and subsequent scope
 
 - [ ] Restrict registration **on the server** before distributing a remotely connected private alpha. Approve the invite/allowlist mechanism and test direct API bypass attempts. APK secrecy and client controls are not access control. The current local listener is USB/loopback only; no managed-project change is authorized.
