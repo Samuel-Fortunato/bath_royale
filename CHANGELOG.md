@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Optimize universal Android preview distribution with Flutter release/AOT builds while retaining the package, existing preview certificate, version scheme, APK/checksum assets and automatic pre-releases.
+- Verify hosted preview 1025 and its public checksum/signature/AOT payload: 56,837,558 bytes versus 157,025,741 bytes for debug preview 1024 (63.8037% smaller); local ARM64 comparison 19,805,283 bytes. Physical update/data acceptance remains open.
 - Fail closed on missing/incompatible preview keys; verify non-debuggable APKs, native architectures, AOT payload, identity, version and certificate. Preserve local debug support and keep production signing/authentication separate.
 
 - Phase 2.3A: add observable, generation-safe fake session renewal/expiry/invalidation and test-only account AppState/Provider lifecycle management over the existing namespace files; preserve guest-only production startup.

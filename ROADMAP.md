@@ -209,7 +209,7 @@ No server schema, wire protocol, HTTP transport or remote method contract change
 
 ### Intermediate maintenance — Optimized Android previews
 
-- [ ] Verify optimized universal release preview locally and through hosted publication, preserving signing, identity, versioning and checksum distribution.
+- [x] Verify optimized universal release preview locally and through hosted publication, preserving signing, identity, versioning and checksum distribution. Hosted run [45859523546](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/45859523546) passed and public preview 1025 independently verified: 56,837,558 bytes, 63.8037% smaller than debug preview 1024. All 170 Flutter regressions, strict analysis, formatting, actionlint and five preview-tooling tests pass.
 - [ ] Owner physical in-place update and existing SQLite data acceptance.
 
 This maintenance milestone does not start Phase 2.3B or production signing. See [preview operations](docs/android-previews.md#optimized-preview-maintenance-after-phase-23a).
