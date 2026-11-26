@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Prepare the authorized SM A166B for manual Phase 2.3B acceptance: verify signing compatibility, install the private Auth release in place with existing code 1023, and leave isolated HTTPS/Auth/Mailpit/USB services running. Owner authentication and data-preservation acceptance remain pending.
+- Add a loopback phone inbox helper that copies correctly mapped confirmation/recovery links without consuming tokens, logging messages or using a public service.
+
 - Harden Phase 2.3B restoration with a non-secret durable denial before refresh/logout/credential replacement; fail closed on missing or failed guard storage, retain secure-only tokens, and require one fresh login for pre-hardening sessions without altering account data.
 - Fix disposed-controller submission and idle renewal churn; recover failed account-store opens and rapid identity changes while preserving draft guards. Separate private Profile authentication flows and show email instead of UUID.
 - Verify 189 ordinary Flutter regressions (178 retained plus 11 new), real Auth directly and over the private TLS gateway, strict analysis, offline backend/preview checks and configured Android/Linux release builds. Physical device acceptance remains open.

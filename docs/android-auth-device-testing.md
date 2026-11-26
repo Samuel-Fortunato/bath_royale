@@ -48,7 +48,7 @@ python3 tool/auth_device_proxy.py serve "$device_dir"
 
 Leave the gateway running in that terminal. In another terminal, reuse the same `device_dir`, `device_code` and `PREVIEW_KEYSTORE` values. `prepare` refuses to overwrite existing certificates/configuration or place credentials inside the checkout. Files are private, the certificate lasts seven days, and `defines.json` contains only the local URL, placeholder client key and public certificate. This temporary shell uses the committed flake input and may fetch its locked packages from the Nix cache. Add `--offline` only when they are already cached; do not install the utility globally.
 
-The backend remains rootless, with independent state/credentials/volumes/network and loopback-only bindings. Confirmation remains required; Mailpit is available **on the computer** at `http://127.0.0.1:55473`. Do not expose Auth or Mailpit to the LAN. Starting/stopping this instance does not select a managed Supabase project.
+The backend remains rootless, with independent state/credentials/volumes/network and loopback-only bindings. Confirmation remains required; Mailpit is available on the computer at `http://127.0.0.1:55473`; optional USB forwarding below also makes it available on the authorized phone. Do not expose Auth or Mailpit to the LAN. Starting/stopping this instance does not select a managed Supabase project.
 
 ## Build, verify and install locally
 
@@ -80,7 +80,20 @@ Use a working unlocked desktop Secret Service when executing it. This build comm
 
 Use new fictional emails such as `device-trono@example.com` and passwords used nowhere else. Profile now separates login, registration, confirmation, recovery-code validation and password change. Private email identifies the selected account; account UUIDs are not presented as profile information. The email is sent privately to the isolated Auth service; no public profile or domain records are uploaded.
 
-The direct Auth service's captured verification links start with `http://127.0.0.1:55471/verify?`. Before pasting one into the app, replace **only that prefix** with `https://localhost:55474/auth/v1/verify?`, retaining the token/query exactly. This maps the direct test server to the local gateway origin accepted by the adapter. Do not open the link in the browser first: that can consume the token. Use the newest matching confirmation/recovery message. Never paste tokens into logs, issues or test reports. A template containing a numeric OTP can instead be used directly with the matching email.
+For convenient phone confirmation/recovery, run the private inbox helper in a separate terminal and forward its loopback port over USB:
+
+```sh
+python3 tool/auth_device_mail.py
+adb reverse tcp:55475 tcp:55475
+adb reverse tcp:55473 tcp:55473
+adb shell am start -a android.intent.action.VIEW -d http://localhost:55475
+```
+
+In the phone browser, open **http://localhost:55475**, enter the same fictional email used in the app, and choose **Atualizar mensagens**. The newest matching message appears first with **Copiar ligação para a app**. Return to Bath Royale, choose **Já recebi o email de confirmação** (or **Já tenho um código de confirmação**), paste into **Código ou ligação do email**, and choose **Confirmar email**. For recovery, use **Já tenho um código de recuperação**, paste the newest recovery link and choose **Validar recuperação**, then set a new password.
+
+The helper reads only the isolated Mailpit API, filters recipients, maps links automatically and never opens/consumes them. It does not send email, store tokens, log requests, include external resources or expose a LAN listener. The page has no-store/referrer restrictions and a manual copy fallback if browser clipboard access is unavailable. Its full-Mailpit link uses the optional 55473 forwarding. Auth itself remains on the separately validated HTTPS connection; this local inbox introduces no app/OS trust relaxation.
+
+Manual fallback: The direct Auth service's captured verification links start with `http://127.0.0.1:55471/verify?`. Before pasting one into the app, replace **only that prefix** with `https://localhost:55474/auth/v1/verify?`, retaining the token/query exactly. This maps the direct test server to the local gateway origin accepted by the adapter. Do not open the link in the browser first: that can consume the token. Use the newest matching confirmation/recovery message. Never paste tokens into logs, issues or test reports. A template containing a numeric OTP can instead be used directly with the matching email.
 
 Record pass/fail separately for each physical check:
 
@@ -118,4 +131,39 @@ POC_INSTANCE=auth nix develop .#backend --offline --no-write-lock-file --command
 
 Keep the isolated backend data and the original signing-key backup. Remove the private temporary device directory only when its test APK/certificate are no longer needed. Regenerating a certificate requires rebuilding the local target; it does not require clearing phone data.
 
-At this milestone, the release builds and local TLS trust/hostname checks are verified on the development computer. A connected phone is reported **unauthorized** by ADB: no installation, physical Keystore/restart, guest-data preservation, USB-forwarded Auth, phone email/recovery UX or real storage-failure behavior is claimed. Linux desktop keyring locking/unlocking and cross-process acceptance also remain open. Private synchronization, guest association, public identity and Phase 2.3C are not started.
+## Prepared physical session — 2026-11-26
+
+The authorized SM A166B was verified with package `com.example.bath_royale`, installed version `0.1.0-preview.23` / code **1023**, and the documented certificate. The existing local preview key was located and checked without printing its contents. The private application was built from the unchanged app sources at `ccce2ea`, with the local HTTPS certificate embedded, version `0.1.0-auth-local.1023` and the same code **1023**. Package, exact version, certificate, universal native architectures, AOT and non-debuggable status were verified before `adb install -r` returned **Success**. Post-update Android app ID and first-install timestamp are unchanged; actual guest/domain data preservation is still for the owner to verify.
+
+Private APK SHA-256:
+
+```text
+04ec17451a879e577e3cc45a38c522381f856179e7a1f9ad0ed40cdf87392acb
+```
+
+Private session files, original APK, release APK, certificate, process IDs and before/after metadata are in `/tmp/bath-auth-acceptance-0m55gulo` (mode 0700). The signing key remains in its existing location, outside that directory. No credentials/tokens or private APK are committed or published. The first metadata probe expected `userId`; the phone reports `appId`, so the parser was corrected before compatibility verification and installation. An initial ADB execution approval review timed out; the permitted retry succeeded.
+
+The isolated Auth/Mailpit containers, HTTPS gateway and inbox helper are left running for manual acceptance. Only loopback listeners are published; USB forwards ports 55474 (Auth HTTPS), 55475 (copy helper) and 55473 (full Mailpit). If USB reconnect removes forwarding, reapply all three `adb reverse tcp:<port> tcp:<port>` commands. The helper was opened in the phone browser; no owner registration, login, confirmation or recovery was performed automatically.
+
+For an offline test, leave the helper available and remove only Auth forwarding:
+
+```sh
+adb reverse --remove tcp:55474
+# Wait beyond the local 60-second JWT lifetime, force-stop/reopen and check local data.
+# Restore Auth access afterwards:
+adb reverse tcp:55474 tcp:55474
+```
+
+To stop this prepared session after testing (do not run while manual acceptance is ongoing):
+
+```sh
+kill "$(cat /tmp/bath-auth-acceptance-0m55gulo/gateway.pid)" "$(cat /tmp/bath-auth-acceptance-0m55gulo/inbox.pid)"
+adb reverse --remove tcp:55474
+adb reverse --remove tcp:55475
+adb reverse --remove tcp:55473
+POC_INSTANCE=auth nix develop .#backend --offline --no-write-lock-file --command python3 backend/poc.py stop
+```
+
+Preparation checks passed: 189 ordinary Flutter regressions, the unchanged strict analyzer baseline and formatting, 25 offline backend tests, Ruff lint/backend format, actionlint, seven preview-tooling tests (including two inbox regressions), the separate two-test TLS target suite, the real Auth lifecycle over HTTPS, and the verified code-1023 Android release build. The inbox was also checked against captured fictional Mailpit messages without consuming links or printing tokens.
+
+Preparation verifies installation compatibility and local tooling, **not physical authentication acceptance**. Owner checks in the matrix above remain pending: existing guest records/settings, actual Android Keystore restart, USB-forwarded Auth, offline/reconnection, logout/relogin, separate accounts, recovery, retained drafts and phone UX. Linux desktop keyring lock/unlock remains open. The managed Supabase project, global NixOS configuration, public preview workflow and Phase 2.3C are untouched.
