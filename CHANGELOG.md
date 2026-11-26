@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Extract the verified managed migration scripts into independent private export, fresh disposable restore and preservation verification tooling; retain CLI filtering/TLS, transactional import, explicit compatibility policy and source ACL reconciliation. Add offline regressions and usage; preserve the historical rehearsal evidence without repeating live operations.
+
 - Phase 2.1C: verify the actual managed-Free exit into a third isolated self-hosted target, with exact identity/content/hash and application authorization preservation, original-password login, session isolation and restart checks; preserve all environments and private checksummed evidence.
 - Require explicit boolean Auth settings and private fictional account reuse; verify 231 managed and 226 destination assertions, document compatibility/default-grant corrections, timings and resources. Production hosting/email/backup decisions remain open.
 

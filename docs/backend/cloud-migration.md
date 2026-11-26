@@ -178,6 +178,18 @@ missed `PYTHONPATH`; the successful command sets it inside the Nix shell.
 Local final code/build verification is recorded in the roadmap. No remote CI
 success is inferred from local tests. Production acceptance remains separate.
 
+## Version-controlled tooling follow-up
+
+The historical procedure above remains verified at **9b634c9**. Its private scripts
+have now been reviewed and extracted into `backend/cloud_transfer.py`, with
+independent export/restore/verification commands, explicit fresh disposable target
+selection, fail-closed compatibility rules and atomic ACL reconciliation.
+See [usage, safety guards, offline checks and limits](cloud-transfer-tooling.md).
+This refactoring was not validated by repeating the managed rehearsal or changing
+any existing database. Its offline tests and read-only original-adaptation
+comparison are separate from the historical end-to-end results. Original bundles
+and all existing environments remain preserved. Phase 2.2 has not begun.
+
 ## Deferred decisions and operations
 
 No paid plan/add-on, domain, additional project/hardware, organization change,
