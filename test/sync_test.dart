@@ -754,4 +754,42 @@ void main() {
       expect(rows('reviews').single['comment'], 'Draft');
     },
   );
+  test(
+    'compound and review edit acknowledgments advance both entity revisions',
+    () async {
+      repository.createBathroom(bathroom());
+      await coordinator.synchronize();
+      repository.saveReview(review(visit()), newVisit: visit(), isNew: true);
+      await coordinator.synchronize();
+      expect(sync.revision('visit', 'v'), sync.revision('review', 'r'));
+      repository.saveReview(review(visit()), isNew: false);
+      await coordinator.synchronize();
+      expect(sync.revision('visit', 'v'), sync.revision('review', 'r'));
+      repository.deleteVisit('v');
+      await coordinator.synchronize();
+      expect(sync.revision('visit', 'v'), sync.revision('review', 'r'));
+    },
+  );
+
+  test('visibility withdrawal can return but terminal deletion cannot', () {
+    sync.applyPull('private', [RemoteChange('bathroom', 'visible', 1)], 'one');
+    sync.applyPull('private', [
+      RemoteChange(
+        'bathroom',
+        'visible',
+        2,
+        deleted: true,
+        payload: {'_visibility': false},
+      ),
+    ], 'two');
+    sync.applyPull('private', [
+      RemoteChange('bathroom', 'visible', 3),
+    ], 'three');
+    expect(rows('remote_records').single['deleted'], 0);
+    sync.applyPull('private', [
+      RemoteChange('bathroom', 'visible', 4, deleted: true),
+    ], 'four');
+    sync.applyPull('private', [RemoteChange('bathroom', 'visible', 5)], 'five');
+    expect(rows('remote_records').single['deleted'], 1);
+  });
 }

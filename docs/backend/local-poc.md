@@ -96,3 +96,6 @@ The subsequent [Phase 2.1B rehearsal](local-migration.md) verifies independent l
 - **105 Flutter tests passed**, with unchanged Flutter source/dependencies/SQLite; formatting (44 files unchanged), the exact existing Material-import analysis gate and Linux/Android debug builds passed. Python Ruff lint/format, Compose parsing, Nix flake evaluation and actionlint passed. No hosted compilation result is inferred from these checks.
 
 Phase 2.1B parameterizes the existing lifecycle with `POC_INSTANCE=source|destination` (source remains the default). See [local migration](local-migration.md) for isolated resource names, ports, export scope and explicit destination cleanup. `test` still resets fictional fixtures; use the migration command for preservation-first verification.
+
+
+Phase 2.2C reuses this lifecycle with `POC_INSTANCE=sync`, project `bath-royale-poc-sync`, loopback Auth/API ports 55461/55462 and independent private state, credentials, volumes and network. The [synchronization runbook](server-synchronization.md) is the current verification entry point. Never run its fixture/reset tests on the three preserved migration installations or managed project.

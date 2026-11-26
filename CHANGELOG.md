@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Phase 2.2C: add authenticated PostgreSQL synchronization commands with durable immutable receipts, verified causal dependencies, shared compound revisions, CAS/conflicts and atomic visit/review tombstones; retain existing authorization and publication restrictions.
+- Add commit-ordered, scoped private/public change feeds, opaque expiring checkpoints and safe full replay; keep never-public identifiers private and preserve pending client drafts.
+- Add the explicitly injected HTTP test adapter with server-subject/compound-response validation and real Auth/API/process-restart/concurrency/race verification in a fourth isolated rootless installation, stopped and preserved afterwards.
+- Verify 144 ordinary Flutter regressions, seven real client/server tests, 25 offline backend tests, full authorization/protocol attacks, exact strict analysis, formatting and Linux/Android debug builds. Document the remaining Unicode compatibility gate and deferred production policies; keep normal bootstrap guest-only and Phase 2.3 unstarted.
+
 - Phase 2.2B: non-destructively bind distributed v5 data to local guest in schema v6; isolate account subjects/backend environments and shared public catalogue caches in checked namespace files.
 - Add atomic entity/outbox commands with stable IDs, dependencies, explicit favourite values and compound visit/review semantics; keep guest/sample/legacy/cache/theme/notification paths excluded and application uploads disabled.
 - Add fake session/remote boundaries and bounded serialized synchronization with durable acknowledgment/retry/backoff, session invalidation, revision/conflict/draft preservation, tombstones and atomic scoped pull checkpoints. Document memory-only pre-commit failures and deferred server/product requirements.

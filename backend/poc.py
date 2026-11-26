@@ -13,13 +13,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 INSTANCE = os.environ.get("POC_INSTANCE", "source")
-if INSTANCE not in ("source", "destination", "cloud-destination"):
-    raise RuntimeError("POC_INSTANCE must be source, destination or cloud-destination")
+if INSTANCE not in ("source", "destination", "cloud-destination", "sync"):
+    raise RuntimeError("POC_INSTANCE must be source, destination, cloud-destination or sync")
 PROJECT = "bath-royale-poc" + ("-" + INSTANCE if INSTANCE != "source" else "")
 AUTH_PORT, REST_PORT = {
     "source": (55431, 55432),
     "destination": (55441, 55442),
     "cloud-destination": (55451, 55452),
+    "sync": (55461, 55462),
 }[INSTANCE]
 STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / PROJECT
 SERVICES = ["db", "auth", "rest"]

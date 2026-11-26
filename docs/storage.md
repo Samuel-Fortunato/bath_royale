@@ -1,12 +1,12 @@
 # Local storage
 
-Current schema is v6. The Phase 2.2A description below retains the guest action/failure semantics; [Phase 2.2B synchronization design](backend/client-synchronization.md) describes the implemented optional account/outbox/cache foundation. Application bootstrap remains guest-only.
+Current schema is v6. The Phase 2.2A description below retains the guest action/failure semantics; [client synchronization design](backend/client-synchronization.md) describes the optional account/outbox/cache foundation and [Phase 2.2C](backend/server-synchronization.md) specifies the verified server protocol. Application bootstrap remains guest-only.
 
 ## Architecture and durability (Phase 2.2A)
 
 The application retains Provider, ChangeNotifier, SQLite (`sqlite3` 3.x), Material 3 and the locked Nix environment. `path_provider` locates the private application-support `bath_royale.sqlite`; SQLite native assets are bundled on Linux and Android. Tests use memory databases or private temporary files, never the production opener.
 
-`AppState` validates local ownership and domain invariants and presents observable state/derived queries. One `BathroomRepository` at its action boundary delegates local loads, first-run initialization and explicit mutation transactions to `LocalStore`. SQL, serialization, schema management and connection ownership remain in `LocalStore`. There is no ORM, second reactive framework or real transport. Optional namespace/outbox/coordinator boundaries are described below; account association is absent.
+`AppState` validates local ownership and domain invariants and presents observable state/derived queries. One `BathroomRepository` at its action boundary delegates local loads, first-run initialization and explicit mutation transactions to `LocalStore`. SQL, serialization, schema management and connection ownership remain in `LocalStore`. There is no ORM or second reactive framework. The optional test-only HTTP transport is described below. Optional namespace/outbox/coordinator boundaries are described below; account association is absent.
 
 Each action uses targeted INSERT/UPDATE/DELETE statements under `BEGIN IMMEDIATE`/`COMMIT`: bathroom creation/modification, visit registration/undo/removal, review creation/editing, favourites and theme. Direct-review visit+review insertion and confirmed visit+review deletion commit atomically. Review edits update content only and guard immutable identity/associations/creation time and monotonic update time. Bathroom edits preserve creator and provenance. Favourite actions persist an explicit boolean rather than retrying a toggle. No ordinary action deletes/reinserts a snapshot. Notifications, rebuilds, getters, rankings and other reads cause no persistence writes.
 
@@ -32,7 +32,7 @@ Unsupported future schemas, unknown nonempty unversioned databases, corrupt data
 
 `test/repository_test.dart` exercises exact distributed v4 content preservation and provenance, migration rollback, initialization rollback/idempotency, zero writes from reads/notifications, audited per-table mutation footprints, atomic creation/removal, injected failure/repeated retry, unchanged observable state and completion ordering. Existing persistence, model and widget regressions retain restart, chronology, ownership, identity, tags/comments, ranking and UI behavior coverage. Final executed check results are recorded in [ROADMAP.md](../ROADMAP.md).
 
-2.2B implements the scoped client foundation below. 2.2C remains the server protocol and end-to-end verification. No Supabase Flutter dependency, auth UI, network, cloud mutation, publication, bulk import, account association or backend-environment change is introduced. Larger datasets may warrant an isolate later. Web still requires a replacement for the native `dart:io` opener (for example WebAssembly/OPFS), persistence and multi-tab verification.
+2.2B implements the scoped client foundation below; 2.2C adds the isolated real protocol verification described at the end. No Supabase Flutter dependency, auth UI, production networking, cloud mutation, publication, bulk import or account association is introduced. The three preserved backend installations remain unchanged. Larger datasets may warrant an isolate later. Web still requires a replacement for the native `dart:io` opener (for example WebAssembly/OPFS), persistence and multi-tab verification.
 
 ## Phase 2.2B — v6 namespaces and synchronization state
 
@@ -43,3 +43,8 @@ The ordered v5→v6 migration adds scope binding, outbox/dependencies, acknowled
 Eligible test repositories atomically commit exact operation snapshots with local actions. Guest/default repositories, seeds, cache pulls, themes, ordinary reads and notifications never enqueue. Revisions/cache are separate from local domain drafts. Tombstones prevent stale resurrection; pull page/checkpoint/revision/retry clearing is atomic. Scoped coordinator requests invalidate results after switch/logout/expiry; original-account unsent work stays durable. See the [design](backend/client-synchronization.md) for implemented retry/error semantics, memory-only versus committed failures, protocol limits and 2.2C requirements.
 
 `test/sync_test.dart` covers v5 preservation, cross-account/environment/public/guest files, atomic outbox/compound actions/deletions, restart/lost acknowledgment/duplicate receipts, bounds/dependencies, session changes and expiry, conflicts, stale deletes, pull rollback/checkpoints, provenance exclusions and no ordinary UI queueing. Existing regressions remain intact, with only current-schema assertions updated. Final executed verification is in [ROADMAP.md](../ROADMAP.md).
+
+
+## Phase 2.2C — Real protocol verification
+
+SQLite remains v6 with unchanged domain tables, provenance and namespace binding. Review acknowledgments now advance both review and parent visit revisions in one transaction, matching server CAS for confirmed deletion. Public visibility-removal markers may return at a higher revision; terminal identity tombstones cannot. Expired server cursors trigger bounded full-log replay into the separate cache, never a database reset or draft/outbox deletion. The explicitly injected HTTP transport is exercised against the new disposable local installation, including separate Dart processes and a server commit without local acknowledgment. The normal opener remains guest-only. See [server synchronization](backend/server-synchronization.md) for actual contracts, verification, Unicode compatibility gate and deferred production policies.

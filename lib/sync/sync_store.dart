@@ -164,6 +164,9 @@ class SyncStore {
     if (body['visit'] case final Map<String, dynamic> visit) {
       targets.add(('visit', visit['id'] as String));
     }
+    if (body['review'] case final Map<String, dynamic> review) {
+      targets.add(('visit', review['visit'] as String));
+    }
     if (body['deletedReviewId'] case final String id) {
       targets.add(('review', id));
     }
@@ -281,7 +284,8 @@ class SyncStore {
         '''INSERT INTO remote_records VALUES(?,?,?,?,?)
         ON CONFLICT(entity_type,entity_id) DO UPDATE SET revision=excluded.revision,
         deleted=excluded.deleted,payload=excluded.payload
-        WHERE excluded.revision>remote_records.revision AND remote_records.deleted=0''',
+        WHERE excluded.revision>remote_records.revision AND
+          (remote_records.deleted=0 OR json_extract(remote_records.payload,'\$._visibility')=0)''',
         [
           c.entityType,
           c.entityId,
