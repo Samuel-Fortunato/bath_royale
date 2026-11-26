@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Verify hosted publication and a publication-only retry for preview 1015; independently download and validate its APK checksum, package, version and existing signing certificate.
 - Automatically publish verified Android development APKs and checksums from successful main builds, with exact-commit tags, recoverable drafts and conflict-safe retries; retain Actions artifacts and add direct Releases download guidance.
 
 - Phase 2.1A: add a minimal digest-pinned Supabase PostgreSQL/Auth/PostgREST environment using the optional Nix shell and rootless Podman, loopback-only API ports, private disposable credentials and scoped lifecycle/cleanup commands.

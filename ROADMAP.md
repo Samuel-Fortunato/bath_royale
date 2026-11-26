@@ -31,7 +31,7 @@ The phases describe intended sequencing, not a fixed specification. Unconfirmed 
 
 See [Android preview operations](docs/android-previews.md). Production signing and store release preparation remain open. This milestone does not start backend implementation.
 
-Verified on 2026-11-25: local formatting, strict analysis, all 40 tests, actionlint, Nix flake checks and Android preview compilation pass. [The first GitHub Actions run](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/45604860872) independently passed the checks, built APK version `0.1.0-preview.1` / code `1001`, verified the existing signing certificate and uploaded the APK/checksum artifact. Automatic draft-first publication supersedes the original optional publishing flow; see the operations document for current verification. A physical in-place installation of the CI APK remains a separate device check.
+Verified on 2026-11-25: local formatting, strict analysis, all 40 tests, actionlint, Nix flake checks and Android preview compilation pass. [The first GitHub Actions run](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/45604860872) independently passed the checks, built APK version `0.1.0-preview.1` / code `1001`, verified the existing signing certificate and uploaded the APK/checksum artifact. Automatic draft-first publication is verified by hosted run 45724799545 and its publication-only retry; preview 1015 downloads, checksum, package, version and signing certificate were independently checked. See the operations document for details. A physical in-place installation of the CI APK remains a separate device check.
 
 ## Phase 1.6 — Approved UI/UX redesign (before Phase 2)
 
