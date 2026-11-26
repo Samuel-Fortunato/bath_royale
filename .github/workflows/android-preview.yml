@@ -52,7 +52,7 @@ jobs:
       - name: Check formatting
         run: |
           actionlint
-          python3 -m unittest discover -s tool -p "test_publish_preview.py"
+          python3 -m unittest discover -s tool -p "test_*preview*.py"
           dart format --output=none --set-exit-if-changed lib test tool
       - name: Analyze (only documented Material import debt is accepted)
         run: dart run tool/check_analysis.dart
@@ -75,15 +75,14 @@ jobs:
           umask 077
           mkdir -p "$ANDROID_USER_HOME"
           printf '%s' "$PREVIEW_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_USER_HOME/debug.keystore"
+          echo "PREVIEW_KEYSTORE=$ANDROID_USER_HOME/debug.keystore" >> "$GITHUB_ENV"
+          python3 tool/verify_preview.py key "$ANDROID_USER_HOME/debug.keystore"
       - name: Build installable preview APK
-        run: flutter build apk --debug --no-pub --build-name "0.1.0-preview.${GITHUB_RUN_NUMBER}" --build-number "$PREVIEW_BUILD_NUMBER"
+        run: flutter build apk --release --no-pub --build-name "0.1.0-preview.${GITHUB_RUN_NUMBER}" --build-number "$PREVIEW_BUILD_NUMBER"
       - name: Verify identity, version and signing certificate
         run: |
-          apk=build/app/outputs/flutter-apk/app-debug.apk
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk" | tee "$RUNNER_TEMP/signing.txt"
-          grep -Fx 'Signer #1 certificate SHA-256 digest: 4f5c38685c8304dca2708d9627e0287a82f3058c4c2293c42bb980d05bea37fc' "$RUNNER_TEMP/signing.txt"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" > "$RUNNER_TEMP/badging.txt"
-          grep "^package: name='com.example.bath_royale' versionCode='$PREVIEW_BUILD_NUMBER' versionName='0.1.0-preview.$GITHUB_RUN_NUMBER'" "$RUNNER_TEMP/badging.txt"
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          python3 tool/verify_preview.py apk "$apk" "$PREVIEW_BUILD_NUMBER" "0.1.0-preview.$GITHUB_RUN_NUMBER"
           mkdir -p preview
           cp "$apk" preview/bath-royale.apk
           (cd preview && sha256sum ./*.apk > SHA256SUMS)

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Optimize universal Android preview distribution with Flutter release/AOT builds while retaining the package, existing preview certificate, version scheme, APK/checksum assets and automatic pre-releases.
+- Fail closed on missing/incompatible preview keys; verify non-debuggable APKs, native architectures, AOT payload, identity, version and certificate. Preserve local debug support and keep production signing/authentication separate.
+
 - Phase 2.3A: add observable, generation-safe fake session renewal/expiry/invalidation and test-only account AppState/Provider lifecycle management over the existing namespace files; preserve guest-only production startup.
 - Initialize accounts empty, separate identity from synchronization consent, retain editors and failed pre-commit actions during test transitions, and preserve committed original-account pending work across logout/restart. Invalidate delayed work targeting retired sessions/stores.
 - Verify all 170 ordinary Flutter tests (144 retained plus 26 new), 25 offline backend regressions, unchanged exact analyzer baseline, formatting and Linux/Android debug builds. Split remaining production account milestones and document authentication/email, credentials/device retention, consent/association, view composition, validation/conflicts, Unicode, metadata portability and public identity/publication gates. Production account/sync features remain disabled; real backend integration was not rerun because server/transport contracts are unchanged.

@@ -9,7 +9,7 @@
 
 Every successful `main` push or manual build automatically publishes a development pre-release. Releases persist until explicitly removed by a maintainer. They are never marked as the latest stable production release. Actions artifacts remain available for 14 days as an alternative ZIP download.
 
-If Android reports an incompatible app or refuses an update, do **not** uninstall it to get past the error. Check the package, signing certificate and version first. Preview APKs are development/debug builds, with debug capabilities and larger downloads; they are intended for trusted testing, not store distribution.
+If Android reports an incompatible app or refuses an update, do **not** uninstall it to get past the error. Check the package, signing certificate and version first. Preview APKs are optimized universal release builds (ARM32, ARM64 and x86_64), without debugging enabled. They retain the existing development certificate and are intended for trusted testing, independently of production store signing.
 
 ## Reproducible verification
 
@@ -23,9 +23,10 @@ dart format --output=none --set-exit-if-changed lib test tool
 dart run tool/check_analysis.dart
 flutter test --no-pub
 actionlint
+python3 -m unittest discover -s tool -p "test_*preview*.py"
 ```
 
-The analysis helper runs `dart analyze --format=machine` across the project and prints all diagnostics. It accepts only the exact bundled-Material import notice in the 20 existing Phase 1 files and the Phase 1.6 redesign regression file (21 explicit paths). New imports, other informational diagnostics, warnings, errors, malformed output and analyzer failures fail CI. Regression tests exercise this policy. Nothing is suppressed in `analysis_options.yaml`; ordinary `flutter analyze` still reports the known debt. Remove the baseline as part of the separate Material migration.
+The analysis helper runs `dart analyze --format=machine` across the project and prints all diagnostics. It accepts only the exact bundled-Material import notice in the explicit paths recorded in `tool/check_analysis.dart`. New imports, other informational diagnostics, warnings, errors, malformed output and analyzer failures fail CI. Regression tests exercise this policy. Nothing is suppressed in `analysis_options.yaml`; ordinary `flutter analyze` still reports the known debt. Remove the baseline as part of the separate Material migration.
 
 GitHub Actions have immutable commit pins. The build job has only `contents: read`; only publication has `contents: write`. Checkout does not persist credentials. Dependency caches exclude signing files, app outputs and local data. Builds retain the existing 60-minute timeout. Each workflow run has a unique concurrency group with cancellation disabled: newer pushes cannot cancel another build/publication. Different version codes may finish out of order, so select the highest build number when updating. Manual cancellation can leave a draft; rerun the publication job to resume it.
 
@@ -45,7 +46,7 @@ During setup, the APK installed on the owner's SM A166B, the local debug APK and
 4f5c38685c8304dca2708d9627e0287a82f3058c4c2293c42bb980d05bea37fc
 ```
 
-The installed baseline has version name `0.1.0`, version code `1`, and is debuggable. With the owner's permission, the existing key was stored as repository Actions secret `ANDROID_PREVIEW_KEYSTORE_BASE64`. The workflow restores it into a private temporary `ANDROID_USER_HOME/debug.keystore`, uses Android's standard development alias/password (`androiddebugkey` / `android`), and removes it in an `always()` cleanup step. These are the standard debug defaults, not production signing credentials. The private key itself must never be printed, committed, included in caches or uploaded as an artifact. The committed certificate fingerprint is public and is checked on every built APK. A missing or different key fails the build; CI never silently generates an incompatible replacement.
+The installed baseline has version name `0.1.0`, version code `1`, and is debuggable. With the owner's permission, the existing key was stored as repository Actions secret `ANDROID_PREVIEW_KEYSTORE_BASE64`. The workflow restores it into a private temporary `ANDROID_USER_HOME/debug.keystore`, sets `PREVIEW_KEYSTORE` explicitly for the release signing configuration, checks the certificate before compilation, uses Android's standard development alias/password (`androiddebugkey` / `android`), and removes it in an `always()` cleanup step. These are the standard debug defaults, not production signing credentials. The private key itself must never be printed, committed, included in caches or uploaded as an artifact. The committed certificate fingerprint is public and is checked on every built APK. A missing or different key fails the build; CI never silently generates an incompatible replacement.
 
 Keep a secure backup of the original key outside Git. If the secret must be restored, use a trusted local terminal and pass the key directly to GitHub without printing it:
 
@@ -78,3 +79,21 @@ An APK with matching identity, signing and an increasing version is eligible for
 Automatic publication update: local actionlint and mocked publication scenarios cover fresh publication, partial drafts, successful retries, conflicting tags/assets, corrupt checksums, incomplete published releases and interrupted uploads. [Hosted run 45724799545](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/45724799545) passed both build and publication jobs, publishing [development pre-release 1015](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/preview-1015). Its tag points exactly to `3e81b3685ab94abdb44d3ff7dc01e290f26c1df6`. A publication-only hosted retry (attempt 2) also passed without compiling or overwriting assets. The publisher compared both remote assets against the original verified artifact.
 
 Independent download verification on 2026-11-26: the public `bath-royale.apk` passes its accompanying checksum, `apksigner verify` confirms the existing certificate above, and `aapt` confirms `com.example.bath_royale`, code `1015`, name `0.1.0-preview.15`. APK SHA-256: `2e7bc705eb673e119fae1f1c6fbf6bc7ff0b8a51c52527e0b27fb76d86d61f7c`. No phone installation was performed. Initial hosted failures exposed checkout clearing downloaded artifacts and REST tag lookup excluding drafts; both were corrected and covered by regressions. The incomplete `preview-1014` draft/tag was deliberately retained rather than deleted automatically.
+
+## Optimized preview maintenance (after Phase 2.3A)
+
+The workflow builds `flutter build apk --release --no-pub` with unchanged version arguments. It does not split per ABI. Before compilation, `tool/verify_preview.py key` checks the existing private key certificate; missing, unreadable or incompatible material fails without generating a key. After compilation, `tool/verify_preview.py apk` verifies signature, package/version, absence of the debuggable flag, exactly ARM32/ARM64/x86_64, AOT libraries for each ABI and absence of a debug Dart kernel. Publication and checksum verification remain unchanged.
+
+For a local equivalent, use the existing matching key (never create a replacement):
+
+```sh
+python3 tool/verify_preview.py key /path/to/existing/debug.keystore
+PREVIEW_KEYSTORE=/path/to/existing/debug.keystore flutter build apk --release --no-pub --build-name 0.1.0-preview.N --build-number CODE
+python3 tool/verify_preview.py apk build/app/outputs/flutter-apk/app-release.apk CODE 0.1.0-preview.N
+```
+
+Local `flutter run` and `flutter build apk --debug` remain supported. No SQLite schema, authentication or backend changes are part of this milestone.
+
+Physical acceptance remains with the owner: install over the existing GitHub preview using **Atualizar**, confirm existing bathrooms, visits, reviews, favourites and theme remain, restart and check persistence, and smoke-test navigation and review editing. Do not uninstall or clear storage. Certificate/identity/version checks establish update eligibility, not proof that this phone's data survived.
+
+Local verification on 2026-11-26: all 170 ordinary Flutter tests passed (one intentional real-suite placeholder skipped), locked dependency resolution, Dart formatting, unchanged strict analyzer gate, actionlint and five preview-tooling tests passed. The universal release is **56,837,554 bytes**, versus **157,023,093 bytes** for independently downloaded/checksummed debug preview 1023 (**63.80% smaller**). Its expected certificate, package, version 1024 / `0.1.0-preview.24`, non-debuggable status and three-ABI AOT payload passed verification. Hosted publication verification follows separately.

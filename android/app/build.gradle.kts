@@ -25,11 +25,25 @@ android {
         versionName = flutter.versionName
     }
 
+    // Explicit preview signing never falls back to an automatically generated key.
+    val previewKeystore = System.getenv("PREVIEW_KEYSTORE")
+    signingConfigs {
+        if (previewKeystore != null) {
+            require(file(previewKeystore).isFile) { "Existing preview keystore required" }
+            create("preview") {
+                storeFile = file(previewKeystore)
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(
+                if (previewKeystore != null) "preview" else "debug"
+            )
         }
     }
 }

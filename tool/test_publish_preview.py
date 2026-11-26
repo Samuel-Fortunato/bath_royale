@@ -18,6 +18,13 @@ class PublicationTest(unittest.TestCase):
                         publication.index('actions/download-artifact@'))
         self.assertEqual(workflow.count('flutter build apk'), 1)
         self.assertEqual(workflow.count('contents: write'), 1)
+        self.assertIn('flutter build apk --release --no-pub', workflow)
+        self.assertNotIn('--split-per-abi', workflow)
+        self.assertIn('app-release.apk', workflow)
+        self.assertLess(workflow.index('python3 tool/verify_preview.py key'),
+                        workflow.index('flutter build apk'))
+        self.assertLess(workflow.index('python3 tool/verify_preview.py apk'),
+                        workflow.index('Upload APK and checksum'))
 
     def test_publication_scenarios(self):
         for scenario in ('new', 'partial', 'complete', 'wrong-tag', 'wrong-asset',

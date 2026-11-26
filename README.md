@@ -39,9 +39,9 @@ Linux builds require a working Linux desktop toolchain. Android production and w
 
 ## Android preview downloads
 
-Pushes to `main` and manual runs execute formatting, a strict analysis policy for the documented Material debt, tests and an Android debug APK build in the locked Nix environment. Download the APK from a successful [Android preview run](https://github.com/Samuel-Fortunato/bath_royale/actions/workflows/android-preview.yml); artifacts are kept for 14 days. Manual runs can optionally publish a [GitHub pre-release](https://github.com/Samuel-Fortunato/bath_royale/releases) with a direct APK download.
+Pushes to `main` and manual runs execute formatting, strict analysis, tests and an optimized universal Android release APK build in the locked Nix environment. Every successful main build automatically publishes a [development pre-release](https://github.com/Samuel-Fortunato/bath_royale/releases) with `bath-royale.apk` and `SHA256SUMS`. Actions artifacts remain available for 14 days.
 
-On your phone, extract the artifact ZIP, open the APK and choose **Update**. Keep the existing app installed to preserve its local data. See [phone installation, signing, versioning and CI details](docs/android-previews.md). These are development previews; production signing is separate. Phase 2 backend work has not started.
+On your phone, download the APK from the highest-numbered pre-release, open it and choose **Atualizar**. Keep the existing app installed. The package and existing preview certificate remain unchanged; physical update/data preservation still requires owner verification. See [installation, signing, versioning and CI details](docs/android-previews.md). Production store signing remains separate; Phase 2.3B has not started.
 
 See [AGENTS.md](AGENTS.md) for development and Git practices.
 
@@ -61,7 +61,7 @@ direnv exec . flutter build apk --debug
 
 The flake sets `android.aapt2FromMavenOverride` via `GRADLE_OPTS` to the Nix-provided `aapt2`. This avoids executing the generic Linux Maven binary on NixOS. Local SDK paths, signing files, caches and generated Android build directories are ignored by Git. Dependency validation remains enabled. Release signing remains separate work.
 
-Verified on 2026-11-25: `flutter build apk --debug` produced `build/app/outputs/flutter-apk/app-debug.apk`; inspecting the APK confirmed the existing application ID, SDK 36 and ARM32/ARM64/x86_64 libraries. All 16 tests, Dart formatting and `git diff --check` passed. Analysis reports only the 12 documented Material import deprecation notices (exit status 1). The first sandboxed build could not write Flutter SDK telemetry; rerunning with cache access succeeded. No dependency-validation bypass was used. The owner has run the app on a physical Android phone. This milestone also successfully launched and synchronized the updated app on SM A166B with a connected Dart VM service; Android release builds remain unverified.
+Verified on 2026-11-25: `flutter build apk --debug` produced `build/app/outputs/flutter-apk/app-debug.apk`; inspecting the APK confirmed the existing application ID, SDK 36 and ARM32/ARM64/x86_64 libraries. All 16 tests, Dart formatting and `git diff --check` passed. Analysis reports only the 12 documented Material import deprecation notices (exit status 1). The first sandboxed build could not write Flutter SDK telemetry; rerunning with cache access succeeded. No dependency-validation bypass was used. The owner has run the app on a physical Android phone. This milestone also successfully launched and synchronized the updated app on SM A166B with a connected Dart VM service; Optimized preview release builds are covered by the intermediate maintenance milestone in the preview operations document.
 
 Phase 1 local prototype acceptance is recorded in [the stabilization audit](docs/phase-1-audit.md), including verification results and deferred technical debt.
 

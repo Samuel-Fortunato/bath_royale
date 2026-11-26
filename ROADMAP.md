@@ -207,6 +207,13 @@ Coverage includes guest startup without Auth/networking, empty account initializ
 
 No server schema, wire protocol, HTTP transport or remote method contract changed, so the real integration suite was not rerun; its seven passing tests at baseline `321d1ea` remain historical evidence. No managed project, preserved backend installation, dependency or global NixOS configuration was accessed/changed. Session/draft/pre-commit input remains memory-only, committed original-account operations remain durable, and no production retention or consent policy is inferred. **Stop at 2.3A; 2.3B/2.3C are not started.** Hosted CI is reported after push without waiting.
 
+### Intermediate maintenance — Optimized Android previews
+
+- [ ] Verify optimized universal release preview locally and through hosted publication, preserving signing, identity, versioning and checksum distribution.
+- [ ] Owner physical in-place update and existing SQLite data acceptance.
+
+This maintenance milestone does not start Phase 2.3B or production signing. See [preview operations](docs/android-previews.md#optimized-preview-maintenance-after-phase-23a).
+
 ### Phase 2.3B — Production authentication and device lifecycle (not started)
 
 - [ ] Approve production authentication method and email delivery/confirmation/recovery; implement and verify a real session adapter.
