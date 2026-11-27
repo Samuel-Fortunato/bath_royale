@@ -805,6 +805,13 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                               : _tagStep(state),
                         ),
                       ),
+                      if (state.communityEnabled && widget.review == null)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'A tua avaliação será pública e anónima: notas, etiquetas e comentário. Não incluas dados pessoais. A visita, a data exata e o email ficam privados.',
+                          ),
+                        ),
                       SafeArea(
                         top: false,
                         child: Padding(

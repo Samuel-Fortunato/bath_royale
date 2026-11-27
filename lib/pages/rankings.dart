@@ -51,10 +51,10 @@ class _RankingsPageState extends State<RankingsPage> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final rows = rankBathrooms(
-      state.allBathrooms,
+      state.visibleBathrooms,
       !_personal && state.communityEnabled
           ? state.community!.reviews
-          : state.reviews,
+          : state.visibleReviews,
       _metric,
       userId: _personal ? state.currentUserId : null,
       worst: _worst,
@@ -68,21 +68,22 @@ class _RankingsPageState extends State<RankingsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: SegmentedButton<bool>(
-                  showSelectedIcon:
-                      MediaQuery.sizeOf(context).width >= 360 ||
-                      MediaQuery.textScalerOf(context).scale(14) <= 18,
-                  segments: const [
-                    ButtonSegment(value: false, label: Text('Comunidade')),
-                    ButtonSegment(value: true, label: Text('Pessoal')),
-                  ],
-                  selected: {_personal},
-                  onSelectionChanged: (v) =>
-                      setState(() => _personal = v.single),
+              if (!state.readOnly)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: SegmentedButton<bool>(
+                    showSelectedIcon:
+                        MediaQuery.sizeOf(context).width >= 360 ||
+                        MediaQuery.textScalerOf(context).scale(14) <= 18,
+                    segments: const [
+                      ButtonSegment(value: false, label: Text('Comunidade')),
+                      ButtonSegment(value: true, label: Text('Pessoal')),
+                    ],
+                    selected: {_personal},
+                    onSelectionChanged: (v) =>
+                        setState(() => _personal = v.single),
+                  ),
                 ),
-              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(

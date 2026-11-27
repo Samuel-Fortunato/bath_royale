@@ -52,7 +52,7 @@ jobs:
       - name: Check formatting
         run: |
           actionlint
-          python3 -m unittest discover -s tool -p "test_*preview*.py"
+          python3 -m unittest discover -s tool -p "test_*.py"
           dart format --output=none --set-exit-if-changed lib test tool
       - name: Analyze (only documented Material import debt is accepted)
         run: dart run tool/check_analysis.dart

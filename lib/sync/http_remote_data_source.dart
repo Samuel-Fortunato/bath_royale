@@ -111,6 +111,18 @@ class HttpRemoteDataSource implements RemoteDataSource {
     }, session);
   }
 
+  Future<void> grantBathroomCreation(
+    SessionIdentity session,
+    String email,
+    bool allowed,
+  ) async {
+    _scope(session.namespace);
+    await _rpc('grant_bathroom_creation', {
+      'account_email': email,
+      'allowed': allowed,
+    }, session);
+  }
+
   static RemoteChange _change(Map<String, dynamic> value) => RemoteChange(
     value['entityType'] as String,
     value['entityId'] as String,

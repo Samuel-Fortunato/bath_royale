@@ -3,6 +3,7 @@ class Bathroom {
   final String id;
   final String name;
   final String createdBy;
+  final String? classification;
 
   final String? _emoji;
   final int? _accent;
@@ -41,6 +42,7 @@ class Bathroom {
     required this.id,
     required this.name,
     required this.createdBy,
+    this.classification,
     String? emoji,
     int? accent,
   }) : _emoji = emoji,

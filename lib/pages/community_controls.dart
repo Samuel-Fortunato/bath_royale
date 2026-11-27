@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
-import '../models/review.dart';
 import '../models/community_review.dart';
 import '../models/bathroom_descriptions.dart';
 import '../sync/http_remote_data_source.dart';
@@ -73,175 +72,6 @@ Future<void> reportCommunityContent(
   }
 }
 
-class CommunityProfileCard extends StatelessWidget {
-  const CommunityProfileCard({super.key});
-  @override
-  Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
-    return Card(
-      child: Column(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.alternate_email),
-            title: Text(
-              state.publicUsername == null
-                  ? 'Escolher nome público'
-                  : '@${state.publicUsername}',
-            ),
-            subtitle: const Text(
-              'Público nas avaliações. Diferente do email privado.',
-            ),
-            onTap: () async {
-              final value = await communityText(
-                context,
-                'Nome público',
-                '3–30 caracteres: começa por uma letra; usa letras a–z, números e _. Não uses o teu email.',
-                initial: state.publicUsername ?? '',
-              );
-              if (value == null || !context.mounted) return;
-              try {
-                state.setPublicUsername(value);
-              } catch (_) {
-                communityError(context);
-              }
-            },
-          ),
-          TextButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) => ChangeNotifierProvider.value(
-                  value: state,
-                  child: const CommunityModerationPage(),
-                ),
-              ),
-            ),
-            child: const Text('Moderação · equipa de teste'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class AssociateBathroomButton extends StatelessWidget {
-  final String bathroomId;
-  const AssociateBathroomButton({super.key, required this.bathroomId});
-  @override
-  Widget build(BuildContext context) => TextButton.icon(
-    icon: const Icon(Icons.link),
-    label: const Text('Associar a um trono do catálogo'),
-    onPressed: () async {
-      final state = context.read<AppState>();
-      final chosen = await showDialog<String>(
-        context: context,
-        builder: (context) => SimpleDialog(
-          title: const Text('Escolher o mesmo trono'),
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'A associação preserva os teus registos privados e favoritos. Não publica avaliações nem altera as visitas originais. Confirma que é o mesmo local.',
-              ),
-            ),
-            for (final b in state.community!.bathrooms)
-              SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, b.id),
-                child: Text('${b.emoji} ${b.name}'),
-              ),
-            if (state.community!.bathrooms.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Sem tronos guardados. Atualiza o catálogo primeiro.',
-                ),
-              ),
-          ],
-        ),
-      );
-      if (chosen == null || !context.mounted) return;
-      final accepted = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Confirmar associação?'),
-          content: const Text(
-            'Associa apenas se for exatamente a mesma casa de banho. Esta associação fica guardada na conta; não envia o histórico para a comunidade.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Associar'),
-            ),
-          ],
-        ),
-      );
-      if (accepted != true || !context.mounted) return;
-      try {
-        state.associateBathroom(bathroomId, chosen);
-      } catch (_) {
-        communityError(context);
-      }
-    },
-  );
-}
-
-class CommunityPublicationButton extends StatelessWidget {
-  final Review review;
-  const CommunityPublicationButton({super.key, required this.review});
-  @override
-  Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
-    final published = state.isPublished(review.id);
-    if (!published &&
-        !state.isShared(state.sharedIdentity(review.bathroomId))) {
-      return const Text(
-        'Avaliação privada. Associa este trono ao catálogo para publicar.',
-      );
-    }
-    return TextButton.icon(
-      icon: Icon(published ? Icons.public_off : Icons.public),
-      label: Text(
-        published ? 'Retirar da comunidade' : 'Publicar na comunidade',
-      ),
-      onPressed: () async {
-        final accepted = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(
-              published ? 'Retirar avaliação?' : 'Publicar avaliação?',
-            ),
-            content: Text(
-              published
-                  ? 'A avaliação deixa de aparecer na comunidade quando o serviço receber a alteração. A tua visita e avaliação privadas continuam guardadas.'
-                  : 'O teu nome público, notas, etiquetas e comentário ficam visíveis para todos. As alterações futuras a esta avaliação também serão públicas até a retirares. Não publicamos a visita, a sua data exata, favoritos ou email. Escolhe primeiro um nome público no Perfil.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(published ? 'Retirar' : 'Publicar'),
-              ),
-            ],
-          ),
-        );
-        if (accepted != true || !context.mounted) return;
-        try {
-          state.publishReview(review, publish: !published);
-        } catch (_) {
-          communityError(context);
-        }
-      },
-    );
-  }
-}
-
 class CommunityReviewCard extends StatelessWidget {
   final CommunityReview review;
   const CommunityReviewCard({super.key, required this.review});
@@ -253,7 +83,7 @@ class CommunityReviewCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '@${review.username}',
+            'Avaliação anónima',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           Text('★ ${ratingNumber(review.rating)} / 5'),

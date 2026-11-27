@@ -548,7 +548,7 @@ void main() {
       );
       stateA.dispose();
       a.database.execute(
-        'CREATE UNIQUE INDEX v6_name_uniqueness ON bathrooms(normalized_name); DROP TABLE sync_resolutions; DROP TABLE sync_preferences; DROP TABLE bathroom_links; DROP TABLE catalogue_bathrooms',
+        'CREATE UNIQUE INDEX v6_name_uniqueness ON bathrooms(normalized_name); DROP TABLE sync_resolutions; DROP TABLE sync_preferences; DROP TABLE catalogue_classifications; DROP TABLE bathroom_links; DROP TABLE catalogue_bathrooms',
       );
       a.database.userVersion = 6;
       a.close();
@@ -562,7 +562,7 @@ void main() {
         ),
         previousRows,
       );
-      expect(a.database.userVersion, 8);
+      expect(a.database.userVersion, 9);
       final b = LocalStore(sqlite3.openInMemory(), namespace: n);
       final foreignN = DataNamespace.account(
         scope.environment,

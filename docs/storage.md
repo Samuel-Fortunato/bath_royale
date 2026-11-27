@@ -1,6 +1,6 @@
 # Local storage
 
-Current schema is **v8**. [A3](backend/community-alpha.md) adds non-destructive shared-parent markers and explicit private/shared associations. Account-domain rows, original IDs, visits, reviews, favourites, settings, outbox and consent remain intact across v7 → v8. Public catalogue/review data uses the separate environment-scoped public cache. Public pulls never overwrite private domain rows; projections materialize only missing shared parents. A3 account synchronization is automatic after acceptance, with no normal enable/pause modes. A1 guest archives remain untouched. Earlier v6/v7 and prototype descriptions below document foundation milestones.
+Current schema is **v9**. [A3.1](backend/community-simplification.md) adds cached official/community classifications and invalidates obsolete public review attribution/checkpoints only. Account-domain rows, original IDs, private history, legacy links, favourites, settings, outbox and consent survive v8 → v9 unchanged. Public data remains in its environment-scoped cache; pulls never overwrite private rows. Equal-revision public cache refreshes accept the new projection fields, while private revision/conflict guards remain strict. Normal workflows use shared identities; legacy private records are recoverable separately in Settings without publication or reassociation. Account synchronization is automatic after acceptance. Guest archives remain untouched. Earlier sections document historical foundation milestones.
 
 ## Architecture and durability (Phase 2.2A)
 

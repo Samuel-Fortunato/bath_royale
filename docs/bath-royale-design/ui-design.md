@@ -1,5 +1,7 @@
 # Bath Royale — Phase 1.6 UI/UX handoff
 
+Current product decisions and pending visual work are in [A3.1 and the A4 backlog](#a31-functional-simplification-and-a4-backlog). They supersede conflicting historical navigation, creation, identity and publication directions below. The earlier sessions remain the visual/interaction reference; A3.1 does not begin the comprehensive A4 redesign.
+
 Status: design direction agreed in conversation, including the owner-approved Session 4C refinements below. Reference: `ui-reference.html` (standalone visual prototype; illustrative data, not production code). This specification takes precedence over prototype details. Preserve existing working behavior and persistent data. Do not implement backend, permissions, power-ups or XP. Session 4A explicitly extends the local schema for persistent bathroom identities.
 
 ## Shared design language
@@ -108,3 +110,19 @@ This supersedes earlier interactive-star, text-only-tag and tags-only step direc
 The final step reads **Etiquetas e comentário**, with **Etiquetas** in the compact progress indicator. Both are optional. Custom creation remains capability-gated: compact suggested emoji choices, a separate emoji field using the system keyboard, a thirty-character label, live preview, visible validation and explicit add/cancel. Emoji sequences are grapheme-aware. Search, bounded suggestions, removal and duplicate detection use canonical normalized labels independent of emoji. The optional multiline comment field has a visible 500-character counter and persists throughout navigation/editing; blank comments are absent. Changed comments require discard confirmation. Community entries bound previews to four lines and open the full experience; individual details show full selectable plain text. Ownership and confirmed removal stay intact.
 
 No backend, shared catalogue, moderation, privacy system, rewards or classification changes. Future shared tags need catalogue identity/permissions; shared comments need moderation, reporting and privacy decisions.
+
+## A3.1 functional simplification and A4 backlog
+
+Owner decision, 2026-11-27: A3 functional tests are accepted. Its technical product model is superseded by A3.1: one shared catalogue (official/community), anonymous automatic public submission of new reviews, private personal activity, server-authorized bathroom creation, and concise account storage acceptance. Historical private records remain in separate Settings recovery; they are never automatically published, merged or deleted. Public usernames, manual publication and catalogue association are removed from normal flows. Signed-out navigation is Explore / Rankings / Account, with no personal tabs/statistics. Account management, password changes, logout, diagnostics and administrator controls belong in Settings. These are functional corrections now, not approval to start the A4 redesign.
+
+A4 consolidates the earlier Explore + / empty-state feedback and current owner observations:
+
+- **Explore and discovery:** + primarily starts a review; creation is a separate entitled action. Remove catalogue/publication/association jargon. Revisit empty/offline/filtered/new-account states, filter grouping and discoverability, card density, official/community identity and personal versus community scores/counts. Preserve genuine data and distinguish fictional development content.
+- **Bathroom details and history:** review summary/actions/tabs, compact shared context, lazy history layout, private visit dates, visit registration/invitation/dismissal and exact safe undo. Keep anonymous browsing free of personal tabs and provide understandable sign-in prompts.
+- **Review composition:** reassess global rating control and precision/zero, category layout/captions, tag search/suggestions/custom entry and optional comments. Preserve original humorous descriptions, answer validation, accessibility and exact review/visit associations. Explain anonymous public submission in plain language before saving.
+- **Rankings:** improve community/personal selection and global/category hierarchy, selectors, podium/list density, metric denominators and unrated states. Preserve arithmetic, deterministic ties and published-only community scope.
+- **Collection and dates:** revisit collection progress/grid, diary/day grouping, visit versus review dates and repeated visits without implying public chronology. Keep favourites/personal history private.
+- **Identity, profile and Settings:** simplify headings, icons, grouping and visual hierarchy; identify the private signed-in email clearly. Keep account/security/logout, detailed sync/recovery and team-only tools out of the main experience. Reduce lengthy notices while linking detailed provisional privacy information.
+- **Anonymous navigation:** review Explore / Rankings / Account, sign-in entry and account-required actions. Do not reintroduce a writable guest identity or empty personal statistics.
+
+A4 proposals require their own design work and acceptance. A3.1 does not redesign palettes, the review wizard, rankings, collection or the overall visual system. Power-up acquisition/consumption, achievements/XP and A5 are outside this milestone. A development-only idempotent fictional backend and account selector support future design acceptance; neither may enter distributable builds or managed environments.

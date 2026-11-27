@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../sync/private_sync_controller.dart';
+import 'privacy.dart';
 
 class PrivateSynchronizationCard extends StatelessWidget {
   final PrivateSyncController sync;
@@ -11,7 +12,7 @@ class PrivateSynchronizationCard extends StatelessWidget {
     builder: (context, _) => Card(
       child: ListTile(
         leading: const Icon(Icons.cloud_sync_outlined),
-        title: const Text('Sincronização privada'),
+        title: const Text('Estado dos dados'),
         subtitle: Text(sync.status),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => Navigator.of(context).push(
@@ -184,7 +185,7 @@ class PrivateSynchronizationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Sincronização privada')),
+    appBar: AppBar(title: const Text('Estado dos dados')),
     body: SafeArea(
       child: Center(
         child: ConstrainedBox(
@@ -203,7 +204,7 @@ class PrivateSynchronizationPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Casas de banho da conta, visitas, avaliações e favoritos. Privados, sem perfil público. Os dados de convidado e os exemplos ficam em separado.',
+                  'As visitas e os favoritos ficam privados. As novas avaliações são públicas e anónimas. O histórico privado anterior fica preservado.',
                 ),
                 const SizedBox(height: 12),
                 if (sync.enabled) ...[
@@ -362,15 +363,18 @@ class _AccountStorageAcceptanceState extends State<AccountStorageAcceptance> {
               const Icon(Icons.cloud_outlined, size: 48),
               const SizedBox(height: 16),
               const Text(
-                'A tua conta guarda automaticamente no serviço as casas de banho privadas, visitas, avaliações e favoritos, incluindo os registos já existentes nesta conta. Assim, ficam disponíveis nos teus outros dispositivos.',
+                'Guardamos os dados da tua conta, incluindo os registos existentes, para os teres nos teus dispositivos. Podes usá-los offline; as alterações são enviadas automaticamente quando há ligação.',
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               const Text(
-                'As visitas, datas exatas e favoritos são privados. Publicar uma avaliação na comunidade exige uma ação tua. O email nunca é público. Os dados antigos de convidado e os exemplos fictícios não são importados nem enviados.',
+                'As novas avaliações são públicas e anónimas. Visitas, datas exatas, favoritos e email ficam privados. O histórico privado anterior não é publicado.',
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Podes usar a conta offline: as alterações ficam guardadas e são enviadas automaticamente quando volta a haver ligação. Ao aceitar, autorizas este armazenamento da conta.',
+              TextButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(builder: (_) => const PrivacyPage()),
+                ),
+                child: const Text('Como tratamos os teus dados'),
               ),
               if (error != null) Text(error!),
               const SizedBox(height: 16),

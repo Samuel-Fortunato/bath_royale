@@ -1,4 +1,6 @@
-# Private Android account preview — A2
+# Private Android account preview
+
+Current procedure and acceptance: [A3.1 development build](#a31-development-build-and-acceptance). Earlier A2/A3 sections retain historical evidence; their pause, manual association, username and publication instructions are superseded.
 
 The ordinary GitHub APK is intentionally **without Auth configuration** and A1 shows an account-service-unavailable screen: its `lib/main.dart` build has no `SUPABASE_URL` or `SUPABASE_PUBLISHABLE_KEY`. Do not add a development endpoint, CA, signing material or Auth credentials to that workflow or publish the APK described here. Backend deployment and public email delivery remain separate approval gates. This procedure uses only the independent `bath-royale-poc-auth` installation, fictional accounts, local mail capture and USB. It never needs the existing managed project, a paid service, a domain or a public listener.
 
@@ -222,3 +224,29 @@ Physical owner checks:
 7. Remove only `tcp:55474` forwarding, restart/use the app offline, then restore forwarding. Cached catalogue and private records must survive; pending changes retry safely. Exercise logout/relogin and A/B isolation without uninstalling or clearing storage. Keystore, touchscreen/keyboard and genuine two-human-device acceptance remain pending.
 
 See [A3 architecture and executed verification](backend/community-alpha.md). Remote hosting/registration restrictions remain a separate release gate. No managed project, paid service, A4 or A5 was introduced.
+
+## A3.1 development build and acceptance
+
+The private alpha target remains `tool/auth_device_preview.dart` → owner `auth` backend over TLS/USB **55474**. The separately compiled fictional development target is `tool/local_development.dart` → **fixtures** backend over TLS/USB **55504**. Both retain the package and original signing certificate, but Auth sessions/account files/public caches are isolated by backend environment. A development replacement does not import or upload the owner's alpha data. Returning to the alpha target restores its original account namespace.
+
+The owner explicitly approved replacing the installed A3.1 alpha with development. SM A166B now runs `0.1.0-dev-a31.1023`, code 1023, app ID 10419, original first-install time `2026-11-26 22:40:55`. Update/launch succeeded without uninstalling, clearing data or changing signing identity. Anonymous catalogue/navigation/details and the five-account selector were inspected on the phone. Actual SQLite/Keystore bytes are not claimed inspected.
+
+Private workstation directory: `/home/samuel/.local/state/bath-royale-a31-development`. Its `test-accounts.txt` contains the requested fictional email/password reference; `development-defines.json` contains the generated development-only credential payload. It also retains signed alpha/development APKs and hash/verification JSON. Do not commit, upload or distribute these files. See [fixture preparation and isolation](backend/community-simplification.md#isolated-development-fixtures).
+
+When an update is wanted, keep the phone connected, start the appropriate existing backend/gateway and use the matching configuration and original key:
+
+```sh
+python3 tool/install_private_alpha.py --development --config-dir /home/samuel/.local/state/bath-royale-a31-development --keystore /path/to/original/debug.keystore
+```
+
+Omit `--development` and use the owner's alpha TLS directory for the alpha target. The installer checks the existing certificate, preserves the installed version code and validates the selected endpoint/target before building. Never use a generated replacement signing key or uninstall to work around a mismatch. Existing accepted storage preferences are retained; new/unaccepted account stores still require the storage explanation to be accepted by the tester.
+
+Concise physical acceptance:
+
+1. While signed out, browse **Explorar**, **Rankings** and details; there should be no personal destinations, favourites or visits tab. Open **Conta** and tap a fictional account to sign in. Accept storage only after reading its concise notice/privacy link. No username setup is needed.
+2. Use **novato** for an empty personal account, **cavaleiro** for repeated visits/history and **escudeiro** for lighter activity. Confirm the private email in Profile/Settings. Settings provides the same test-account selector when no editor/persistence failure blocks switching.
+3. Tap **Avaliar**, choose a bathroom and read the anonymous-public submission disclosure. Save a fictional review, switch accounts and confirm it appears anonymously in community scores. Exact dates/favourites remain personal. Edit/delete your own review and verify public updates; historical private records must remain in Settings recovery only.
+4. **duque** can create a bathroom via the separate entitled action; ordinary accounts cannot. **rei** can grant that entitlement and moderate a reported review in Settings. Revocation is supported by the protected API; its UI remains a later refinement. No review needs pre-approval.
+5. Disconnect only fixture forwarding (`adb reverse --remove tcp:55504`), restart, browse the cache and submit a fictional review offline. Reconnect (`adb reverse tcp:55504 tcp:55504`), foreground the app or pull to refresh, and verify one eventual submission. Check account switching and secure restoration without clearing data.
+
+Owner touchscreen/keyboard/offline/Keystore acceptance is pending. Future power-up rules and production privacy/registration/hosting decisions remain open. A4 visual redesign and A5 remain deferred.

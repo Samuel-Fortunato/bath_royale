@@ -181,194 +181,193 @@ class _ExplorePageState extends State<ExplorePage> {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1000),
-        child: CustomScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          slivers: [
-            SliverToBoxAdapter(
-              child: Column(
-                children: [
-                  if (appState.community != null)
-                    ListTile(
-                      dense: true,
-                      title: Text(
-                        appState.community!.error ??
-                            (appState.community!.running
-                                ? 'A atualizar o catálogo…'
-                                : 'Catálogo partilhado · avaliações publicadas'),
+        child: RefreshIndicator(
+          onRefresh: () => appState.community?.refresh() ?? Future.value(),
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            slivers: [
+              SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    if (appState.community?.error != null)
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(
+                          'Sem ligação. A mostrar os tronos guardados.',
+                        ),
                       ),
-                      trailing: IconButton(
-                        tooltip: 'Atualizar catálogo',
-                        onPressed: appState.community!.running
-                            ? null
-                            : appState.community!.refresh,
-                        icon: const Icon(Icons.refresh),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 8, 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _search,
+                              onChanged: (_) => setState(() {}),
+                              decoration: InputDecoration(
+                                hintText: 'Procurar um trono',
+                                filled: true,
+                                prefixIcon: const Icon(Icons.search),
+                                isDense: true,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                suffixIcon: _search.text.isEmpty
+                                    ? null
+                                    : IconButton(
+                                        tooltip: 'Limpar pesquisa',
+                                        icon: const Icon(Icons.close),
+                                        onPressed: () =>
+                                            setState(() => _search.clear()),
+                                      ),
+                              ),
+                            ),
+                          ),
+                          if (!appState.readOnly)
+                            IconButton(
+                              tooltip: 'Filtros',
+                              icon: Badge(
+                                isLabelVisible: activeFilters.isNotEmpty,
+                                label: Text('${activeFilters.length}'),
+                                child: const Icon(Icons.tune),
+                              ),
+                              onPressed: _showFilters,
+                            ),
+                        ],
                       ),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 8, 4),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _search,
-                            onChanged: (_) => setState(() {}),
-                            decoration: InputDecoration(
-                              hintText: 'Procurar um trono',
-                              filled: true,
-                              prefixIcon: const Icon(Icons.search),
-                              isDense: true,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
+                    Padding(
+                      padding: const EdgeInsets.only(right: 16, top: 4),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: PopupMenuButton<BathroomSort>(
+                          tooltip: 'Ordenar por',
+                          initialValue: _sort,
+                          onSelected: (value) => setState(() => _sort = value),
+                          itemBuilder: (_) => [
+                            PopupMenuItem(
+                              value: BathroomSort.name,
+                              child: Text('Nome (A–Z)'),
+                            ),
+                            PopupMenuItem(
+                              value: BathroomSort.community,
+                              child: Text('Avaliação da comunidade'),
+                            ),
+                            if (!appState.readOnly)
+                              const PopupMenuItem(
+                                value: BathroomSort.personal,
+                                child: Text('Última experiência pessoal'),
                               ),
-                              suffixIcon: _search.text.isEmpty
-                                  ? null
-                                  : IconButton(
-                                      tooltip: 'Limpar pesquisa',
-                                      icon: const Icon(Icons.close),
-                                      onPressed: () =>
-                                          setState(() => _search.clear()),
-                                    ),
+                            if (!appState.readOnly)
+                              const PopupMenuItem(
+                                value: BathroomSort.latestVisit,
+                                child: Text('Última visita (mais recente)'),
+                              ),
+                          ],
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: 48),
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHigh,
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.sort, size: 18),
+                                const SizedBox(width: 6),
+                                Text(switch (_sort) {
+                                  BathroomSort.name => 'A–Z',
+                                  BathroomSort.community => 'Comunidade',
+                                  BathroomSort.personal => 'Pessoal',
+                                  BathroomSort.latestVisit => 'Recentes',
+                                }),
+                                const Icon(Icons.expand_more, size: 18),
+                              ],
                             ),
                           ),
                         ),
-                        IconButton(
-                          tooltip: 'Filtros',
-                          icon: Badge(
-                            isLabelVisible: activeFilters.isNotEmpty,
-                            label: Text('${activeFilters.length}'),
-                            child: const Icon(Icons.tune),
-                          ),
-                          onPressed: _showFilters,
+                      ),
+                    ),
+                    if (activeFilters.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            for (final filter in activeFilters)
+                              InputChip(
+                                label: Text(filter.label),
+                                onDeleted: () => _toggleFilter(filter, false),
+                                deleteButtonTooltipMessage:
+                                    'Remover ${filter.label}',
+                              ),
+                          ],
                         ),
+                      ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
+                      children: [
+                        if (activeFilters.isNotEmpty || query.isNotEmpty)
+                          Text('${filteredWCs.length} resultados'),
+                        if (activeFilters.isNotEmpty || _search.text.isNotEmpty)
+                          TextButton(
+                            onPressed: _clear,
+                            child: const Text('Limpar pesquisa e filtros'),
+                          ),
                       ],
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 16, top: 4),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: PopupMenuButton<BathroomSort>(
-                        tooltip: 'Ordenar por',
-                        initialValue: _sort,
-                        onSelected: (value) => setState(() => _sort = value),
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(
-                            value: BathroomSort.name,
-                            child: Text('Nome (A–Z)'),
-                          ),
-                          PopupMenuItem(
-                            value: BathroomSort.community,
-                            child: Text('Avaliação da comunidade'),
-                          ),
-                          PopupMenuItem(
-                            value: BathroomSort.personal,
-                            child: Text('Última experiência pessoal'),
-                          ),
-                          PopupMenuItem(
-                            value: BathroomSort.latestVisit,
-                            child: Text('Última visita (mais recente)'),
-                          ),
-                        ],
-                        child: Container(
-                          constraints: const BoxConstraints(minHeight: 48),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.sort, size: 18),
-                              const SizedBox(width: 6),
-                              Text(switch (_sort) {
-                                BathroomSort.name => 'A–Z',
-                                BathroomSort.community => 'Comunidade',
-                                BathroomSort.personal => 'Pessoal',
-                                BathroomSort.latestVisit => 'Recentes',
-                              }),
-                              const Icon(Icons.expand_more, size: 18),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (activeFilters.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          for (final filter in activeFilters)
-                            InputChip(
-                              label: Text(filter.label),
-                              onDeleted: () => _toggleFilter(filter, false),
-                              deleteButtonTooltipMessage:
-                                  'Remover ${filter.label}',
-                            ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 12,
-                    children: [
-                      if (activeFilters.isNotEmpty || query.isNotEmpty)
-                        Text('${filteredWCs.length} resultados'),
-                      if (activeFilters.isNotEmpty || _search.text.isNotEmpty)
-                        TextButton(
-                          onPressed: _clear,
-                          child: const Text('Limpar pesquisa e filtros'),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            if (filteredWCs.isEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    appState.entries.isEmpty
-                        ? (appState.communityEnabled
-                              ? (appState.readOnly
-                                    ? 'Ainda não há tronos no catálogo guardado. Atualiza com ligação à internet ou entra para contribuir. 🚽'
-                                    : 'Ainda não há tronos guardados. Atualiza o catálogo ou usa «Adicionar trono» para contribuir. 🚽')
-                              : 'Ainda não há tronos. Usa + para criar o primeiro! 🚽')
-                        : 'Nenhum trono à vista. Experimenta limpar a pesquisa e os filtros. 🚽',
-                  ),
+                  ],
                 ),
-              )
-            else
-              SliverList.builder(
-                itemCount: filteredWCs.length,
-                itemBuilder: (context, i) => WcCard(
-                  entry: filteredWCs[i],
-                  toggleFavorite: appState.readOnly
-                      ? null
-                      : () =>
-                            appState.toggleFavorite(filteredWCs[i].bathroom.id),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => ChangeNotifierProvider.value(
-                        value: appState,
-                        child: BathroomDetailsPage(
-                          bathroomId: filteredWCs[i].bathroom.id,
+              ),
+              if (filteredWCs.isEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      appState.entries.isEmpty
+                          ? (appState.communityEnabled
+                                ? 'Ainda não há tronos disponíveis. Volta a tentar com ligação à internet. 🚽'
+                                : 'Ainda não há tronos. Usa + para criar o primeiro! 🚽')
+                          : 'Nenhum trono à vista. Experimenta limpar a pesquisa e os filtros. 🚽',
+                    ),
+                  ),
+                )
+              else
+                SliverList.builder(
+                  itemCount: filteredWCs.length,
+                  itemBuilder: (context, i) => WcCard(
+                    entry: filteredWCs[i],
+                    showPersonal: !appState.readOnly,
+                    toggleFavorite:
+                        appState.readOnly ||
+                            !appState.isAvailable(filteredWCs[i].bathroom.id)
+                        ? null
+                        : () => appState.toggleFavorite(
+                            filteredWCs[i].bathroom.id,
+                          ),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ChangeNotifierProvider.value(
+                          value: appState,
+                          child: BathroomDetailsPage(
+                            bathroomId: filteredWCs[i].bathroom.id,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            const SliverToBoxAdapter(child: SizedBox(height: 88)),
-          ],
+              const SliverToBoxAdapter(child: SizedBox(height: 88)),
+            ],
+          ),
         ),
       ),
     );

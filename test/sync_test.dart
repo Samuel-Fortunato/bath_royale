@@ -131,6 +131,7 @@ void main() {
       for (final table in [
         'bathroom_links',
         'catalogue_bathrooms',
+        'catalogue_classifications',
         'sync_resolutions',
         'sync_preferences',
         'sync_conflicts',
@@ -165,7 +166,7 @@ void main() {
           before[table],
         );
       }
-      expect(upgraded.database.userVersion, 8);
+      expect(upgraded.database.userVersion, 9);
       expect(upgraded.database.select('SELECT * FROM outbox'), isEmpty);
     },
   );

@@ -47,9 +47,18 @@ Earlier iteration failures (schema-fixture version assertions, Unicode empty/gra
 - [x] Add the common catalogue, stable identities, normalized duplicate prevention, anonymous public projections and explicit private-to-shared association without publishing/reparenting historical data. Add published-only review projections, independent public identities/usernames, owner edit/withdrawal, reporting and protected administrative moderation.
 - [x] Verify direct API authorization, A/B isolation, duplicates, publication/withdrawal/moderation, historical-feed privacy, populated community/private export/restoration and existing server/client protocol regressions in disposable infrastructure.
 - [x] Complete automatic accepted account storage, persistent anonymous catalogue caching, personal/shared composition, clear private/shared labels and Explore/details/rankings/publication/moderation integration. Verify 224 Flutter regressions, real community/API/protocol/portability suites, actual local HTTPS Auth, strict analysis and Android/Linux releases. Install private `0.1.0-alpha-a3.1023` in place on SM A166B with the original certificate, app ID and first-install timestamp; no reset, association or publication on the owner’s behalf.
-- [ ] Owner physical A3 acceptance: retained A2 records, one-time storage acceptance, anonymous/offline catalogue, two-account community visibility, explicit links/publication/edit/withdrawal, reports/moderation, pending operations, favourites and Keystore restart.
+- [x] Owner accepted A3 functional tests before authorizing A3.1. This does not imply new A4 design or production/privacy approval. Platform-specific checks not covered by that acceptance remain separate.
 
 See [A3 architecture, reproducible milestones and verification](docs/backend/community-alpha.md). The A3 decision supersedes A2's normal optional enable/pause modes and the historical per-item manual catalogue-approval proposal. Guest archives/examples remain excluded; remote alpha distribution/registration policy and A4/A5 remain deferred.
+
+### A3.1 — Community simplification and development fixtures
+
+- [x] Deliver shared-only normal workflows, anonymous automatic public new reviews and protected bathroom-creation entitlement, preserving historical privacy and original references.
+- [x] Simplify signed-out navigation, account/Settings identification, storage acceptance, automatic refresh and recovery; hide administration from ordinary users.
+- [x] Verify idempotent isolated fictional accounts/catalogue/activity, private credential reference, and a separately compiled local-development selector absent from distributable builds. Never overwrite owner accounts.
+- [x] Consolidate previous/current owner feedback in [the A4 backlog](docs/bath-royale-design/ui-design.md#a31-functional-simplification-and-a4-backlog). Comprehensive visual redesign remains deferred.
+- [x] Complete regression/API/fixture/isolation/build verification and update the connected phone without clearing data to the explicitly authorized development build. See [resumable A3.1 evidence](docs/backend/community-simplification.md).
+- [ ] Owner physical A3.1 acceptance: touchscreen/keyboard, account switching, anonymous submission/edit/deletion, offline restart/reconnection, Settings/recovery and Keystore restoration. Git delivery/current CI are recorded in the task report.
 
 ### Private alpha release gates and subsequent scope
 

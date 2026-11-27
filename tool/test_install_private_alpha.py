@@ -1,5 +1,6 @@
 """Verify update-only installation and fail-closed certificate checks."""
 import os
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -13,7 +14,7 @@ class InstallerTest(unittest.TestCase):
         calls = []
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'defines.json').write_text('{}')
+            (root / 'defines.json').write_text(json.dumps({'SUPABASE_URL':'https://localhost:55474','SUPABASE_PUBLISHABLE_KEY':'local-device-client'}))
             (root / 'key').touch()
             sdk = root / 'build-tools/36.0.0'
             sdk.mkdir(parents=True)
@@ -47,3 +48,14 @@ class InstallerTest(unittest.TestCase):
     def test_mismatched_certificate_stops_before_build_or_install(self):
         calls = self.exercise('wrong')
         self.assertFalse(any('build' in c or 'install' in c for c in calls))
+
+
+class ConfigurationIsolationTest(unittest.TestCase):
+    def test_alpha_rejects_development_or_managed_configuration(self):
+        for config in [dict(SUPABASE_URL='https://managed.invalid',SUPABASE_PUBLISHABLE_KEY='public'),dict(SUPABASE_URL='https://localhost:55504',SUPABASE_PUBLISHABLE_KEY='local-development-client'),dict(SUPABASE_URL='https://localhost:55474',SUPABASE_PUBLISHABLE_KEY='local-device-client',BATH_ISOLATED_DEVELOPMENT=True)]:
+            with self.assertRaises(ValueError):installer.validate_configuration(config,False)
+    def test_development_requires_explicit_fixture_data(self):
+        config=dict(SUPABASE_URL='https://localhost:55504',SUPABASE_PUBLISHABLE_KEY='local-development-client')
+        with self.assertRaises(ValueError):installer.validate_configuration(config,True)
+        config.update(BATH_ISOLATED_DEVELOPMENT=True,BATH_LOCAL_TEST_ACCOUNTS='fixture-marker')
+        installer.validate_configuration(config,True)

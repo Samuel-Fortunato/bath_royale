@@ -40,12 +40,14 @@ def prepare(directory):
 
 
 class Gateway(BaseHTTPRequestHandler):
+    auth_port = 55471
+    rest_port = 55472
     def log_message(self, *_):
         pass
 
     def proxy(self):
         auth_route = self.path.startswith('/auth/v1/')
-        sync_route = self.path in ('/rest/v1/rpc/sync_submit', '/rest/v1/rpc/sync_pull', '/rest/v1/rpc/moderation_reports', '/rest/v1/rpc/moderate_content')
+        sync_route = self.path in ('/rest/v1/rpc/sync_submit', '/rest/v1/rpc/sync_pull', '/rest/v1/rpc/moderation_reports', '/rest/v1/rpc/moderate_content', '/rest/v1/rpc/grant_bathroom_creation')
         if not (auth_route or sync_route):
             self.send_error(404)
             return
@@ -56,7 +58,7 @@ class Gateway(BaseHTTPRequestHandler):
             body = self.rfile.read(length)
             headers = {k: v for k, v in self.headers.items()
                        if k.lower() in ('content-type', 'authorization', 'apikey')}
-            connection = http.client.HTTPConnection('127.0.0.1', 55471 if auth_route else 55472, timeout=15)
+            connection = http.client.HTTPConnection('127.0.0.1', self.auth_port if auth_route else self.rest_port, timeout=15)
             try:
                 connection.request(self.command, self.path[len('/auth/v1') if auth_route else len('/rest/v1'):], body, headers)
                 response = connection.getresponse()
@@ -74,13 +76,13 @@ class Gateway(BaseHTTPRequestHandler):
     do_GET = do_POST = do_PUT = do_DELETE = proxy
 
 
-def serve(directory):
+def serve(directory, *, port=55474, handler=Gateway):
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.minimum_version = ssl.TLSVersion.TLSv1_2
     context.load_cert_chain(directory / 'server.pem', directory / 'server.key')
-    server = ThreadingHTTPServer(('127.0.0.1', 55474), Gateway)
+    server = ThreadingHTTPServer(('127.0.0.1', port), handler)
     server.socket = context.wrap_socket(server.socket, server_side=True)
-    print('Local TLS Auth gateway ready on 127.0.0.1:55474', flush=True)
+    print(f'Local TLS gateway ready on 127.0.0.1:{port}', flush=True)
     try:
         server.serve_forever()
     finally:

@@ -90,35 +90,45 @@ class BathroomRepository {
       references: [if (reviewId != null) ('review', reviewId)],
     );
   });
-  void saveReview(Review r, {Visit? newVisit, required bool isNew}) =>
-      store.transaction(() {
-        _owner(r.authorId);
-        if (newVisit != null) {
-          if (!isNew ||
-              newVisit.id != r.visitId ||
-              newVisit.bathroomId != r.bathroomId ||
-              newVisit.userId != r.authorId) {
-            throw ArgumentError('Compound review must match its new visit');
-          }
-          _owner(newVisit.userId);
-          store.insertVisit(newVisit);
-        }
-        store.writeReview(r, isNew: isNew);
-        final row = _row('reviews', r.id);
-        _queue(
-          'review',
-          r.id,
-          newVisit != null
-              ? 'createVisitReview'
-              : (isNew ? 'createReview' : 'updateReview'),
-          {
-            'review': row,
-            if (newVisit != null) 'visit': _row('visits', newVisit.id),
-          },
-          eligible: _eligible(row),
-          references: [('bathroom', r.bathroomId), ('visit', r.visitId)],
-        );
-      });
+  void saveReview(
+    Review r, {
+    Visit? newVisit,
+    required bool isNew,
+    bool communitySubmission = false,
+  }) => store.transaction(() {
+    _owner(r.authorId);
+    if (newVisit != null) {
+      if (!isNew ||
+          newVisit.id != r.visitId ||
+          newVisit.bathroomId != r.bathroomId ||
+          newVisit.userId != r.authorId) {
+        throw ArgumentError('Compound review must match its new visit');
+      }
+      _owner(newVisit.userId);
+      store.insertVisit(newVisit);
+    }
+    store.writeReview(r, isNew: isNew);
+    final row = _row('reviews', r.id);
+    _queue(
+      'review',
+      r.id,
+      newVisit != null
+          ? (communitySubmission
+                ? 'createCommunityVisitReview'
+                : 'createVisitReview')
+          : (isNew
+                ? (communitySubmission
+                      ? 'createCommunityReview'
+                      : 'createReview')
+                : 'updateReview'),
+      {
+        'review': row,
+        if (newVisit != null) 'visit': _row('visits', newVisit.id),
+      },
+      eligible: _eligible(row),
+      references: [('bathroom', r.bathroomId), ('visit', r.visitId)],
+    );
+  });
   void setFavourite(String user, String bathroom, bool value) =>
       store.transaction(() => _setFavourite(user, bathroom, value));
   void setRelatedFavourites(String user, List<String> ids, bool value) =>

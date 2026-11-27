@@ -240,8 +240,6 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
             children: [
               if (review != null)
                 Text('${review.hygieneText} · ${review.paperText}'),
-              if (review != null && state.canContribute)
-                CommunityPublicationButton(review: review),
               Text(
                 reviewDate(visit.visitedAt),
                 style: Theme.of(context).textTheme.bodySmall,
@@ -301,11 +299,12 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                 selected: !_personal,
                 onSelected: (_) => setState(() => _personal = false),
               ),
-              ChoiceChip(
-                label: const Text('A tua experiência'),
-                selected: _personal,
-                onSelected: (_) => setState(() => _personal = true),
-              ),
+              if (!state.readOnly)
+                ChoiceChip(
+                  label: const Text('A tua experiência'),
+                  selected: _personal,
+                  onSelected: (_) => setState(() => _personal = true),
+                ),
             ],
           ),
           const SizedBox(height: 24),
@@ -327,7 +326,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
             Text(
               _personal
                   ? 'Última experiência avaliada · ${reviewDate(state.visits.firstWhere((v) => v.id == personal!.visitId).visitedAt)}'
-                  : '${scoreReviews.length} ${scoreReviews.length == 1 ? 'avaliação' : 'avaliações'} da comunidade${state.communityEnabled ? ' · publicadas' : ' · média das avaliações locais'}',
+                  : '${scoreReviews.length} ${scoreReviews.length == 1 ? 'avaliação' : 'avaliações'} da comunidade${state.communityEnabled ? '' : ' · média das avaliações locais'}',
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -406,7 +405,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
     }
 
     return DefaultTabController(
-      length: 3,
+      length: state.readOnly ? 2 : 3,
       child: Scaffold(
         appBar: AppBar(
           title: Row(
@@ -417,19 +416,20 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
             ],
           ),
           actions: [
-            IconButton(
-              tooltip: entry.activity.isFavorite
-                  ? 'Remover dos favoritos'
-                  : 'Adicionar aos favoritos',
-              onPressed: state.readOnly || !state.isAvailable(bathroomId)
-                  ? null
-                  : () => state.toggleFavorite(bathroomId),
-              icon: Icon(
-                entry.activity.isFavorite
-                    ? Icons.favorite
-                    : Icons.favorite_border,
+            if (!state.readOnly)
+              IconButton(
+                tooltip: entry.activity.isFavorite
+                    ? 'Remover dos favoritos'
+                    : 'Adicionar aos favoritos',
+                onPressed: state.readOnly || !state.isAvailable(bathroomId)
+                    ? null
+                    : () => state.toggleFavorite(bathroomId),
+                icon: Icon(
+                  entry.activity.isFavorite
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                ),
               ),
-            ),
           ],
         ),
         body: SafeArea(
@@ -448,24 +448,30 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                       spacing: 12,
                       runSpacing: 8,
                       children: [
-                        FilledButton.icon(
-                          onPressed:
-                              _inviting ||
-                                  state.readOnly ||
-                                  !state.isAvailable(bathroomId)
-                              ? null
-                              : registerVisit,
-                          icon: const Icon(Icons.add_location_alt_outlined),
-                          label: const Text('Estive aqui!'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed:
-                              state.readOnly || !state.isAvailable(bathroomId)
-                              ? null
-                              : () => openForm(),
-                          icon: const Icon(Icons.rate_review_outlined),
-                          label: const Text('Avaliar'),
-                        ),
+                        if (state.readOnly)
+                          const Text(
+                            'Entra na tua conta para avaliar ou guardar este trono.',
+                          ),
+                        if (!state.readOnly)
+                          FilledButton.icon(
+                            onPressed:
+                                _inviting ||
+                                    state.readOnly ||
+                                    !state.isAvailable(bathroomId)
+                                ? null
+                                : registerVisit,
+                            icon: const Icon(Icons.add_location_alt_outlined),
+                            label: const Text('Estive aqui!'),
+                          ),
+                        if (!state.readOnly)
+                          OutlinedButton.icon(
+                            onPressed:
+                                state.readOnly || !state.isAvailable(bathroomId)
+                                ? null
+                                : () => openForm(),
+                            icon: const Icon(Icons.rate_review_outlined),
+                            label: const Text('Avaliar'),
+                          ),
                       ],
                     ),
                   ),
@@ -476,15 +482,6 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                         'Este trono aguarda envio ou está indisponível no catálogo. O histórico privado continua guardado.',
                       ),
                     ),
-                  if (state.canContribute && !state.isShared(bathroomId)) ...[
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'Este registo é privado. Associa-o ao mesmo trono do catálogo para reunir as tuas experiências, sem publicar o histórico.',
-                      ),
-                    ),
-                    AssociateBathroomButton(bathroomId: bathroomId),
-                  ],
                   if (state.canContribute &&
                       state.isShared(bathroomId) &&
                       state.isAvailable(bathroomId))
@@ -496,11 +493,11 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                       ),
                       child: const Text('Denunciar trono'),
                     ),
-                  const TabBar(
+                  TabBar(
                     tabs: [
                       Tab(text: 'Resumo'),
                       Tab(text: 'Avaliações'),
-                      Tab(text: 'Visitas'),
+                      if (!state.readOnly) const Tab(text: 'Visitas'),
                     ],
                   ),
                   Expanded(
@@ -513,7 +510,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                                       child: Padding(
                                         padding: EdgeInsets.all(24),
                                         child: Text(
-                                          'Ainda sem avaliações publicadas. As tuas avaliações privadas estão nas Visitas.',
+                                          'Ainda ninguém se sentou para avaliar. 🚽',
                                         ),
                                       ),
                                     )
@@ -536,16 +533,17 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                                 itemCount: reviews.length,
                                 itemBuilder: (_, i) => reviewTile(reviews[i]),
                               ),
-                        visits.isEmpty
-                            ? const Center(
-                                child: Text('As tuas visitas aparecem aqui.'),
-                              )
-                            : ListView.builder(
-                                key: const PageStorageKey('visits'),
-                                padding: const EdgeInsets.all(16),
-                                itemCount: visits.length,
-                                itemBuilder: (_, i) => visitTile(visits[i]),
-                              ),
+                        if (!state.readOnly)
+                          visits.isEmpty
+                              ? const Center(
+                                  child: Text('As tuas visitas aparecem aqui.'),
+                                )
+                              : ListView.builder(
+                                  key: const PageStorageKey('visits'),
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount: visits.length,
+                                  itemBuilder: (_, i) => visitTile(visits[i]),
+                                ),
                       ],
                     ),
                   ),

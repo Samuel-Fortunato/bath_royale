@@ -29,6 +29,7 @@ class CommunityCatalogue extends ChangeNotifier {
         id: p['id'] as String,
         name: p['name'] as String,
         createdBy: 'catalogue',
+        classification: p['classification'] as String? ?? 'community',
         emoji: p['emoji'] as String,
         accent: p['accent'] as int,
       ),

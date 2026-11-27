@@ -35,7 +35,7 @@ class LocalStore {
         throw StateError('Database integrity check failed');
       }
       final version = database.userVersion;
-      if (version > 8) {
+      if (version > 9) {
         throw StateError('Database was created by a newer application');
       }
       // SQLite's documented table-rebuild procedure keeps child references intact.
@@ -153,6 +153,18 @@ class LocalStore {
           ''');
           database.userVersion = 8;
         }
+        if (version < 9) {
+          database.execute(
+            "CREATE TABLE catalogue_classifications(id TEXT PRIMARY KEY REFERENCES bathrooms(id),kind TEXT NOT NULL CHECK(kind IN ('official','community')))",
+          );
+          if (this.namespace.kind == 'public') {
+            // Public attribution changed incompatibly; discard only this cache.
+            database.execute(
+              "DELETE FROM remote_records WHERE entity_type='review'; DELETE FROM server_revisions WHERE entity_type='review'; DELETE FROM pull_checkpoints WHERE feed='catalogue'; DELETE FROM pull_status WHERE feed='catalogue'",
+            );
+          }
+          database.userVersion = 9;
+        }
         if (database.select('SELECT scope FROM namespace').single['scope'] !=
             this.namespace.key) {
           throw StateError('Database namespace mismatch');
@@ -210,6 +222,12 @@ CREATE TABLE favourites (user TEXT NOT NULL CHECK(length(user)>0), bathroom TEXT
             id: r['id'] as String,
             name: r['name'] as String,
             createdBy: r['creator'] as String,
+            classification:
+                database.select(
+                      'SELECT kind FROM catalogue_classifications WHERE id=?',
+                      [r['id']],
+                    ).firstOrNull?['kind']
+                    as String?,
             emoji: r['emoji'] as String,
             accent: r['accent'] as int,
           ),

@@ -3,11 +3,11 @@ import 'tag_presentation.dart';
 
 /// Public projection. It cannot contain a visit ID/date or an authentication ID.
 class CommunityReview implements ReviewScores {
-  final String id, username;
+  final String id;
+  @override
+  String get authorId => '';
   @override
   final String bathroomId;
-  @override
-  final String authorId;
   @override
   final double rating;
   @override
@@ -23,8 +23,6 @@ class CommunityReview implements ReviewScores {
   CommunityReview.fromJson(Map<String, dynamic> p)
     : id = p['id'] as String,
       bathroomId = p['bathroom_id'] as String,
-      authorId = p['author_id'] as String,
-      username = p['username'] as String,
       rating = (p['rating'] as num).toDouble(),
       paperAvailability = p['paper'] as int,
       hygiene = p['hygiene'] as int,

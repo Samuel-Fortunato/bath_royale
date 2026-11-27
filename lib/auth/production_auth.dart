@@ -54,6 +54,18 @@ class AuthConfiguration {
     _validate(false);
   }
 
+  /// Dedicated non-distributable development target; never accepts a managed host.
+  AuthConfiguration.localDevelopment(String url, this.clientKey)
+    : emailConfirmationRequired = false,
+      passwordRecoveryAvailable = false,
+      endpoint = Uri.parse(url) {
+    if (url != 'https://localhost:55504' ||
+        clientKey != 'local-development-client') {
+      throw ArgumentError('Isolated development endpoint required');
+    }
+    _validate(false);
+  }
+
   void _validate(bool localTest) {
     if (endpoint.userInfo.isNotEmpty ||
         endpoint.query.isNotEmpty ||

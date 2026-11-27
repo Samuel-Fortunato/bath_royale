@@ -7,12 +7,14 @@ class WcCard extends StatelessWidget {
   final BathroomEntry entry;
   final VoidCallback? toggleFavorite;
   final VoidCallback onTap;
+  final bool showPersonal;
 
   const WcCard({
     super.key,
     required this.entry,
     required this.toggleFavorite,
     required this.onTap,
+    this.showPersonal = true,
   });
 
   @override
@@ -39,16 +41,17 @@ class WcCard extends StatelessWidget {
                       style: theme.textTheme.titleMedium,
                     ),
                   ),
-                  IconButton(
-                    tooltip: entry.activity.isFavorite
-                        ? 'Remover dos favoritos'
-                        : 'Adicionar aos favoritos',
-                    isSelected: entry.activity.isFavorite,
-                    onPressed: toggleFavorite,
-                    icon: const Icon(Icons.favorite_border),
-                    selectedIcon: const Icon(Icons.favorite),
-                    color: theme.colorScheme.primary,
-                  ),
+                  if (toggleFavorite != null)
+                    IconButton(
+                      tooltip: entry.activity.isFavorite
+                          ? 'Remover dos favoritos'
+                          : 'Adicionar aos favoritos',
+                      isSelected: entry.activity.isFavorite,
+                      onPressed: toggleFavorite,
+                      icon: const Icon(Icons.favorite_border),
+                      selectedIcon: const Icon(Icons.favorite),
+                      color: theme.colorScheme.primary,
+                    ),
                 ],
               ),
               if (entry.catalogueLabel != null)
@@ -78,24 +81,25 @@ class WcCard extends StatelessWidget {
                     ],
                   ),
                 ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 16,
-                runSpacing: 4,
-                children: [
-                  if (review != null)
+              if (showPersonal) const SizedBox(height: 8),
+              if (showPersonal)
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 4,
+                  children: [
+                    if (review != null)
+                      Text(
+                        'A tua avaliação: ${ratingNumber(review.rating)} / 5',
+                        style: theme.textTheme.bodySmall,
+                      ),
                     Text(
-                      'A tua avaliação: ${ratingNumber(review.rating)} / 5',
+                      entry.activity.visitCount > 0
+                          ? '✓ Descoberta'
+                          : 'Por descobrir',
                       style: theme.textTheme.bodySmall,
                     ),
-                  Text(
-                    entry.activity.visitCount > 0
-                        ? '✓ Descoberta'
-                        : 'Por descobrir',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
-              ),
+                  ],
+                ),
             ],
           ),
         ),

@@ -109,12 +109,16 @@ void main() {
       }
 
       final a = states[0], b = states[1];
+      SyncStore(stores[0]).consent();
+      SyncStore(stores[1]).consent();
+      await sync(0);
+      await sync(1);
       final shared = a.createBathroom(
         'Flutter community ${AppState.newEntityId()}',
       );
       // Nothing transfers before acceptance, including contributions.
       await syncs[0].synchronize();
-      expect(syncs[0].store.pendingCount, 1);
+      expect(syncs[0].store.pendingCount, 0);
       SyncStore(stores[0]).consent();
       SyncStore(stores[1]).consent();
       await sync(0);
@@ -139,17 +143,13 @@ void main() {
       );
       a.saveReview(review);
       a.toggleFavorite(shared.id);
-      a.setPublicUsername(
-        'flutter_${AppState.newEntityId().replaceAll('-', '').substring(0, 12)}',
-      );
       await sync(0);
       await sync(1);
       await catalogue.refresh();
       expect(b.visits, isEmpty);
       expect(b.reviews, isEmpty);
       expect(b.activityFor(shared.id).isFavorite, false);
-      expect(b.communityReviewsFor(shared.id), isEmpty);
-      a.publishReview(review, publish: true);
+      expect(b.communityReviewsFor(shared.id).single.rating, 5);
       await sync(0);
       await catalogue.refresh();
       expect(b.communityReviewsFor(shared.id).single.rating, 5);
@@ -188,11 +188,11 @@ void main() {
         ),
         isNot(contains((sessions[0]['user'] as Map)['email'])),
       );
-      a.publishReview(review, publish: false);
+      a.deleteVisit(visit.id, deleteReview: true);
       await sync(0);
       await catalogue.refresh();
       expect(b.communityReviewsFor(shared.id), isEmpty);
-      expect(a.visitsFor(shared.id).single.id, visit.id);
+      expect(a.visitsFor(shared.id), isEmpty);
       expect(a.activityFor(shared.id).isFavorite, true);
       // A second device restores the same account's shared-parent references and history.
       final another = LocalStore(
@@ -216,7 +216,7 @@ void main() {
       otherState.materializeCatalogue();
       AccountProjection(SyncStore(another)).apply();
       otherState.reloadAccountData();
-      expect(otherState.visitsFor(shared.id).single.id, visit.id);
+      expect(otherState.visitsFor(shared.id), isEmpty);
       expect(otherState.activityFor(shared.id).isFavorite, true);
       // Cache reads do not require a network request.
       expect(catalogue.bathrooms.any((r) => r.id == shared.id), true);

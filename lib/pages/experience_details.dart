@@ -6,7 +6,6 @@ import '../state/app_state.dart';
 import '../widgets/bathroom_identity.dart';
 import 'bathroom_details.dart' show reviewDate;
 import 'review_form.dart';
-import 'community_controls.dart';
 
 Future<bool> removeExperience(
   BuildContext context,
@@ -130,8 +129,6 @@ class ExperienceDetailsPage extends StatelessWidget {
                   SelectableText(review.comment!),
                 ],
               ],
-              if (own && review != null && state.canContribute)
-                CommunityPublicationButton(review: review),
               if (own) ...[
                 const SizedBox(height: 24),
                 FilledButton.icon(

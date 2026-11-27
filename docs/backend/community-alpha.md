@@ -1,5 +1,7 @@
 # A3 community alpha
 
+Historical A3 implementation/verification record. **[A3.1](community-simplification.md) supersedes the product model below:** shared-only normal workflows, anonymous automatic publication of new reviews, protected bathroom creation and separate legacy recovery. Public usernames, manual publication and association are no longer normal actions. The current community runner verifies A3.1; the counts below describe the earlier A3 run.
+
 Owner-authorized scope, 2026-11-27: automatic accepted account storage, anonymous shared catalogue, explicit authenticated contributions/publication, public usernames, reporting and administrative moderation. Flutter, Provider, Material 3, SQLite and the existing Postgres/Auth/PostgREST protocol remain. No managed deployment, private APK publication, paid services, A4 or A5.
 
 ## Independently verifiable milestones

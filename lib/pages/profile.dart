@@ -1,5 +1,8 @@
 import 'private_synchronization.dart';
 import 'community_controls.dart';
+import '../auth/production_auth.dart';
+import 'privacy.dart';
+import '../sync/http_remote_data_source.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
@@ -61,8 +64,8 @@ class ProfilePage extends StatelessWidget {
           return name != 0 ? name : a.bathroom.id.compareTo(b.bathroom.id);
         });
     final rated = rankBathrooms(
-      state.allBathrooms,
-      state.reviews,
+      state.visibleBathrooms,
+      state.visibleReviews,
       RankingMetric.overall,
       userId: state.currentUserId,
     );
@@ -91,24 +94,6 @@ class ProfilePage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            if (state.canContribute) const CommunityProfileCard(),
-            if (state.synchronization != null)
-              PrivateSynchronizationCard(sync: state.synchronization!),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.manage_accounts_outlined),
-                title: const Text('A minha conta'),
-                subtitle: const Text('Sessão e segurança · email privado'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => AuthenticationPage(
-                      canTransition: !state.hasUncommittedWork,
-                    ),
-                  ),
-                ),
-              ),
-            ),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -131,13 +116,10 @@ class ProfilePage extends StatelessWidget {
                                 style: Theme.of(context).textTheme.titleLarge,
                               ),
                               Text(
-                                state.communityEnabled
-                                    ? (state.readOnly
-                                          ? 'Consulta sem conta'
-                                          : (state.publicUsername == null
-                                                ? 'Explorador'
-                                                : '@${state.publicUsername}'))
-                                    : 'Explorador local',
+                                context
+                                        .watch<ProductionAuth?>()
+                                        ?.privateEmail ??
+                                    'Explorador local',
                               ),
                             ],
                           ),
@@ -211,7 +193,7 @@ class ProfilePage extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Text(
-                'Os dados da conta são sincronizados automaticamente após a aceitação inicial. As avaliações só são públicas quando as publicas. Os dados antigos de convidado e os exemplos fictícios ficam em separado.',
+                'Os dados da conta são sincronizados automaticamente após a aceitação inicial. As novas avaliações são públicas e anónimas. Os dados antigos de convidado e os exemplos fictícios ficam em separado.',
               ),
             ),
           ],
@@ -281,18 +263,145 @@ class SettingsPage extends StatelessWidget {
                   onChanged: state.readOnly ? null : (_) => state.toggleTheme(),
                 ),
                 const Divider(height: 32),
+                if (!state.hasUncommittedWork) ...[
+                  if (context.watch<AccountEntryExtras?>()?.builder
+                      case final builder?)
+                    builder(context),
+                ],
+                if (context.watch<ProductionAuth?>() != null)
+                  Card(
+                    child: ListTile(
+                      title: const Text('Conta e segurança'),
+                      subtitle: Text(
+                        context.watch<ProductionAuth?>()?.privateEmail ?? '',
+                      ),
+                      leading: const Icon(Icons.manage_accounts_outlined),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => AuthenticationPage(
+                            canTransition: !state.hasUncommittedWork,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (state.synchronization != null)
+                  PrivateSynchronizationCard(sync: state.synchronization!),
+                if (state.isModerator)
+                  TextButton(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => ChangeNotifierProvider.value(
+                          value: state,
+                          child: const CommunityModerationPage(),
+                        ),
+                      ),
+                    ),
+                    child: const Text('Moderação'),
+                  ),
+                if (state.isModerator)
+                  TextButton(
+                    onPressed: () => grantCreation(context, state),
+                    child: const Text('Permitir criar casas de banho'),
+                  ),
+                if (state.legacyBathrooms.isNotEmpty)
+                  ListTile(
+                    title: const Text('Registos anteriores'),
+                    subtitle: const Text(
+                      'Histórico preservado, sem publicação automática',
+                    ),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => ChangeNotifierProvider.value(
+                          value: state,
+                          child: const LegacyHistoryPage(),
+                        ),
+                      ),
+                    ),
+                  ),
+                TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const PrivacyPage(),
+                    ),
+                  ),
+                  child: const Text('Privacidade'),
+                ),
+                const Divider(height: 32),
                 Text(
                   'Dados locais',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Os dados da conta são sincronizados automaticamente após a aceitação inicial. As avaliações só são públicas quando as publicas. Os dados antigos de convidado e os exemplos fictícios ficam em separado.',
+                  'Os dados da conta são sincronizados automaticamente após a aceitação inicial. As novas avaliações são públicas e anónimas. Os dados antigos de convidado e os exemplos fictícios ficam em separado.',
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+Future<void> grantCreation(BuildContext context, AppState state) async {
+  final email = await communityText(
+    context,
+    'Permitir criar casas de banho',
+    'Email privado da conta a autorizar. A permissão mantém-se até ser retirada.',
+  );
+  if (email == null || !context.mounted) return;
+  try {
+    final sync = state.synchronization!;
+    await (sync.coordinator.remote as HttpRemoteDataSource)
+        .grantBathroomCreation(sync.coordinator.auth.current!, email, true);
+    await sync.retry();
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Permissão atualizada.')));
+    }
+  } catch (_) {
+    if (context.mounted) communityError(context);
+  }
+}
+
+class LegacyHistoryPage extends StatelessWidget {
+  const LegacyHistoryPage({super.key});
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Registos anteriores')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text(
+            'Estes registos foram guardados como privados. Continuam preservados, com as referências originais. Não foram publicados nem associados automaticamente a outros tronos. Podes consultar e copiar o texto para recuperação.',
+          ),
+          for (final b in state.legacyBathrooms)
+            ExpansionTile(
+              title: Text(b.name),
+              children: [
+                for (final v in state.visits.where(
+                  (v) =>
+                      v.bathroomId == b.id && v.userId == state.currentUserId,
+                ))
+                  ListTile(
+                    title: Text(v.visitedAt.toLocal().toString()),
+                    subtitle: SelectableText(
+                      state.reviewForVisit(v.id)?.comment ??
+                          'Visita sem avaliação',
+                    ),
+                  ),
+              ],
+            ),
+        ],
       ),
     );
   }

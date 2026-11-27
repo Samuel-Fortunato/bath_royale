@@ -1,3 +1,4 @@
+import '../tool/local_development.dart' show developmentAccounts;
 import 'package:bath_royale/pages/private_synchronization.dart';
 import 'package:bath_royale/storage/bathroom_repository.dart';
 import 'package:bath_royale/sync/sync_store.dart';
@@ -27,6 +28,7 @@ import 'package:bath_royale/pages/review_form.dart';
 import 'package:bath_royale/main.dart';
 import 'package:bath_royale/models/review.dart';
 import 'package:bath_royale/models/bathroom.dart';
+import 'package:bath_royale/models/visit.dart';
 import 'package:bath_royale/storage/local_store.dart';
 
 class SequenceClient extends DelayedLoginClient {
@@ -42,6 +44,52 @@ class SequenceClient extends DelayedLoginClient {
 }
 
 void main() {
+  testWidgets(
+    'development account selector is one tap and ordinary entry has no shortcut',
+    (tester) async {
+      final vault = MemoryVault();
+      final client = DelayedLoginClient()
+        ..response.complete(AuthResponse(session: fixtureSession()));
+      final auth = ProductionAuth(
+        AuthConfiguration.localDevelopment(
+          'https://localhost:55504',
+          'local-development-client',
+        ),
+        vault,
+        restorationGuard: vault.guard,
+        client: client,
+      );
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: auth,
+          child: const MaterialApp(home: WelcomePage()),
+        ),
+      );
+      expect(find.textContaining('Contas de teste'), findsNothing);
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: auth,
+          child: Provider<AccountEntryExtras>.value(
+            value: AccountEntryExtras(
+              (_) => developmentAccounts([
+                {
+                  'email': 'unit@example.invalid',
+                  'password': 'test-only-input',
+                },
+              ]),
+            ),
+            child: const MaterialApp(home: WelcomePage()),
+          ),
+        ),
+      );
+      expect(find.text('unit@example.invalid'), findsOneWidget);
+      await tester.tap(find.text('unit@example.invalid'));
+      await tester.pumpAndSettle();
+      expect(auth.current, isNotNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      auth.dispose();
+    },
+  );
   testWidgets(
     'welcome routes have visible and system back; registration retains invalid password',
     (tester) async {
@@ -160,8 +208,15 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(opens, 0);
-      expect(find.byType(WelcomePage), findsOneWidget);
-      expect(find.byType(HomePage), findsNothing);
+      expect(find.byType(HomePage), findsOneWidget);
+      expect(
+        find.widgetWithText(NavigationDestination, 'Conta'),
+        findsOneWidget,
+      );
+      expect(
+        tester.element(find.byType(HomePage)).read<AppState>().readOnly,
+        true,
+      );
       await auth.login('first@example.invalid', 'password');
       await tester.pumpAndSettle();
       expect(find.byType(AccountStorageAcceptance), findsOneWidget);
@@ -179,12 +234,15 @@ void main() {
       );
       state.repository!.createBathroom(bathroom);
       state.reloadAccountData();
-      final visit = state.recordVisit(
-        bathroom.id,
+      final visit = Visit(
+        id: AppState.newEntityId(),
+        bathroomId: bathroom.id,
+        userId: state.currentUserId,
         visitedAt: DateTime.utc(2026, 11, 26),
       );
-      state.toggleFavorite(bathroom.id);
-      state.saveReview(
+      state.repository!.recordVisit(visit);
+      state.repository!.setFavourite(state.currentUserId, bathroom.id, true);
+      state.repository!.saveReview(
         Review(
           id: 'a1-review',
           visitId: visit.id,
@@ -197,20 +255,29 @@ void main() {
           comfort: 3,
           aesthetics: 2,
         ),
+        isNew: true,
       );
+      state.reloadAccountData();
       await tester.pumpAndSettle();
       // Profile presents navigation to the dedicated flow, with no embedded form.
       await tester.tap(find.text('Perfil'));
       await tester.pumpAndSettle();
       expect(find.byType(AuthenticationPanel), findsNothing);
-      await tester.tap(find.text('A minha conta'));
+      await tester.tap(find.byTooltip('Definições'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Conta e segurança'));
       await tester.pumpAndSettle();
       expect(find.byType(AuthenticationPage), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
       await auth.logout();
       await tester.pumpAndSettle();
-      expect(find.byType(HomePage), findsNothing);
+      expect(
+        tester.element(find.byType(HomePage)).read<AppState>().readOnly,
+        true,
+      );
+      await tester.tap(find.text('Conta'));
+      await tester.pumpAndSettle();
       expect(find.widgetWithText(FilledButton, 'Entrar'), findsOneWidget);
       await auth.login('second@example.invalid', 'password');
       await tester.pumpAndSettle();
@@ -222,7 +289,7 @@ void main() {
       expect(state.allBathrooms, isEmpty);
       expect(state.visits, isEmpty);
       expect(state.reviews, isEmpty);
-      state.setPublicUsername('second_account');
+      state.toggleTheme();
       await auth.logout();
       await auth.login('first@example.invalid', 'password');
       await tester.pumpAndSettle();
@@ -239,6 +306,7 @@ void main() {
       await tester.pumpAndSettle();
       state = tester.element(find.byType(HomePage)).read<AppState>();
       expect(state.allBathrooms.single.id, bathroom.id);
+      expect(state.legacyBathrooms.single.id, bathroom.id);
       expect(state.visits.single.id, visit.id);
       expect(state.reviews.single.rating, 4.5);
       expect(state.activityFor(bathroom.id).isFavorite, isTrue);
@@ -581,9 +649,15 @@ void main() {
       expect(find.byType(AccountStorageAcceptance), findsOneWidget);
       await auth.logout();
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(AppBar, 'Explorar'), findsNothing);
+      expect(find.widgetWithText(AppBar, 'Explorar'), findsOneWidget);
+      await tester.tap(find.text('Conta'));
+      await tester.pumpAndSettle();
       expect(find.widgetWithText(FilledButton, 'Entrar'), findsOneWidget);
-      expect(find.byType(WelcomePage), findsOneWidget);
+      expect(find.byType(HomePage), findsOneWidget);
+      expect(
+        find.widgetWithText(NavigationDestination, 'Conta'),
+        findsOneWidget,
+      );
       expect(auth.current, isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -915,13 +989,10 @@ void main() {
         ),
       );
       expect(
-        find.textContaining('não são importados nem enviados'),
+        find.textContaining('O histórico privado anterior não é publicado'),
         findsOneWidget,
       );
-      expect(
-        find.textContaining('incluindo os registos já existentes'),
-        findsOneWidget,
-      );
+      expect(find.text('Como tratamos os teus dados'), findsOneWidget);
       await tester.scrollUntilVisible(find.text('Aceitar e continuar'), 200);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Aceitar e continuar'));

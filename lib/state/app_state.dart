@@ -25,6 +25,25 @@ class AppState extends ChangeNotifier {
   bool readOnly = false;
   bool get communityEnabled => community != null;
   bool get canContribute => communityEnabled && !readOnly;
+  bool get canCreateBathroom =>
+      canContribute &&
+      _effective('capabilities', currentUserId)?['create_bathroom'] == true;
+  bool get isModerator =>
+      canContribute &&
+      _effective('capabilities', currentUserId)?['moderator'] == true;
+  List<Bathroom> get visibleBathrooms => !communityEnabled
+      ? allBathrooms
+      : allBathrooms.where((b) => isShared(b.id)).toList();
+  List<Visit> get visibleVisits => !communityEnabled
+      ? visits
+      : visits.where((v) => isShared(sharedIdentity(v.bathroomId))).toList();
+  List<Review> get visibleReviews => !communityEnabled
+      ? reviews
+      : reviews.where((r) => isShared(sharedIdentity(r.bathroomId))).toList();
+  List<Bathroom> get legacyBathrooms => communityEnabled
+      ? allBathrooms.where((b) => !isShared(b.id)).toList()
+      : [];
+
   bool isShared(String id) =>
       community?.bathrooms.any((b) => b.id == id) == true ||
       repository?.store.database.select(
@@ -47,8 +66,6 @@ class AppState extends ChangeNotifier {
           .where((r) => r.bathroomId == sharedIdentity(id))
           .toList() ??
       [];
-  String? get publicUsername =>
-      _effective('profile', currentUserId)?['username'] as String?;
   Map<String, dynamic>? _effective(String kind, String id) {
     final db = repository?.store.database;
     if (db == null) return null;
@@ -78,8 +95,6 @@ class AppState extends ChangeNotifier {
           );
   }
 
-  bool isPublished(String reviewId) =>
-      _effective('publication', reviewId)?['published'] == true;
   void attachCommunity(CommunityCatalogue catalogue, {bool anonymous = false}) {
     community = catalogue;
     readOnly = anonymous;
@@ -110,6 +125,12 @@ class AppState extends ChangeNotifier {
             'INSERT OR IGNORE INTO catalogue_bathrooms VALUES(?)',
             [b.id],
           );
+          if (b.classification != null) {
+            store.database.execute(
+              'INSERT INTO catalogue_classifications VALUES(?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind',
+              [b.id, b.classification],
+            );
+          }
         }
       }
     });
@@ -140,72 +161,6 @@ class AppState extends ChangeNotifier {
         ).enqueue(kind, id, command, payload, references: references),
       ),
       () {},
-    );
-  }
-
-  void setPublicUsername(String username) {
-    final clean = username.trim().toLowerCase();
-    if (!RegExp(r'^[a-z][a-z0-9_]{2,29}$').hasMatch(clean)) {
-      throw ArgumentError('Invalid public username');
-    }
-    _communityCommand('profile', currentUserId, 'setUsername', {
-      'username': clean,
-    });
-  }
-
-  void associateBathroom(String privateId, String sharedId) {
-    _writable();
-    materializeCatalogue();
-    final store = repository!.store;
-    final b = allBathrooms.singleWhere((b) => b.id == privateId);
-    if (!canContribute ||
-        isShared(privateId) ||
-        b.createdBy != currentUserId ||
-        bathroomLinks.containsKey(privateId) ||
-        !isShared(sharedId) ||
-        !isAvailable(sharedId) ||
-        ![
-          Provenance.userCreated,
-          Provenance.remote,
-        ].contains(store.bathroomProvenance(privateId))) {
-      throw StateError('Ineligible association');
-    }
-    _mutate(
-      () => store.transaction(() {
-        SyncStore(store).enqueue(
-          'link',
-          privateId,
-          'linkBathroom',
-          {'shared_id': sharedId},
-          references: [('bathroom', privateId)],
-        );
-        store.database.execute('INSERT INTO bathroom_links VALUES(?,?)', [
-          privateId,
-          sharedId,
-        ]);
-      }),
-      () {},
-    );
-  }
-
-  void publishReview(Review review, {required bool publish}) {
-    if (review.authorId != currentUserId ||
-        (publish &&
-            (publicUsername == null ||
-                !isShared(sharedIdentity(review.bathroomId)) ||
-                !isAvailable(sharedIdentity(review.bathroomId))))) {
-      throw StateError('Ineligible publication');
-    }
-    _communityCommand(
-      'publication',
-      review.id,
-      publish ? 'publishReview' : 'withdrawReview',
-      {'review_id': review.id, 'published': publish},
-      references: [
-        ('review', review.id),
-        ('link', review.bathroomId),
-        ('profile', currentUserId),
-      ],
     );
   }
 
@@ -382,7 +337,11 @@ class AppState extends ChangeNotifier {
   final List<Bathroom> _bathrooms;
 
   List<Bathroom> get allBathrooms => List.unmodifiable([
-    ..._bathrooms,
+    ..._bathrooms.map(
+      (b) => b.createdBy == 'catalogue'
+          ? (community?.bathrooms.where((r) => r.id == b.id).firstOrNull ?? b)
+          : b,
+    ),
     if (community != null)
       ...community!.bathrooms.where(
         (b) => !_bathrooms.any((p) => p.id == b.id),
@@ -499,7 +458,9 @@ class AppState extends ChangeNotifier {
     if (cleaned.contains(RegExp(r'[\x00-\x1F\x7F]'))) {
       return 'Usa apenas texto numa linha.';
     }
-    if (_bathrooms.any((b) => normalizeName(b.name) == normalizeName(name))) {
+    if (visibleBathrooms.any(
+      (b) => normalizeName(b.name) == normalizeName(name),
+    )) {
       return 'Já existe uma casa de banho com este nome.';
     }
     return null;
@@ -514,6 +475,9 @@ class AppState extends ChangeNotifier {
       throw ArgumentError('Invalid accent');
     }
     _writable();
+    if (communityEnabled && !canCreateBathroom) {
+      throw StateError('Bathroom creation entitlement required');
+    }
     final error = validateBathroomName(name);
     if (error != null) throw ArgumentError(error);
     final bathroom = Bathroom(
@@ -595,18 +559,16 @@ class AppState extends ChangeNotifier {
   }
 
   List<BathroomEntry> get entries => [
-    for (final bathroom in allBathrooms.where(
+    for (final bathroom in visibleBathrooms.where(
       (b) => !bathroomLinks.containsKey(b.id),
     ))
       BathroomEntry(
         bathroom: bathroom,
         catalogueLabel: !communityEnabled
             ? null
-            : !isShared(bathroom.id)
-            ? 'Privado · por associar ao catálogo'
-            : isAvailable(bathroom.id)
-            ? 'Catálogo partilhado'
-            : 'Envio pendente ou catálogo indisponível',
+            : bathroom.classification == 'official'
+            ? 'Oficial'
+            : 'Comunidade',
         activity: activityFor(bathroom.id),
         reviews: personalReviewsFor(bathroom.id),
         communityReviews: communityEnabled
@@ -645,6 +607,9 @@ class AppState extends ChangeNotifier {
 
   void toggleFavorite(String bathroomId) {
     _writable();
+    if (communityEnabled && !isShared(bathroomId)) {
+      throw StateError('Choose a shared bathroom');
+    }
     materializeCatalogue();
     final previous = activityFor(bathroomId);
     final activity = BathroomActivity(
@@ -695,6 +660,9 @@ class AppState extends ChangeNotifier {
 
   Visit recordVisit(String bathroomId, {required DateTime visitedAt}) {
     _writable();
+    if (communityEnabled && !isShared(bathroomId)) {
+      throw StateError('Choose a shared bathroom');
+    }
     if (!isAvailable(bathroomId)) {
       throw StateError('Catalogue contribution pending or unavailable');
     }
@@ -760,6 +728,11 @@ class AppState extends ChangeNotifier {
       throw StateError('Only the current author can save a review');
     }
     final index = _reviews.indexWhere((r) => r.id == review.id);
+    if (communityEnabled &&
+        index < 0 &&
+        (!isShared(review.bathroomId) || !isAvailable(review.bathroomId))) {
+      throw StateError('Choose an available bathroom');
+    }
     if (newVisit != null) {
       if (index >= 0 || newVisit.id != review.visitId) {
         throw StateError('Invalid new visit');
@@ -788,8 +761,12 @@ class AppState extends ChangeNotifier {
       }
     }
     _mutate(
-      () =>
-          repository?.saveReview(review, newVisit: newVisit, isNew: index < 0),
+      () => repository?.saveReview(
+        review,
+        newVisit: newVisit,
+        isNew: index < 0,
+        communitySubmission: communityEnabled && index < 0,
+      ),
       () {
         if (index < 0) {
           if (newVisit != null) _visits.add(newVisit);

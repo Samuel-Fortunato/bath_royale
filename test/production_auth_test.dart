@@ -101,6 +101,37 @@ class RevokedClient extends DelayedLoginClient {
 }
 
 void main() {
+  test('development policy cannot target alpha or managed services', () {
+    expect(
+      () => AuthConfiguration.localDevelopment(
+        'https://managed.invalid',
+        'local-development-client',
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => AuthConfiguration.localDevelopment(
+        'https://localhost:55474',
+        'local-development-client',
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => AuthConfiguration.localAlpha(
+        'https://localhost:55504',
+        'local-development-client',
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      AuthConfiguration.localDevelopment(
+        'https://localhost:55504',
+        'local-development-client',
+      ).environment,
+      'https://localhost:55504',
+    );
+  });
+
   test(
     'alpha policy cannot target production or disable default confirmation',
     () async {

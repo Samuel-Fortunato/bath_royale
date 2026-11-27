@@ -33,7 +33,13 @@ void main() {
 class AuthenticatedBootstrap extends StatefulWidget {
   final ProductionAuth Function()? createAuth;
   final Future<LocalStore> Function(DataNamespace)? openStore;
-  const AuthenticatedBootstrap({super.key, this.createAuth, this.openStore});
+  final WidgetBuilder? accountEntryExtras;
+  const AuthenticatedBootstrap({
+    super.key,
+    this.createAuth,
+    this.openStore,
+    this.accountEntryExtras,
+  });
   @override
   State<AuthenticatedBootstrap> createState() => _AuthenticatedBootstrapState();
 }
@@ -161,7 +167,10 @@ class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap>
           ? ThemeMode.light
           : ThemeMode.dark,
       home: auth!.current == null && error == null
-          ? WelcomePage(canTransition: true, catalogue: publicState)
+          ? ChangeNotifierProvider.value(
+              value: publicState!,
+              child: const MainApp(),
+            )
           : AuthenticationPage(
               canTransition:
                   auth!.current == null ||
@@ -193,7 +202,12 @@ class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => Provider<AccountEntryExtras>.value(
+    value: AccountEntryExtras(widget.accountEntryExtras),
+    child: buildAccount(context),
+  );
+
+  Widget buildAccount(BuildContext context) {
     if (!loading && auth != null && scope != null && scope!.state == null) {
       return ChangeNotifierProvider.value(value: auth!, child: recovery());
     }

@@ -18,6 +18,8 @@ const materialImportBaseline = {
   'lib/pages/private_synchronization.dart',
   // Reviewed A3 controls use the same bundled Material 3 widgets.
   'lib/pages/community_controls.dart',
+  'lib/pages/privacy.dart',
+  'tool/local_development.dart',
   'test/community_test.dart',
   'lib/pages/authentication.dart',
   'lib/pages/rankings.dart',

@@ -30,11 +30,15 @@ class LocalStatistics extends StatelessWidget {
       if (includeDiscoveries)
         (entries.where((e) => e.activity.visitCount > 0).length, 'Descobertas'),
       (
-        state.visits.where((v) => v.userId == state.currentUserId).length,
+        state.visibleVisits
+            .where((v) => v.userId == state.currentUserId)
+            .length,
         'Visitas',
       ),
       (
-        state.reviews.where((r) => r.authorId == state.currentUserId).length,
+        state.visibleReviews
+            .where((r) => r.authorId == state.currentUserId)
+            .length,
         'Avaliações',
       ),
       (entries.where((e) => e.activity.isFavorite).length, 'Favoritos'),
@@ -327,13 +331,15 @@ class VisitDiary extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final visits =
-        state.visits.where((v) => v.userId == state.currentUserId).toList()
+        state.visibleVisits
+            .where((v) => v.userId == state.currentUserId)
+            .toList()
           ..sort((a, b) {
             final order = b.visitedAt.compareTo(a.visitedAt);
             return order != 0 ? order : b.id.compareTo(a.id);
           });
-    final bathrooms = {for (final b in state.allBathrooms) b.id: b};
-    final reviews = {for (final r in state.reviews) r.visitId: r};
+    final bathrooms = {for (final b in state.visibleBathrooms) b.id: b};
+    final reviews = {for (final r in state.visibleReviews) r.visitId: r};
     if (visits.isEmpty) {
       return const Center(
         child: Padding(

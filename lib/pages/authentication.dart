@@ -6,6 +6,12 @@ import '../sync/auth_session.dart';
 import '../state/app_state.dart';
 import '../app.dart';
 
+/// Optional host-owned content; ordinary builds provide no implementation/data.
+class AccountEntryExtras {
+  final WidgetBuilder? builder;
+  const AccountEntryExtras(this.builder);
+}
+
 /// Dedicated private flow, also used as the unauthenticated application gate.
 class AuthenticationPage extends StatelessWidget {
   final AuthFlow initialFlow;
@@ -102,6 +108,11 @@ class WelcomePage extends StatelessWidget {
                   onPressed: () => open(AuthFlow.registration),
                   child: const Text('Criar conta'),
                 ),
+                if (canTransition) ...[
+                  if (context.watch<AccountEntryExtras?>()?.builder
+                      case final builder?)
+                    builder(context),
+                ],
                 if (catalogue != null)
                   TextButton.icon(
                     onPressed: () => Navigator.push(
@@ -523,9 +534,14 @@ class _AuthenticationPanelState extends State<AuthenticationPanel> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Podes consultar o catálogo partilhado sem conta através do ecrã de boas-vindas.',
+                    'Podes explorar e consultar os rankings sem conta.',
                     style: TextStyle(fontSize: 12),
                   ),
+                ],
+                if (!signedIn && widget.canTransition) ...[
+                  if (context.watch<AccountEntryExtras?>()?.builder
+                      case final builder?)
+                    builder(context),
                 ],
                 if (auth.storageBlocked)
                   TextButton(
