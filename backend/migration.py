@@ -35,6 +35,7 @@ TABLES = [
     "app_private.moderators",
     "app_private.bathroom_links",
     "app_private.reports",
+    "app_private.bathroom_creators",
     "app_private.sync_clock",
     "app_private.sync_records",
     "app_private.sync_changes",

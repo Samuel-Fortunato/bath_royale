@@ -569,9 +569,37 @@ def private_authorization():
 
 def verification():
     if "--skip-authorization" not in sys.argv:
-        auth.verify(check_expiry="--skip-expiry" not in sys.argv)
-    accounts = json.loads((poc.STATE / "accounts.json").read_text())
+        from simplification import verify as verify_current_authorization
+
+        verify_current_authorization()
+    path = poc.STATE / "accounts.json"
+    if not path.exists():
+        poc.secure_write(
+            path,
+            json.dumps(
+                [
+                    dict(
+                        email="protocol-" + str(i) + "-" + uuid.uuid4().hex + "@example.invalid",
+                        password=secrets.token_urlsafe(32),
+                    )
+                    for i in range(2)
+                ]
+            ),
+        )
+        for account in json.loads(path.read_text()):
+            status, _ = poc.request(poc.AUTH_PORT, "/signup", "POST", account)
+            check(status == 200, "protocol fixture signup")
+    accounts = json.loads(path.read_text())
     a, b = [auth.login(account) for account in accounts]
+    for session in (a, b):
+        actor = str(uuid.UUID(session["user"]["id"]))
+        poc.sql(
+            "insert into public.profiles(id,username) values('"
+            + actor
+            + "','protocol_"
+            + actor.replace("-", "")[:16]
+            + "') on conflict(id) do nothing"
+        )
     cases = poc.run(["dart", "run", "tool/generate_grapheme_sql.dart", "--cases"])
     mismatches = poc.sql(
         "select count(*) from jsonb_to_recordset('"

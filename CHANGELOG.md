@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- A3.1 backend: enforce administrator-granted bathroom creation, automatically publish new shared reviews anonymously and preserve historical private operations/records. Remove public author correlation while retaining ownership, moderation, reporting and published-only ratings.
+- Add guarded idempotent fictional fixtures on a separate local backend; preserve existing accounts and keep generated credentials outside Git. Verify direct API/privacy/entitlement behavior and the full synchronization/export protocol.
 - A3 app: replace normal enable/pause synchronization modes with clear, persistent onboarding acceptance and automatic account storage, preserving offline operations, conflict recovery, guest archives and genuine account records.
 - Add cached anonymous catalogue browsing, public contributions, explicit private/shared associations, public usernames, publication/withdrawal, reports and a small protected moderation screen. Compose personal visits/favourites with shared identities; use published-only community details, scores and rankings.
 - Preserve SQLite v7 data in v8; verify 224 Flutter regressions, offline cache/queue restart, narrow layouts, two-account community integration, real HTTPS authentication, backend/portability checks and release builds. Install private `0.1.0-alpha-a3.1023` in place with the original certificate and retained app identity/first-install date. Configured artifacts remain private; physical owner acceptance is separate from automated verification.

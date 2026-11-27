@@ -21,9 +21,10 @@ if INSTANCE not in (
     "auth",
     "community",
     "protocol",
+    "fixtures",
 ):
     raise RuntimeError(
-        "POC_INSTANCE must be source, destination, cloud-destination, sync, auth, community or protocol"
+        "POC_INSTANCE must be source, destination, cloud-destination, sync, auth, community, protocol or fixtures"
     )
 PROJECT = "bath-royale-poc" + ("-" + INSTANCE if INSTANCE != "source" else "")
 AUTH_PORT, REST_PORT = {
@@ -34,6 +35,7 @@ AUTH_PORT, REST_PORT = {
     "auth": (55471, 55472),
     "community": (55481, 55482),
     "protocol": (55491, 55492),
+    "fixtures": (55501, 55502),
 }[INSTANCE]
 STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / PROJECT
 SERVICES = ["db", "auth", "rest"]
