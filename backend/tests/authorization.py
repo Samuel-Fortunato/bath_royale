@@ -58,10 +58,38 @@ def review(visit, bathroom=ONE, **overrides):
         "aesthetics": 0,
         "tags": [{"emoji": "✨", "label": "Nice", "key": "nice", "version": 1}],
         "comment": "Comentário fictício do PoC.",
-        "published": True,
     }
+    if overrides.get("published") is False:
+        overrides.pop("published")
     value.update(overrides)
     return value
+
+
+def publish(session, review_id, value):
+    # Explicit A3 command with its separate per-owner publication CAS state.
+    rows = sql(
+        "select revision from app_private.sync_records where subject='"
+        + session["user"]["id"]
+        + "' and entity_type='publication' and entity_id='"
+        + review_id
+        + "'"
+    )
+    return api(
+        "rpc/sync_submit",
+        "POST",
+        {
+            "command": {
+                "operationId": str(uuid.uuid4()),
+                "entityType": "publication",
+                "entityId": review_id,
+                "type": "publishReview" if value else "withdrawReview",
+                "payload": {"review_id": review_id, "published": value},
+                "baseRevision": int(rows) if rows else None,
+                "dependencies": {},
+            }
+        },
+        session,
+    )
 
 
 def verify(existing_only=False, check_expiry=True):
@@ -103,8 +131,9 @@ def verify(existing_only=False, check_expiry=True):
         "delete from app_private.moderators;"
     )
     sql((ROOT / "backend/fixtures.sql").read_text())
-    check(len(api("bathrooms")) == 2, "anonymous approved catalogue only")
-    check(len(api("profiles")) == 2, "public usernames only")
+    check(len(api("rpc/public_catalogue")) == 2, "anonymous approved catalogue only")
+    reject("profiles", "GET")
+    check(len(api("profiles", user=a)) == 1, "private profile ID author-only")
     for table in ["visits", "reviews", "favourites"]:
         reject(table, "GET")
         reject(table, "POST", {})
@@ -316,7 +345,7 @@ def verify(existing_only=False, check_expiry=True):
         "authorized moderator sees proposal",
     )
     api("rpc/approve_bathroom", "POST", {"proposal_id": pid}, b, 204)
-    approved = api("bathrooms?id=eq." + pid)[0]
+    approved = api("bathrooms?id=eq." + pid, user=b)[0]
     check(
         approved["contributor_id"] == aid and approved["approved_by"] == bid,
         "approval preserves contributor",
@@ -335,6 +364,8 @@ def verify(existing_only=False, check_expiry=True):
         "PASS: proposal privacy, no self-approval/admin escalation, moderator approval and attribution"
     )
 
+    publish(a, ar["id"], True)
+    publish(b, br["id"], True)
     projection = api("rpc/public_reviews")
     check(len(projection) == 2, "only explicitly published reviews")
     expected = {
@@ -404,14 +435,15 @@ def verify(existing_only=False, check_expiry=True):
     reject("visits?select=*,profiles(*)", "GET", user=b)
     reject("visits?select=*,users(*)", "GET", user=b)
     reject("profiles?select=*,users(*)", "GET", user=a)
-    api("reviews?id=eq." + ar["id"], "PATCH", {"published": False}, a)
+    publish(a, ar["id"], False)
     check(len(api("rpc/public_reviews")) == 1, "unpublish removes projection immediately")
     api(
         "reviews?id=eq." + ar["id"],
         "PATCH",
-        {"published": True, "comment": "Exemplo fictício."},
+        {"comment": "Exemplo fictício."},
         a,
     )
+    publish(a, ar["id"], True)
     # Token forgery fails signature verification.
     parts = a["access_token"].split(".")
     import base64
@@ -439,8 +471,12 @@ def verify(existing_only=False, check_expiry=True):
         ).splitlines()[-1]
 
     check(
-        as_role("anon", "select count(*) from public.bathrooms") == "3",
-        "SQL anonymous approved only",
+        as_role("anon", "select count(*) from public.public_catalogue()") == "3",
+        "SQL anonymous approved projection only",
+    )
+    check(
+        as_role("anon", "select count(*) from public.bathrooms") == "0",
+        "SQL raw catalogue hides Auth IDs",
     )
     check(
         as_role("authenticated", "select count(*) from public.visits", bid) == "1",

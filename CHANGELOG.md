@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- A3 backend: add a common anonymous catalogue with stable identities and duplicate prevention, explicit private bathroom associations, public usernames and separate published review/author identities. Preserve private visits, timestamps, favourites and email.
+- Add explicit owner publication/withdrawal, report deduplication and protected hide/restore moderation. Keep generic writes from bypassing publication, and serve current visibility when replaying historical public feeds.
+- Verify additive A2 preservation, direct HTTP authorization/isolation and populated community metadata export/restoration in isolated local infrastructure; retain the existing receipt/CAS/offline protocol and extend its export allowlist.
+
 - A2: integrate opt-in private synchronization of account bathrooms, visits, reviews and favourites using the existing transactional outbox, authenticated protocol and isolated account storage. Preserve offline actions, original records and persistent authentication; exclude archived guests and fictional examples.
 - Separate private ownership from public profiles, prohibit private bathroom publication and verify anonymous/other-account isolation. Add foreground retry/status, safe renewal/transitions, conflict preservation, text correction, local archives and non-destructive replay recovery.
 - Preserve v6 account data/protocol metadata in v7; align server/client grapheme validation and verify private synchronization metadata, receipts, cursors, clock and sequence across logical export/restoration.

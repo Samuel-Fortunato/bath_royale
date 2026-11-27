@@ -8,7 +8,7 @@ import poc
 
 
 def verify():
-    if poc.INSTANCE != "sync":
+    if poc.INSTANCE not in ("sync", "protocol", "community"):
         raise RuntimeError("Disposable sync instance required")
     import cloud_transfer
 
@@ -97,6 +97,10 @@ def verify():
             r
             for r in before["app_private.sync_receipts"]
             if r["outcome"]["status"] == "acknowledged"
+            and any(
+                c["subject"] == r["subject"] and c["feed"] == "private"
+                for c in before["app_private.sync_cursors"]
+            )
         )
         subject = receipt["subject"]
         claims = json.dumps({"sub": subject, "role": "authenticated"})

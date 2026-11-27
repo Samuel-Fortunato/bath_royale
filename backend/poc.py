@@ -13,8 +13,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 INSTANCE = os.environ.get("POC_INSTANCE", "source")
-if INSTANCE not in ("source", "destination", "cloud-destination", "sync", "auth"):
-    raise RuntimeError("POC_INSTANCE must be source, destination, cloud-destination, sync or auth")
+if INSTANCE not in (
+    "source",
+    "destination",
+    "cloud-destination",
+    "sync",
+    "auth",
+    "community",
+    "protocol",
+):
+    raise RuntimeError(
+        "POC_INSTANCE must be source, destination, cloud-destination, sync, auth, community or protocol"
+    )
 PROJECT = "bath-royale-poc" + ("-" + INSTANCE if INSTANCE != "source" else "")
 AUTH_PORT, REST_PORT = {
     "source": (55431, 55432),
@@ -22,6 +32,8 @@ AUTH_PORT, REST_PORT = {
     "cloud-destination": (55451, 55452),
     "sync": (55461, 55462),
     "auth": (55471, 55472),
+    "community": (55481, 55482),
+    "protocol": (55491, 55492),
 }[INSTANCE]
 STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / PROJECT
 SERVICES = ["db", "auth", "rest"]
@@ -165,7 +177,7 @@ def bindings():
     print("PASS: rootless containers; published bindings exclusively 127.0.0.1")
 
 
-def migrate():
+def migrate(through=None):
     sql(
         "create schema if not exists bath_royale_migrations; "
         "create table if not exists bath_royale_migrations.applied "
@@ -173,6 +185,8 @@ def migrate():
         "revoke all on schema bath_royale_migrations from public, anon, authenticated;"
     )
     for path in sorted((ROOT / "supabase/migrations").glob("*.sql")):
+        if through is not None and path.name > through:
+            continue
         content = path.read_text()
         digest = hashlib.sha256(content.encode()).hexdigest()
         previous = sql(

@@ -15,7 +15,7 @@ import uuid
 
 import poc
 
-if poc.INSTANCE != "sync":
+if poc.INSTANCE not in ("sync", "protocol"):
     raise RuntimeError("Set POC_INSTANCE=sync; preserved installations are forbidden")
 
 sys.path.insert(0, str(poc.ROOT / "backend/tests"))
@@ -569,7 +569,7 @@ def private_authorization():
 
 def verification():
     if "--skip-authorization" not in sys.argv:
-        auth.verify()
+        auth.verify(check_expiry="--skip-expiry" not in sys.argv)
     accounts = json.loads((poc.STATE / "accounts.json").read_text())
     a, b = [auth.login(account) for account in accounts]
     cases = poc.run(["dart", "run", "tool/generate_grapheme_sql.dart", "--cases"])
