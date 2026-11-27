@@ -355,7 +355,8 @@ class VisitDiary extends StatelessWidget {
             final order = b.visitedAt.compareTo(a.visitedAt);
             return order != 0 ? order : b.id.compareTo(a.id);
           });
-    final bathrooms = {for (final b in state.visibleBathrooms) b.id: b};
+    // Diary parents remain available after public withdrawal or deletion.
+    final bathrooms = {for (final b in state.allBathrooms) b.id: b};
     final reviews = {for (final r in state.visibleReviews) r.visitId: r};
     if (visits.isEmpty) {
       return const Center(

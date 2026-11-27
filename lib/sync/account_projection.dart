@@ -1,5 +1,6 @@
 import 'dart:convert';
 import '../models/provenance.dart';
+import '../models/bathroom.dart';
 import '../storage/local_store.dart';
 import 'sync_store.dart';
 
@@ -93,7 +94,10 @@ class AccountProjection {
             db.execute('DELETE FROM reviews WHERE id=?', [id]);
           }
           // No bathroom deletion command exists in A2. Retain a referenced parent.
-          if (type == 'bathroom') {
+          if (type == 'bathroom' &&
+              db.select('SELECT id FROM catalogue_bathrooms WHERE id=?', [
+                id,
+              ]).isEmpty) {
             db.execute('DELETE FROM favourites WHERE bathroom=?', [id]);
             db.execute(
               'DELETE FROM bathrooms WHERE id=? AND NOT EXISTS(SELECT 1 FROM visits WHERE bathroom=?)',
@@ -104,21 +108,17 @@ class AccountProjection {
         }
         if (p.isEmpty) continue;
         if (type == 'sharedBathroom') {
-          if (db.select('SELECT id FROM bathrooms WHERE id=?', [id]).isEmpty) {
-            upsert('bathrooms', {
-              'id': id,
-              'name': p['name'],
-              'normalized_name': (p['name'] as String).toLowerCase(),
-              'creator': 'catalogue',
-              'emoji': p['emoji'],
-              'accent': p['accent'],
-              'accent_rgb': p['accent_rgb'],
-              'provenance': 'remote',
-            });
-          }
-          db.execute('INSERT OR IGNORE INTO catalogue_bathrooms VALUES(?)', [
-            id,
-          ]);
+          local.materializeSharedBathroom(
+            Bathroom(
+              id: id,
+              name: p['name'] as String,
+              createdBy: 'catalogue',
+              emoji: p['emoji'] as String,
+              accent: p['accent'] as int,
+              accentRgb: p['accent_rgb'] as int?,
+              classification: p['classification'] as String?,
+            ),
+          );
         } else if (type == 'bathroom') {
           if (p['contributor_id'] != local.namespace.subject) {
             throw StateError('Foreign account bathroom');

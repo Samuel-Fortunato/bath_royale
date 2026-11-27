@@ -1,8 +1,15 @@
-Bem-vindo ao Bath Royale: encontra o teu próximo trono, a começar pela Universidade de Aveiro! 🚽👑 Esta primeira alfa Android já permite explorar o catálogo e partilhar a tua opinião.
+Bem-vindo ao Bath Royale: encontra o teu próximo trono, a começar pela Universidade de Aveiro! 🚽👑 Esta alfa Android permite explorar o catálogo e partilhar a tua opinião.
+
+## Novidades da versão 0.1.1
+
+- Navegação e atualização do catálogo mais rápidas, com as melhorias de desempenho já aprovadas.
+- Os WC removidos ou ocultos deixam de aparecer no catálogo; os restaurados voltam a aparecer. Nomes, emojis e cores acompanham as alterações do serviço.
+- As visitas, avaliações, favoritos e alterações pendentes continuam guardados. A atualização corrige também instalações existentes, sem reinstalar nem apagar dados.
+- Offline, continuas a consultar a última cache disponível; uma atualização interrompida mantém os dados já recebidos.
 
 ## Funcionalidades principais
 
-- 34 WC oficiais com identidades visuais próprias.
+- Catálogo atual de 30 WC com identidades visuais próprias.
 - Avaliações públicas e anónimas, com critérios e descrições bem-humoradas.
 - Visitas privadas, favoritos, coleção e rankings da comunidade.
 - Temas e sincronização dos dados da conta, com consulta de dados em cache offline.
@@ -20,7 +27,7 @@ Podes desativar a permissão de instalação depois. Para verificar a transferê
 
 Versão de teste com assinatura de desenvolvimento: pode conter erros e não é uma versão estável de produção. O teste num segundo dispositivo físico continua pendente. A criação de WC exige autorização da administração; as restantes contas podem avaliar os existentes. A sincronização depende da ligação ao serviço; offline, a consulta usa os dados já carregados em cache.
 
-O catálogo inicial inclui 34 WC oficiais, com as identidades visuais aprovadas e sem avaliações inventadas. Regista-te diretamente na aplicação com email e palavra-passe; não precisas de convite.
+O catálogo atual inclui 30 WC, com as identidades visuais aprovadas e sem avaliações inventadas. Regista-te diretamente na aplicação com email e palavra-passe; não precisas de convite.
 
 Nesta alfa, o email não é verificado nem serve de prova para recuperar uma conta. Guarda o teu código de recuperação nas definições. As novas avaliações são públicas e anónimas; visitas e favoritos são privados. O feedback inclui o texto, versões da aplicação/sistema e ecrã genérico, sendo acessível apenas à administração.
 

@@ -1,6 +1,6 @@
 # A6.1 performance and stability investigation
 
-Status: targeted fixes verified on 2026-11-27; owner acceptance and historical ANR attribution remain open. This work takes priority over new features. The owner's reproduction guidance is **online, especially following refresh and opening menus/pages**. No new GitHub release is authorized; `ALPHA_RELEASE_APPROVED` was read back as `false`.
+Status: targeted fixes verified on 2026-11-27. The owner subsequently physically tested and accepted commit `97e14ae`, reporting substantially better performance. Historical ANR stack attribution remains unproven. The next candidate also contains the [catalogue reconciliation fix](catalogue-reconciliation.md), whose physical acceptance is still pending. This work takes priority over new features. The owner's reproduction guidance is **online, especially following refresh and opening menus/pages**. No new GitHub release is authorized; `ALPHA_RELEASE_APPROVED` was read back as `false`.
 
 ## Physical baseline and method
 

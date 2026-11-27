@@ -325,6 +325,34 @@ CREATE TABLE favourites (user TEXT NOT NULL CHECK(length(user)>0), bathroom TEXT
     );
   }
 
+  /// Call inside the caller's transaction. Catalogue membership is durable
+  /// identity/provenance for history, never evidence of current availability.
+  void materializeSharedBathroom(Bathroom bathroom) {
+    final existing = database.select(
+      'SELECT creator,provenance FROM bathrooms WHERE id=?',
+      [bathroom.id],
+    );
+    if (existing.isEmpty) {
+      insertBathroom(bathroom, provenance: Provenance.remote);
+    } else {
+      // Shared projections must not take over legacy or locally owned records.
+      if (existing.single['creator'] != 'catalogue' ||
+          existing.single['provenance'] != Provenance.remote.value) {
+        return;
+      }
+      updateBathroom(bathroom);
+    }
+    database.execute('INSERT OR IGNORE INTO catalogue_bathrooms VALUES(?)', [
+      bathroom.id,
+    ]);
+    if (bathroom.classification != null) {
+      database.execute(
+        'INSERT INTO catalogue_classifications VALUES(?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind',
+        [bathroom.id, bathroom.classification],
+      );
+    }
+  }
+
   void updateBathroom(Bathroom b) {
     database.execute(
       'UPDATE bathrooms SET name=?,normalized_name=?,emoji=?,accent=?,accent_rgb=? WHERE id=? AND creator=?',

@@ -8,7 +8,7 @@
 
 ## O que podes fazer
 
-- Explorar um catálogo inicial de **34 WC oficiais**, com as identidades visuais aprovadas.
+- Explorar um catálogo atual de **30 WC**, com as identidades visuais aprovadas.
 - Consultar e partilhar avaliações públicas e anónimas, com critérios e descrições bem-humoradas.
 - Registar visitas privadas, guardar favoritos e completar a tua coleção.
 - Consultar rankings, escolher o tema e sincronizar os dados da tua conta, com cache para consulta offline.

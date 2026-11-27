@@ -13,7 +13,7 @@ class PublicationTest(unittest.TestCase):
     def test_public_version_is_separate_from_build(self):
         for alpha in (True, False):
             title, notes = publisher.release_presentation('1039', alpha)
-            self.assertIn('Bath Royale v0.1.0 — ', title)
+            self.assertIn('Bath Royale v0.1.1 — ', title)
             self.assertNotIn('1039', title)
             self.assertIn('Compilação interna Android: **1039**', notes)
             if alpha:

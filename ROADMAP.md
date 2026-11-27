@@ -2,7 +2,7 @@
 
 The phases describe intended sequencing, not a fixed specification. Unconfirmed details are proposals and may change with product decisions and implementation findings. Check items only when implemented and verified.
 
-## Current priority — Performance and stability
+## Current priority — Catalogue reconciliation and v0.1.1 candidate
 
 The owner has reprioritized delivery to a small group of friends. Phase A1 below supersedes the optional writable guest/embedded Profile authentication decisions in the historical Phase 2.3B entries. Existing completed foundations remain available; later roadmap items do not authorize implementation.
 
@@ -10,14 +10,23 @@ The owner has reprioritized delivery to a small group of friends. Phase A1 below
 
 ### A6.1 — Performance and stability investigation
 
-Owner-authorized priority after reports of online sluggishness following refresh and navigation. Diagnose and fix these problems before new features. **In progress; owner acceptance and the historical ANR investigation remain open.**
+Owner-authorized priority after reports of online sluggishness following refresh and navigation. Diagnose and fix these problems before new features. **Performance physically accepted by the owner for `97e14ae`; historical ANR stack attribution remains unproven.**
 
 - [x] Inspect the actual SM-A166B installation: signed release 1038, retained identity/data, startup, app-scoped logcat, historical input ANR, CPU, memory and compositor diagnostics. Measure Flutter frames and derived-data calculations in a separate release-mode fictional-data application on the same phone; never use debug timings as release evidence.
 - [x] Remove measured repeated catalogue decoding, nested entity/activity scans and ranking identity queries; preserve score/chronology/privacy semantics without a long-lived cache or schema change. Reproduce and fix premature completion of overlapping catalogue refreshes.
 - [x] Verify targeted regressions, 248 Flutter tests, strict analysis, real disposable community/protocol/offline/restoration suites and Android/Linux releases. Prepare and install signed code-1040 RC in place with the original certificate and first-install timestamp; keep publication disabled.
-- [ ] Owner physical acceptance of refreshed navigation, scrolling, review submission, collection/rankings, restart/offline/reconnection and account convergence; establish whether any reported bug or ANR remains. Second physical device and longer memory/network traces remain outstanding.
+- [x] Owner physically tested and approved the performance improvements in `97e14ae`, reporting that the application feels substantially better. Second physical device testing and historical ANR stack attribution remain outstanding.
 
 See [measurements, limitations, reproducible probe and exact acceptance steps](docs/performance-stability.md). Local calculation improvements do not establish that every reported bug, startup delay or historical ANR is resolved. No GitHub release or managed database reset/fixture operation is authorized.
+
+### A6.2 — Catalogue reconciliation and v0.1.1
+
+- [x] Diagnose retained catalogue membership overriding public deletion/visibility and insert-only shared metadata projection.
+- [x] Reconcile public availability independently from historical account parents; retain visits, reviews, favourites, pending operations and links across deletion, hide/restore, offline restart and interrupted refresh. Update cached names and visual identities.
+- [x] Verify 258 Flutter regressions, strict analysis, tooling/backend tests and Android/Linux release builds. Update the existing SM-A166B in place to signed v0.1.1 code 1045; confirm 36 → 30 catalogue entries, 7 → 1 DETI search results and retained account/identity through offline cold restart.
+- [ ] Owner physically accepts the catalogue fix. Keep publication disabled until that acceptance; no managed data changes or reset.
+
+See [reconciliation protocol and candidate evidence](docs/catalogue-reconciliation.md).
 
 ### Phase A1 — Simplified authentication
 

@@ -88,10 +88,10 @@ jobs:
           if [ "$ALPHA_RELEASE_APPROVED" = true ]; then
             python3 tool/build_alpha.py --number "$PREVIEW_BUILD_NUMBER"
             echo "configured_alpha=true" >> "$GITHUB_OUTPUT"
-            echo "APK_VERSION_NAME=0.1.0-alpha.$PREVIEW_BUILD_NUMBER" >> "$GITHUB_ENV"
+            echo "APK_VERSION_NAME=0.1.1-alpha.$PREVIEW_BUILD_NUMBER" >> "$GITHUB_ENV"
           else
-            flutter build apk --release --no-pub --build-name "0.1.0-preview.${GITHUB_RUN_NUMBER}" --build-number "$PREVIEW_BUILD_NUMBER"
-            echo "APK_VERSION_NAME=0.1.0-preview.$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+            flutter build apk --release --no-pub --build-name "0.1.1-preview.${GITHUB_RUN_NUMBER}" --build-number "$PREVIEW_BUILD_NUMBER"
+            echo "APK_VERSION_NAME=0.1.1-preview.$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
           fi
       - name: Verify identity, version and signing certificate
         run: |

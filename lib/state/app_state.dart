@@ -42,8 +42,27 @@ class AppState extends ChangeNotifier {
   };
   List<Bathroom> get visibleBathrooms {
     if (!communityEnabled) return allBathrooms;
-    final shared = _sharedIds;
-    return allBathrooms.where((b) => shared.contains(b.id)).toList();
+    // Membership records retain historical parents, not public visibility.
+    // Only positive cache evidence (including offline cache) makes an entry live.
+    final available = community!.bathrooms.map((b) => b.id).toSet();
+    final db = repository?.store.database;
+    if (db != null) {
+      final known = community!.local.database
+          .select(
+            "SELECT entity_id FROM remote_records WHERE entity_type='bathroom'",
+          )
+          .map((r) => r['entity_id'] as String)
+          .toSet();
+      // Keep local contributions discoverable while awaiting publication, unless
+      // the public feed has already supplied a withdrawal/deletion for that ID.
+      for (final row in db.select(
+        "SELECT entity_id FROM outbox WHERE entity_type='contribution' AND operation_id NOT IN (SELECT operation_id FROM sync_resolutions)",
+      )) {
+        final id = row['entity_id'] as String;
+        if (!known.contains(id)) available.add(id);
+      }
+    }
+    return allBathrooms.where((b) => available.contains(b.id)).toList();
   }
 
   List<Visit> get visibleVisits {
@@ -128,40 +147,28 @@ class AppState extends ChangeNotifier {
 
   void _catalogueChanged() {
     if (_disposed) return;
+    if (!community!.running) materializeCatalogue();
     notifyListeners();
   }
 
+  /// Reconcile public metadata without deleting personal parent identities.
+  /// Absence from a bounded page is never a deletion; the durable public cache
+  /// applies explicit tombstones and retains unseen rows across failed pulls.
   void materializeCatalogue() {
     final store = repository?.store;
     if (store == null || community == null) return;
+    final bathrooms = community!.bathrooms;
     store.transaction(() {
-      for (final b in community!.bathrooms) {
-        if (store.database.select('SELECT id FROM bathrooms WHERE id=?', [
-          b.id,
-        ]).isEmpty) {
-          store.insertBathroom(b, provenance: Provenance.remote);
-        }
-        if (store.database.select(
-          "SELECT id FROM bathrooms WHERE id=? AND creator='catalogue'",
-          [b.id],
-        ).isNotEmpty) {
-          store.database.execute(
-            'INSERT OR IGNORE INTO catalogue_bathrooms VALUES(?)',
-            [b.id],
-          );
-          if (b.classification != null) {
-            store.database.execute(
-              'INSERT INTO catalogue_classifications VALUES(?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind',
-              [b.id, b.classification],
-            );
-          }
-        }
+      for (final bathroom in bathrooms) {
+        store.materializeSharedBathroom(bathroom);
       }
     });
+    // Replace metadata as well as inserting new identities. Personal records,
+    // pending operations and unavailable historical parents remain untouched.
     final retained = store.load()!.bathrooms;
-    _bathrooms.addAll(
-      retained.where((b) => !_bathrooms.any((p) => p.id == b.id)),
-    );
+    _bathrooms
+      ..clear()
+      ..addAll(retained);
   }
 
   void _writable() {
@@ -468,6 +475,7 @@ class AppState extends ChangeNotifier {
   /// A remote projection is applied only outside editors and failed commits.
   bool reloadAccountData() {
     if (_disposed || hasUncommittedWork) return false;
+    materializeCatalogue();
     final data = repository!.load()!;
     _bathrooms
       ..clear()

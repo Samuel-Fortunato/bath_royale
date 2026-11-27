@@ -51,7 +51,7 @@ def main():
     config = configuration(
         os.environ["SUPABASE_URL"], os.environ["SUPABASE_PUBLISHABLE_KEY"]
     )
-    config["BATH_APP_VERSION"] = f"0.1.0-alpha.{args.number}"
+    config["BATH_APP_VERSION"] = f"0.1.1-alpha.{args.number}"
     with tempfile.TemporaryDirectory(prefix="bath-alpha-public-") as directory:
         path = Path(directory) / "defines.json"
         path.write_text(json.dumps(config))

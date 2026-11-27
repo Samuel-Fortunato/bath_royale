@@ -10,7 +10,7 @@ A5.2 integrates the owner's approved content. A5.3 deployment status is recorded
 
 ## Official bathrooms
 
-The 34 initial entries preserve the exact approved abbreviated names, emoji and RGB values. A general department entry deliberately covers that department until specific bathroom locations are known. Do not expand abbreviations or invent ratings/location detail. Importing creates only bathroom records: no accounts, reviews, tags, visits or favourites.
+The original import contained 34 entries. The owner-maintained CSV now contains 30 entries, including general DETI and Cantina, following the separately performed catalogue maintenance. The [v0.1.1 reconciliation fix](catalogue-reconciliation.md) makes existing app caches follow that managed catalogue without reimporting or changing managed data. Entries preserve the exact approved abbreviated names, emoji and RGB values. A general department entry deliberately covers that department until specific bathroom locations are known. Do not expand abbreviations or invent ratings/location detail. Importing creates only bathroom records: no accounts, reviews, tags, visits or favourites.
 
 Add a CSV row with a new permanent lowercase hyphenated `key`, exact name, one emoji grapheme and `#RRGGBB`. Never rename, reuse or delete an established key to correct appearance. UUIDs are UUIDv5 with `uuid.NAMESPACE_URL` and `bath-royale:official-catalogue:v1:<key>`; this derivation is permanent. Correct name, emoji or color in the existing row. Review the CSV diff with the owner before applying significant catalogue changes. The initial official CSV is not bundled into the app and never runs at startup.
 

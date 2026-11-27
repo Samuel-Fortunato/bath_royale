@@ -1,10 +1,17 @@
 # Changelog
 
+## 0.1.1 — Alpha release candidate (unpublished)
+
+- Reconcile catalogue visibility from the durable public cache instead of treating retained account parents as permanently public; remove deleted/hidden entries and accept restored identities and metadata changes.
+- Refresh shared names, emojis, colours and classifications on disk while preserving historical visits/reviews, favourites, links and outbox operations. Repair existing stale installations without a reset; preserve offline cache and atomic bounded-page/tombstone semantics.
+- Keep historical diary experiences accessible and handle withdrawal while bathroom details are open. Add persisted-installation, metadata, hide/restore, terminal tombstone, interrupted refresh, account-projection and widget regressions.
+- Prepare v0.1.1 with an increasing signed Android code and the owner-accepted performance improvements from `97e14ae`. Publication remains blocked pending owner physical acceptance of this catalogue fix.
+
 ## A6.1 — Measured performance and refresh stability
 
 - Replace repeated catalogue decoding and nested activity/ranking scans with per-calculation snapshots and grouped aggregation; retain personal/community separation, linked-history chronology, zero ratings and deterministic ranking ties.
 - Make overlapping catalogue refresh callers await the same request; retain offline data, durable operations, validation and synchronization protections.
-- Add an isolated Android AOT measurement target, bounded-read/history/refresh/slow-network regressions and physical-device before/after evidence. Prepare a signed in-place RC without publishing; owner acceptance and historical ANR attribution remain open.
+- Add an isolated Android AOT measurement target, bounded-read/history/refresh/slow-network regressions and physical-device before/after evidence. Prepare a signed in-place RC without publishing. The owner subsequently physically accepted commit `97e14ae`; historical ANR stack attribution remains unproven.
 
 ## Historical development release cleanup
 

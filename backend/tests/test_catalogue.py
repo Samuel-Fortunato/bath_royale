@@ -9,12 +9,16 @@ from import_catalogue import ROOT, identity, load, plan
 class CatalogueTest(unittest.TestCase):
     def test_approved_catalogue_and_permanent_identity(self):
         entries = load(ROOT / "content/official_bathrooms.csv")
-        self.assertEqual(len(entries), 34)
+        self.assertEqual(len(entries), 30)
+        self.assertEqual(
+            [entry["content"]["name"] for entry in entries if "DETI" in entry["content"]["name"]],
+            ["DETI"],
+        )
         self.assertEqual(entries[0]["id"], "ee759988-87ed-54e1-bee5-94be386a03e1")
         self.assertEqual(entries[0]["content"]["name"], "DLC")
         self.assertEqual(entries[0]["content"]["emoji"], "🗣️")
         self.assertEqual(entries[0]["content"]["accent_rgb"], 0x8B5CF6)
-        self.assertEqual(entries[-1]["content"]["name"], "Antiga Reitoria")
+        self.assertEqual(entries[-1]["content"]["name"], "Cantina")
         for entry in entries:
             self.assertEqual(entry["id"], identity(entry["key"]))
             self.assertEqual(entry["content"]["origin"], "curated")

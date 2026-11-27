@@ -33,7 +33,17 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
   Widget build(BuildContext context) {
     final bathroomId = stateIdentity(context, widget.bathroomId);
     final state = context.watch<AppState>();
-    final entry = state.entries.firstWhere((e) => e.bathroom.id == bathroomId);
+    final entry = state.entries
+        .where((e) => e.bathroom.id == bathroomId)
+        .firstOrNull;
+    if (entry == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Casa de banho indisponível')),
+        body: const Center(
+          child: Text('Esta casa de banho já não está disponível no catálogo.'),
+        ),
+      );
+    }
     final reviews =
         state.reviews.where((r) => r.bathroomId == bathroomId).toList()
           ..sort((a, b) {
