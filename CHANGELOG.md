@@ -2,6 +2,7 @@
 
 ## A7.1 — Independent management foundation
 
+- Establish the independent private `bath_royale_manager` with the six-command Python foundation, pinned Nix package, 26 passing tests, independent successful CI and a single owner inventory/migration/recovery handbook. Existing credentials remain in place pending explicit migration approval.
 - Define public application versus private manager responsibilities and the owner-approved A7.1–A7.6 roadmap. Keep application domain/security tools authoritative; no managed data/schema changes or credential relocation.
 
 ## 0.1.1 — Alfa (published)
