@@ -1,6 +1,9 @@
 import 'package:bath_royale/app.dart';
 import 'package:bath_royale/pages/private_synchronization.dart';
 import 'dart:convert';
+import 'dart:async';
+import 'package:bath_royale/models/community_review.dart';
+import 'package:bath_royale/models/provenance.dart';
 import 'package:bath_royale/models/bathroom_filters.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -22,11 +25,27 @@ import 'package:bath_royale/pages/home.dart';
 import 'package:bath_royale/pages/profile.dart';
 import 'package:bath_royale/pages/review_form.dart';
 
+class CountingCatalogue extends CommunityCatalogue {
+  int bathroomReads = 0, reviewReads = 0;
+  CountingCatalogue(super.coordinator);
+  @override
+  List<Bathroom> get bathrooms {
+    bathroomReads++;
+    return super.bathrooms;
+  }
+
+  @override
+  List<CommunityReview> get reviews {
+    reviewReads++;
+    return super.reviews;
+  }
+}
+
 void main() {
   final n = DataNamespace.account('a31-test', 'alice');
   late LocalStore local, public;
   late AppState state;
-  late CommunityCatalogue catalogue;
+  late CountingCatalogue catalogue;
   setUp(() {
     local = LocalStore(sqlite3.openInMemory(), namespace: n);
     public = LocalStore(
@@ -67,7 +86,7 @@ void main() {
         },
       ),
     ], 'cached');
-    catalogue = CommunityCatalogue(
+    catalogue = CountingCatalogue(
       SyncCoordinator(
         store: SyncStore(public),
         auth: FakeAuthSession(),
@@ -113,6 +132,185 @@ void main() {
       ),
     ], 'cap');
   }
+
+  test(
+    'entry snapshots bound catalogue reads as activity grows and stay fresh',
+    () {
+      SyncStore(public).applyPull('catalogue', [
+        for (var i = 0; i < 100; i++)
+          RemoteChange(
+            'bathroom',
+            'extra$i',
+            1,
+            payload: {
+              'id': 'extra$i',
+              'name': 'Fictício $i',
+              'emoji': '🚽',
+              'accent': 0,
+            },
+          ),
+      ], 'large');
+      review('shared');
+      catalogue.bathroomReads = catalogue.reviewReads = 0;
+      final entries = state.entries;
+      expect(entries.length, 101);
+      expect(
+        entries
+            .singleWhere((b) => b.bathroom.id == 'shared')
+            .activity
+            .visitCount,
+        1,
+      );
+      expect(catalogue.bathroomReads, lessThanOrEqualTo(3));
+      expect(catalogue.reviewReads, 1);
+      SyncStore(public).applyPull('catalogue', [
+        RemoteChange('review', 'public-review', 2, deleted: true),
+      ], 'withdrawn');
+      expect(
+        state.entries
+            .singleWhere((b) => b.bathroom.id == 'shared')
+            .communityRating,
+        isNull,
+      );
+      expect(
+        state.entries
+            .singleWhere((b) => b.bathroom.id == 'shared')
+            .personalReview!
+            .rating,
+        5,
+      );
+    },
+  );
+
+  test(
+    'linked history keeps chronology, favourites and foreign-author isolation',
+    () {
+      state.materializeCatalogue();
+      local.insertBathroom(
+        Bathroom(id: 'old', name: 'Histórico', createdBy: n.subject),
+        provenance: Provenance.userCreated,
+      );
+      for (final (id, user, year, score) in [
+        ('old', n.subject, 2028, 0.0),
+        ('shared', n.subject, 2027, 5.0),
+        ('shared', 'other', 2029, 3.0),
+      ]) {
+        final v = Visit(
+          id: '$user-$year',
+          bathroomId: id,
+          userId: user,
+          visitedAt: DateTime.utc(year),
+        );
+        local.insertVisit(v);
+        local.writeReview(
+          Review(
+            id: 'r${v.id}',
+            visitId: v.id,
+            bathroomId: id,
+            authorId: user,
+            createdAt: v.visitedAt,
+            rating: score,
+            paperAvailability: 0,
+            hygiene: 0,
+            comfort: 0,
+            aesthetics: 0,
+          ),
+          isNew: true,
+        );
+      }
+      local.database.execute('INSERT INTO bathroom_links VALUES(?,?)', [
+        'old',
+        'shared',
+      ]);
+      local.setFavourite(n.subject, 'old', true);
+      state.reloadAccountData();
+      final entry = state.entries.single;
+      expect(entry.bathroom.id, 'shared');
+      expect(entry.activity.visitCount, 2);
+      expect(entry.activity.lastVisitedAt, DateTime.utc(2028));
+      expect(entry.activity.isFavorite, true);
+      expect(entry.personalReview!.rating, 0);
+      expect(entry.communityRating, 2);
+      expect(state.visibleVisits.length, 3);
+    },
+  );
+
+  test('concurrent refresh callers await the same delayed pull', () async {
+    final gate = Completer<void>();
+    final started = Completer<void>();
+    final remote = catalogue.coordinator.remote as FakeRemoteDataSource;
+    remote.beforePull = () async {
+      started.complete();
+      await gate.future;
+    };
+    final first = catalogue.refresh();
+    await started.future;
+    var completed = false;
+    final second = catalogue.refresh().then((_) => completed = true);
+    await Future<void>.delayed(Duration.zero);
+    expect(completed, false);
+    expect(remote.pullRequests.length, 1);
+    gate.complete();
+    await Future.wait([first, second]);
+    expect(completed, true);
+  });
+
+  test(
+    'a synchronous refresh listener joins without starting a second pull',
+    () async {
+      final gate = Completer<void>();
+      final remote = catalogue.coordinator.remote as FakeRemoteDataSource;
+      remote.beforePull = () => gate.future;
+      var requested = false;
+      Future<void>? joined;
+      catalogue.addListener(() {
+        if (!requested && catalogue.running) {
+          requested = true;
+          joined = catalogue.refresh();
+        }
+      });
+      final first = catalogue.refresh();
+      expect(identical(joined, first), true);
+      expect(remote.pullRequests.length, 1);
+      gate.complete();
+      await first;
+    },
+  );
+
+  testWidgets(
+    'slow and failed catalogue pulls leave navigation and durable local actions responsive',
+    (tester) async {
+      final remote = catalogue.coordinator.remote as FakeRemoteDataSource;
+      final gate = Completer<void>();
+      remote.beforePull = () => gate.future;
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(value: state, child: const MainApp()),
+      );
+      final pending = catalogue.refresh();
+      await tester.pump();
+      await tester.tap(find.text('Coleção').last);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Tronos descobertos'), findsOneWidget);
+      await tester.tap(find.text('Rankings').last);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Por categoria'), findsOneWidget);
+      state.toggleFavorite('shared');
+      final queued = SyncStore(local).pendingCount;
+      expect(queued, greaterThan(0));
+      remote.pullFailures.add(const RemoteFailure(RemoteFailureKind.transport));
+      gate.complete();
+      await pending;
+      expect(catalogue.error, isNotNull);
+      expect(state.entries.single.activity.isFavorite, true);
+      expect(SyncStore(local).pendingCount, queued);
+      remote.beforePull = null;
+      await catalogue.refresh();
+      expect(catalogue.error, isNull);
+      expect(state.entries.single.activity.isFavorite, true);
+      expect(SyncStore(local).pendingCount, queued);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   test(
     'new shared reviews use anonymous submission commands; cache does not mix private scores',

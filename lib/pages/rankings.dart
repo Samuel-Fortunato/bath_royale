@@ -50,6 +50,7 @@ class _RankingsPageState extends State<RankingsPage> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final links = state.bathroomLinks;
     final rows = rankBathrooms(
       state.visibleBathrooms,
       !_personal && state.communityEnabled
@@ -58,7 +59,7 @@ class _RankingsPageState extends State<RankingsPage> {
       _metric,
       userId: _personal ? state.currentUserId : null,
       worst: _worst,
-      bathroomIdentity: state.sharedIdentity,
+      bathroomIdentity: (id) => links[id] ?? id,
     );
     return DefaultTabController(
       length: 4,

@@ -2,11 +2,22 @@
 
 The phases describe intended sequencing, not a fixed specification. Unconfirmed details are proposals and may change with product decisions and implementation findings. Check items only when implemented and verified.
 
-## Current priority — Usable private alpha
+## Current priority — Performance and stability
 
 The owner has reprioritized delivery to a small group of friends. Phase A1 below supersedes the optional writable guest/embedded Profile authentication decisions in the historical Phase 2.3B entries. Existing completed foundations remain available; later roadmap items do not authorize implementation.
 
 **A5 initial alpha is complete:** [alpha 1039](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1039) is published and independently verified. The owner confirmed physical acceptance on the existing phone; second physical device testing remains pending. Dedicated project support and appropriate verified-email authentication/recovery remain mandatory before public launch.
+
+### A6.1 — Performance and stability investigation
+
+Owner-authorized priority after reports of online sluggishness following refresh and navigation. Diagnose and fix these problems before new features. **In progress; owner acceptance and the historical ANR investigation remain open.**
+
+- [x] Inspect the actual SM-A166B installation: signed release 1038, retained identity/data, startup, app-scoped logcat, historical input ANR, CPU, memory and compositor diagnostics. Measure Flutter frames and derived-data calculations in a separate release-mode fictional-data application on the same phone; never use debug timings as release evidence.
+- [x] Remove measured repeated catalogue decoding, nested entity/activity scans and ranking identity queries; preserve score/chronology/privacy semantics without a long-lived cache or schema change. Reproduce and fix premature completion of overlapping catalogue refreshes.
+- [x] Verify targeted regressions, 248 Flutter tests, strict analysis, real disposable community/protocol/offline/restoration suites and Android/Linux releases. Prepare and install signed code-1040 RC in place with the original certificate and first-install timestamp; keep publication disabled.
+- [ ] Owner physical acceptance of refreshed navigation, scrolling, review submission, collection/rankings, restart/offline/reconnection and account convergence; establish whether any reported bug or ANR remains. Second physical device and longer memory/network traces remain outstanding.
+
+See [measurements, limitations, reproducible probe and exact acceptance steps](docs/performance-stability.md). Local calculation improvements do not establish that every reported bug, startup delay or historical ANR is resolved. No GitHub release or managed database reset/fixture operation is authorized.
 
 ### Phase A1 — Simplified authentication
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## A6.1 — Measured performance and refresh stability
+
+- Replace repeated catalogue decoding and nested activity/ranking scans with per-calculation snapshots and grouped aggregation; retain personal/community separation, linked-history chronology, zero ratings and deterministic ranking ties.
+- Make overlapping catalogue refresh callers await the same request; retain offline data, durable operations, validation and synchronization protections.
+- Add an isolated Android AOT measurement target, bounded-read/history/refresh/slow-network regressions and physical-device before/after evidence. Prepare a signed in-place RC without publishing; owner acceptance and historical ANR attribution remain open.
+
 ## Historical development release cleanup
 
 - Remove all 24 historical preview releases and their 46 assets with owner approval; preserve all Git tags/source history and the sole remaining alpha release unchanged.

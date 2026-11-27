@@ -36,23 +36,17 @@ List<RankedBathroom> rankBathrooms(
   String Function(String)? bathroomIdentity,
 }) {
   final result = <RankedBathroom>[];
+  final scores = <String, (double, int)>{};
+  for (final r in reviews) {
+    if (userId != null && r.authorId != userId) continue;
+    final id = bathroomIdentity?.call(r.bathroomId) ?? r.bathroomId;
+    final previous = scores[id] ?? (0.0, 0);
+    scores[id] = (previous.$1 + metric.score(r), previous.$2 + 1);
+  }
   for (final b in bathrooms) {
-    final matching = reviews
-        .where(
-          (r) =>
-              (bathroomIdentity?.call(r.bathroomId) ?? r.bathroomId) == b.id &&
-              (userId == null || r.authorId == userId),
-        )
-        .toList();
-    if (matching.isNotEmpty) {
-      result.add(
-        RankedBathroom(
-          b,
-          matching.fold<double>(0, (sum, r) => sum + metric.score(r)) /
-              matching.length,
-          matching.length,
-        ),
-      );
+    final score = scores[b.id];
+    if (score != null) {
+      result.add(RankedBathroom(b, score.$1 / score.$2, score.$2));
     }
   }
   result.sort((a, b) {

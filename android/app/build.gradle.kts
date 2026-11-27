@@ -4,6 +4,11 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val performanceProbe = System.getenv("BATH_PERFORMANCE_PROBE") == "true"
+require(performanceProbe == project.findProperty("target").toString().endsWith("tool/performance_probe.dart")) {
+    "The fictional performance target requires BATH_PERFORMANCE_PROBE=true and its separate application ID"
+}
+
 android {
     namespace = "com.example.bath_royale"
     compileSdk = flutter.compileSdkVersion
@@ -17,6 +22,11 @@ android {
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.bath_royale"
+        // Isolated, fictional-data AOT probe; never replace the owner's app.
+        if (performanceProbe) {
+            applicationIdSuffix = ".performance"
+        }
+        manifestPlaceholders["applicationLabel"] = if (performanceProbe) "Bath Royale — Medição" else "Bath Royale"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

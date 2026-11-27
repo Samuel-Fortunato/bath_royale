@@ -8,6 +8,25 @@ import 'package:bath_royale/pages/rankings.dart';
 import 'package:bath_royale/theme/theme.dart';
 
 void main() {
+  test('ranking resolves each eligible review once with linked identities', () {
+    final state = AppState();
+    addTearDown(state.dispose);
+    var resolutions = 0;
+    final rows = rankBathrooms(
+      state.allBathrooms,
+      state.reviews,
+      RankingMetric.overall,
+      bathroomIdentity: (id) {
+        resolutions++;
+        return id;
+      },
+    );
+    expect(resolutions, state.reviews.length);
+    expect(
+      rows.map((r) => r.count).reduce((a, b) => a + b),
+      state.reviews.length,
+    );
+  });
   testWidgets(
     'overall is default and category survives scope and mode switches',
     (tester) async {

@@ -15,6 +15,7 @@ class CommunityCatalogue extends ChangeNotifier {
   bool running = false, _disposed = false;
   bool _foreground = true;
   Timer? _retry;
+  Future<void>? _refreshing;
   String? error;
   List<Map<String, dynamic>> _rows(String type) => [
     for (final row in local.database.select(
@@ -44,8 +45,29 @@ class CommunityCatalogue extends ChangeNotifier {
     if (value) refresh();
   }
 
-  Future<void> refresh() async {
-    if (_disposed || running || !_foreground) return;
+  Future<void> refresh() {
+    if (_disposed || !_foreground) return Future.value();
+    if (_refreshing case final pending?) return pending;
+    // Publish the future before notifying listeners: a listener can itself
+    // request a refresh synchronously, before the first network await.
+    final completion = Completer<void>();
+    _refreshing = completion.future;
+    unawaited(
+      _refresh().then(
+        (_) {
+          _refreshing = null;
+          completion.complete();
+        },
+        onError: (Object error, StackTrace stack) {
+          _refreshing = null;
+          completion.completeError(error, stack);
+        },
+      ),
+    );
+    return completion.future;
+  }
+
+  Future<void> _refresh() async {
     _retry?.cancel();
     running = true;
     error = null;

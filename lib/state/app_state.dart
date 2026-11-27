@@ -32,18 +32,41 @@ class AppState extends ChangeNotifier {
   bool get isModerator =>
       canContribute &&
       _effective('capabilities', currentUserId)?['moderator'] == true;
-  List<Bathroom> get visibleBathrooms => !communityEnabled
-      ? allBathrooms
-      : allBathrooms.where((b) => isShared(b.id)).toList();
-  List<Visit> get visibleVisits => !communityEnabled
-      ? visits
-      : visits.where((v) => isShared(sharedIdentity(v.bathroomId))).toList();
-  List<Review> get visibleReviews => !communityEnabled
-      ? reviews
-      : reviews.where((r) => isShared(sharedIdentity(r.bathroomId))).toList();
-  List<Bathroom> get legacyBathrooms => communityEnabled
-      ? allBathrooms.where((b) => !isShared(b.id)).toList()
-      : [];
+  Set<String> get _sharedIds => {
+    ...?community?.bathrooms.map((b) => b.id),
+    if (repository != null)
+      for (final row in repository!.store.database.select(
+        'SELECT id FROM catalogue_bathrooms',
+      ))
+        row['id'] as String,
+  };
+  List<Bathroom> get visibleBathrooms {
+    if (!communityEnabled) return allBathrooms;
+    final shared = _sharedIds;
+    return allBathrooms.where((b) => shared.contains(b.id)).toList();
+  }
+
+  List<Visit> get visibleVisits {
+    if (!communityEnabled) return visits;
+    final shared = _sharedIds, links = bathroomLinks;
+    return _visits
+        .where((v) => shared.contains(links[v.bathroomId] ?? v.bathroomId))
+        .toList();
+  }
+
+  List<Review> get visibleReviews {
+    if (!communityEnabled) return reviews;
+    final shared = _sharedIds, links = bathroomLinks;
+    return _reviews
+        .where((r) => shared.contains(links[r.bathroomId] ?? r.bathroomId))
+        .toList();
+  }
+
+  List<Bathroom> get legacyBathrooms {
+    if (!communityEnabled) return [];
+    final shared = _sharedIds;
+    return allBathrooms.where((b) => !shared.contains(b.id)).toList();
+  }
 
   bool isShared(String id) =>
       community?.bathrooms.any((b) => b.id == id) == true ||
@@ -340,17 +363,18 @@ class AppState extends ChangeNotifier {
 
   final List<Bathroom> _bathrooms;
 
-  List<Bathroom> get allBathrooms => List.unmodifiable([
-    ..._bathrooms.map(
-      (b) => b.createdBy == 'catalogue'
-          ? (community?.bathrooms.where((r) => r.id == b.id).firstOrNull ?? b)
-          : b,
-    ),
-    if (community != null)
-      ...community!.bathrooms.where(
-        (b) => !_bathrooms.any((p) => p.id == b.id),
-      ),
-  ]);
+  List<Bathroom> get allBathrooms {
+    final public = {
+      for (final b in community?.bathrooms ?? <Bathroom>[]) b.id: b,
+    };
+    final retained = _bathrooms.map((b) => b.id).toSet();
+    return List.unmodifiable([
+      for (final b in _bathrooms)
+        b.createdBy == 'catalogue' ? (public[b.id] ?? b) : b,
+      ...public.values.where((b) => !retained.contains(b.id)),
+    ]);
+  }
+
   final List<Review> _reviews;
   final List<Visit> _visits;
   final Map<(String, String), BathroomActivity> _activities = {};
@@ -585,29 +609,69 @@ class AppState extends ChangeNotifier {
     return null;
   }
 
-  List<BathroomEntry> get entries => [
-    for (final bathroom in visibleBathrooms.where(
-      (b) => !bathroomLinks.containsKey(b.id),
-    ))
-      BathroomEntry(
-        bathroom: bathroom,
-        catalogueLabel: !communityEnabled
-            ? null
-            : bathroom.classification == 'official'
-            ? 'Oficial'
-            : 'Comunidade',
-        activity: activityFor(bathroom.id),
-        reviews: personalReviewsFor(bathroom.id),
-        communityReviews: communityEnabled
-            ? communityReviewsFor(bathroom.id)
-            : null,
-        visits: _visits,
-      ),
-  ];
+  List<BathroomEntry> get entries {
+    // One snapshot per computation: never query/decode the catalogue or links
+    // inside a bathroom × activity loop. No long-lived cache can go stale.
+    final links = bathroomLinks;
+    String identity(String id) => links[id] ?? id;
+    final ownReviews = <String, List<Review>>{};
+    final publicReviews = <String, List<CommunityReview>>{};
+    final groupedVisits = <String, List<Visit>>{};
+    final counts = <String, int>{};
+    final latest = <String, DateTime>{};
+    final favourites = <String>{};
+    for (final r in _reviews) {
+      (ownReviews[identity(r.bathroomId)] ??= []).add(r);
+    }
+    for (final r in community?.reviews ?? <CommunityReview>[]) {
+      (publicReviews[r.bathroomId] ??= []).add(r);
+    }
+    for (final v in _visits) {
+      final id = identity(v.bathroomId);
+      (groupedVisits[id] ??= []).add(v);
+      if (v.userId != currentUserId) continue;
+      counts[id] = (counts[id] ?? 0) + 1;
+      if (latest[id] == null || v.visitedAt.isAfter(latest[id]!)) {
+        latest[id] = v.visitedAt;
+      }
+    }
+    for (final a in _activities.values) {
+      if (a.userId == currentUserId && a.isFavorite) {
+        favourites.add(identity(a.bathroomId));
+      }
+    }
+    return [
+      for (final b in visibleBathrooms.where((b) => !links.containsKey(b.id)))
+        BathroomEntry(
+          bathroom: b,
+          catalogueLabel: !communityEnabled
+              ? null
+              : b.classification == 'official'
+              ? 'Oficial'
+              : 'Comunidade',
+          activity: BathroomActivity(
+            userId: currentUserId,
+            bathroomId: b.id,
+            isFavorite: favourites.contains(b.id),
+            lastVisitedAt: latest[b.id],
+            visitCount: counts[b.id] ?? 0,
+          ),
+          reviews: ownReviews[b.id] ?? [],
+          communityReviews: communityEnabled
+              ? (publicReviews[b.id] ?? [])
+              : null,
+          visits: groupedVisits[b.id] ?? [],
+        ),
+    ];
+  }
 
-  List<Review> personalReviewsFor(String id) => _reviews
-      .where((r) => sharedIdentity(r.bathroomId) == sharedIdentity(id))
-      .toList();
+  List<Review> personalReviewsFor(String id) {
+    final links = bathroomLinks;
+    final target = links[id] ?? id;
+    return _reviews
+        .where((r) => (links[r.bathroomId] ?? r.bathroomId) == target)
+        .toList();
+  }
 
   BathroomActivity activityFor(String bathroomId) {
     _requireBathroom(bathroomId);
