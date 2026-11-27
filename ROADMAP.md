@@ -2,7 +2,7 @@
 
 The phases describe intended sequencing, not a fixed specification. Unconfirmed details are proposals and may change with product decisions and implementation findings. Check items only when implemented and verified.
 
-## Current priority — Catalogue reconciliation and v0.1.1 candidate
+## Current priority — A7.1 independent management foundation
 
 The owner has reprioritized delivery to a small group of friends. Phase A1 below supersedes the optional writable guest/embedded Profile authentication decisions in the historical Phase 2.3B entries. Existing completed foundations remain available; later roadmap items do not authorize implementation.
 
@@ -17,16 +17,32 @@ Owner-authorized priority after reports of online sluggishness following refresh
 - [x] Verify targeted regressions, 248 Flutter tests, strict analysis, real disposable community/protocol/offline/restoration suites and Android/Linux releases. Prepare and install signed code-1040 RC in place with the original certificate and first-install timestamp; keep publication disabled.
 - [x] Owner physically tested and approved the performance improvements in `97e14ae`, reporting that the application feels substantially better. Second physical device testing and historical ANR stack attribution remain outstanding.
 
-See [measurements, limitations, reproducible probe and exact acceptance steps](docs/performance-stability.md). Local calculation improvements do not establish that every reported bug, startup delay or historical ANR is resolved. No GitHub release or managed database reset/fixture operation is authorized.
+See [measurements, limitations, reproducible probe and exact acceptance steps](docs/performance-stability.md). Local calculation improvements do not establish that every reported bug, startup delay or historical ANR is resolved. The historical investigation did not authorize publication; the subsequent explicit owner approval and verified v0.1.1 publication are recorded below. No managed database reset/fixture operation is authorized.
 
 ### A6.2 — Catalogue reconciliation and v0.1.1
 
 - [x] Diagnose retained catalogue membership overriding public deletion/visibility and insert-only shared metadata projection.
 - [x] Reconcile public availability independently from historical account parents; retain visits, reviews, favourites, pending operations and links across deletion, hide/restore, offline restart and interrupted refresh. Update cached names and visual identities.
 - [x] Verify 258 Flutter regressions, strict analysis, tooling/backend tests and Android/Linux release builds. Update the existing SM-A166B in place to signed v0.1.1 code 1045; confirm 36 → 30 catalogue entries, 7 → 1 DETI search results and retained account/identity through offline cold restart.
-- [ ] Owner physically accepts the catalogue fix. Keep publication disabled until that acceptance; no managed data changes or reset.
+- [x] Owner physically tested and approved all v0.1.1 performance/catalogue fixes and explicitly authorized publication; no managed data changes or reset.
+- [x] Publish signed code-1046 v0.1.1 as Latest through the controlled workflow; independently verify actual APK/certificate/version/checksum and anonymous downloads, preserve alpha-1039/history, update README and restore `ALPHA_RELEASE_APPROVED=false`. [Release evidence](docs/releases/v0.1.1.md). A6 is closed.
 
 See [reconciliation protocol and candidate evidence](docs/catalogue-reconciliation.md).
+
+### A7 — Independent owner manager (approved architecture)
+
+This supersedes all previous A7 proposals. Two adjacent primary clones: `~/Documents/bath_royale` and `~/Documents/bath_royale_manager`. Public application owns Flutter, schema/migrations, official catalogue/content, app-specific tested tools and public build/release CI. The private manager owns Python `bRoyale` CLI/future Textual TUI, orchestration, encrypted SOPS+age credentials, backup/release management and the owner handbook. It has independent versions/tests/CI and reuses app interfaces rather than duplicating domain or security logic.
+
+- **A7.1 — Foundation/organization:** close A6; private repository; metadata-only resource inventory; portable configuration and canonical private resource paths; disposable-secret SOPS/age tests; `--help`, `version`, `status`, `doctor`, `paths`, `setup`; pinned Nix package/app/shell; owner handbook and explicit migration/recovery approval gate. No managed mutation, existing credential relocation/retirement or production secret commit.
+- **A7.2 — Database administration:** catalogue edit/validate/dry-run/apply, create/edit/hide/restore/retire with reference/dependency checks; community/user/permission/tag moderation and feedback/support; explicit managed/development separation.
+- **A7.3 — Backups/recovery:** reuse verified complete consistency locks, export/verification/isolated restore and preservation rules; encrypted daily backups, safe retention, notifications, optional encrypted-only MEGA destination and authorized-computer recovery. No backups in Git or destructive sync/pruning during foundation.
+- **A7.4 — Releases/CI:** one app version authority, semantic versions and monotonic Android codes, development/RC builds, explicit signed-publication approval, gate cleanup, APK/checksum/fixture verification, notes/downloads, CI diagnostics, secret management without values, previous-release preservation/rollback. Consolidate duplicated strings in pubspec, build/installer/workflow and feedback defaults through an app-side interface.
+- **A7.5 — Textual TUI:** keyboard-driven overview/catalogue/users/tags/feedback/backups/releases/GitHub/environments/configuration over existing services, visible environment and explicit dangerous-action confirmations. No separate GUI or administration server.
+- **A7.6 — Operational overview:** database/application aggregates, backup health, Supabase usage/quotas, release/CI/feedback/service diagnostics without unnecessary personal data or intrusive analytics.
+
+Sensitive migration needs separate owner approval of exact sources/destinations, consumer changes, verification, rollback and cloud coverage. Every machine has its own age identity; an independent offline recovery recipient is required. Removed recipients retain historical access; compromised devices require credential/session rotation as appropriate. External CLI logins stay independent. Do not modify global NixOS/Home Manager configuration.
+
+The private manager is the canonical location for project-specific operational inventory and its single handbook; public documentation contains only repository responsibilities and roadmap. Later A7 phases are not authorized by A7.1.
 
 ### Phase A1 — Simplified authentication
 

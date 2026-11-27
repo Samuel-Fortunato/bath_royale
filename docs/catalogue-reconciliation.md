@@ -1,6 +1,6 @@
 # Catalogue reconciliation and v0.1.1 candidate
 
-Status on 2026-11-27: implementation, automated checks and operator-observed in-place verification complete. **Owner physical acceptance of the catalogue fix remains pending. No publication is authorized yet.** The owner physically tested and accepted the performance improvements in `97e14ae`; those improvements are included unchanged.
+Status on 2026-11-27: implementation, automated checks and operator-observed in-place verification complete. **The owner physically tested and approved all v0.1.1 performance and catalogue fixes and explicitly authorized publication. A6 is closed; see [release evidence](releases/v0.1.1.md).** The owner physically tested and accepted the performance improvements in `97e14ae`; those improvements are included unchanged.
 
 ## Cause and reconciliation rules
 
@@ -39,8 +39,8 @@ Only `adb install -r` was used. The account opened without signing in again. App
 
 Private XML/verification receipts are under `/tmp/catalogue-*`; no private device captures or APKs enter Git. Version 1045 exceeds the installed code and aligns with the next workflow sequence after run 44. A future authorized published build must use a fresh workflow number and a code greater than the candidate installed then; do not reset the workflow counter.
 
-## Owner acceptance and publication hold
+## Owner acceptance and publication
 
-On installed **v0.1.1 / code 1045**, physically check Explore/search and Collection after refresh and restart: **30 bathrooms**, only the general **DETI**, and no deleted DETI floors. Confirm the expected names/visuals and that the approved performance remains satisfactory. Check intentional personal history/favourites and offline/reconnection behavior without clearing data. Hide/restore and metadata transitions are covered by local regressions; do not mutate managed content merely to demonstrate them.
+The owner confirmed physical acceptance of all v0.1.1 performance and catalogue reconciliation fixes in the A6 closure/A7.1 instruction. The approved release is [Bath Royale v0.1.1 — Alfa](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1046), code **1046**, greater than installed candidate 1045. The existing controlled workflow passed; actual APK, original certificate/package/version/checksum and anonymous downloads were independently verified. It is Latest; the previous alpha and Git history remain preserved.
 
-The publication variable remains **`ALPHA_RELEASE_APPROVED=false`**. No release/tag, release asset, public candidate upload or publication dispatch was created. The README download still points to published v0.1.0. v0.1.1 notes and versioning are prepared for later release; routine source pushes run validation only. Wait for the owner's physical acceptance before any publication action.
+`ALPHA_RELEASE_APPROVED` was restored to **false** once the approved build captured its gate. README links now point to the verified release. See [complete publication evidence](releases/v0.1.1.md). No managed data/schema change, device uninstall or reset was performed during publication.

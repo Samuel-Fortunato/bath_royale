@@ -1,11 +1,15 @@
 # Changelog
 
-## 0.1.1 — Alpha release candidate (unpublished)
+## A7.1 — Independent management foundation
+
+- Define public application versus private manager responsibilities and the owner-approved A7.1–A7.6 roadmap. Keep application domain/security tools authoritative; no managed data/schema changes or credential relocation.
+
+## 0.1.1 — Alfa (published)
 
 - Reconcile catalogue visibility from the durable public cache instead of treating retained account parents as permanently public; remove deleted/hidden entries and accept restored identities and metadata changes.
 - Refresh shared names, emojis, colours and classifications on disk while preserving historical visits/reviews, favourites, links and outbox operations. Repair existing stale installations without a reset; preserve offline cache and atomic bounded-page/tombstone semantics.
 - Keep historical diary experiences accessible and handle withdrawal while bathroom details are open. Add persisted-installation, metadata, hide/restore, terminal tombstone, interrupted refresh, account-projection and widget regressions.
-- Prepare v0.1.1 with an increasing signed Android code and the owner-accepted performance improvements from `97e14ae`. Publication remains blocked pending owner physical acceptance of this catalogue fix.
+- Publish owner-approved v0.1.1 as Latest (`alpha-1046`, code 1046), preserving the original package/signing identity and previous alpha. Verify actual APK/checksum and anonymous downloads; restore the publication gate to false and update download links. See release evidence in `docs/releases/v0.1.1.md`.
 
 ## A6.1 — Measured performance and refresh stability
 

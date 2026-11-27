@@ -1,6 +1,6 @@
 # Release presentation and versioning
 
-The current user-facing version is **v0.1.0**, titled **Bath Royale v0.1.0 — Primeira Alfa**. Its immutable distribution identity is `alpha-1039`, APK versionName `0.1.0-alpha.1039`, Android versionCode `1039`. Presentation edits do not alter these identities, signing, assets or download URLs.
+The current user-facing version is **v0.1.1**, titled **Bath Royale v0.1.1 — Alfa**, published as **Latest**. Its immutable identity is `alpha-1046`, APK versionName `0.1.1-alpha.1046`, Android versionCode `1046`. See [publication evidence](v0.1.1.md). Previous `alpha-1039` remains preserved. Presentation edits do not alter identities, signing, assets or download URLs.
 
 Future titles use `Bath Royale v<major.minor.patch> — Alfa`; development builds are never published. The semantic version comes from `pubspec.yaml`, excluding build metadata; change it only as an explicitly scoped application release decision. Android build codes are monotonically increasing internal update identifiers, shown separately in the technical details, never as public version numbers. Existing build-name/code generation and `alpha-<code>` tags remain unchanged. “Primeira Alfa” applies only to this inaugural publication; subsequent publications use the generic Alfa label.
 
@@ -10,7 +10,7 @@ Future titles use `Bath Royale v<major.minor.patch> — Alfa`; development build
 
 The owner explicitly approved removal of every historical `preview-*` GitHub release and its assets, superseding the earlier recommendation to retain selected evidence releases. Removed **24 releases**: the empty `preview-1014` draft and published `preview-1015` through `preview-1037`, including **46 assets**. No `preview-1038` release existed. All 46 removed asset API endpoints returned HTTP 404 after cleanup. Git tags, their target objects, commits and source history were preserved; deletion used only the GitHub release API, never tag deletion.
 
-`alpha-1039` is the only remaining GitHub release. Its title, body, pre-release flag, identity, APK/checksum asset IDs, digests and download URLs were compared before/after and preserved. Anonymous download still matches the original size and checksum below. The publication gate remains `false`.
+At that historical cleanup, `alpha-1039` was the only remaining GitHub release. Its title, body, pre-release flag, identity, APK/checksum asset IDs, digests and download URLs were compared before/after and preserved. Anonymous download still matches the original size and checksum below. The publication gate remains `false`.
 
 Historical verification remains in [Android preview operations](../android-previews.md): source SHAs, hosted-run links, APK sizes, checksums and signing/version observations describe the tests performed at that time. Removed preview releases have no live download links in this documentation; preserved source tags remain available in Git. This cleanup does not retract historical verification or claim new compilation.
 

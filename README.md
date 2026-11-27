@@ -4,7 +4,7 @@
 
 **Encontra o teu próximo trono.** 🚽👑 Uma aplicação Android para descobrir e avaliar casas de banho, a começar pela Universidade de Aveiro.
 
-**[📲 Descarregar a alfa v0.1.0](https://github.com/Samuel-Fortunato/bath_royale/releases/download/alpha-1039/bath-royale.apk)** · [Notas da release](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1039) · [Checksum SHA-256](https://github.com/Samuel-Fortunato/bath_royale/releases/download/alpha-1039/SHA256SUMS)
+**[📲 Descarregar a alfa v0.1.1](https://github.com/Samuel-Fortunato/bath_royale/releases/download/alpha-1046/bath-royale.apk)** · [Notas da release](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1046) · [Checksum SHA-256](https://github.com/Samuel-Fortunato/bath_royale/releases/download/alpha-1046/SHA256SUMS)
 
 ## O que podes fazer
 
@@ -22,13 +22,13 @@
 
 Não precisas de convite nem de conta GitHub. Podes voltar a desativar a permissão de instalação depois. [Instruções completas e verificação do checksum](docs/android-previews.md#download-and-install-from-a-phone).
 
-## Primeira alfa: o que esperar
+## Alfa: o que esperar
 
-Esta é uma **versão de teste**, distribuída como pré-lançamento e com assinatura de desenvolvimento. Pode conter erros; o teste num segundo dispositivo físico continua pendente. A criação de WC está reservada a contas autorizadas pela administração; as restantes contas podem avaliar os existentes.
+Esta é uma **versão de teste**, publicada como alfa e com assinatura de desenvolvimento. Pode conter erros; o teste num segundo dispositivo físico continua pendente. A criação de WC está reservada a contas autorizadas pela administração; as restantes contas podem avaliar os existentes.
 
 O email ainda não é verificado e não permite recuperar a conta: guarda o código de recuperação. As novas avaliações são públicas e anónimas; visitas e favoritos são privados. A sincronização precisa de ligação ao serviço; a cache permite consultar dados já carregados offline.
 
-O suporte inicial é **samff2006@gmail.com**; nunca envies a palavra-passe. Consulta a privacidade nas definições e as [limitações e condições da alfa](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1039). O lançamento público exige contacto próprio do projeto e autenticação/recuperação com verificação de email adequada.
+O suporte inicial é **samff2006@gmail.com**; nunca envies a palavra-passe. Consulta a privacidade nas definições e as [limitações e condições da alfa](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1046). O lançamento público exige contacto próprio do projeto e autenticação/recuperação com verificação de email adequada.
 
 ## Project and development
 
@@ -65,7 +65,7 @@ Linux builds require a working Linux desktop toolchain. Android production and w
 
 ## Android releases and CI
 
-The current managed alpha is [v0.1.0 — Primeira Alfa](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1039). Historical `preview-*` releases and assets have been removed; their Git tags and source history remain. CI validates every main push; distribution requires the separately approved configured-alpha gate, currently disabled. See [installation and CI](docs/android-previews.md) and [release presentation/versioning](docs/releases/README.md). Development builds are validation-only and are not publicly distributed.
+The current managed alpha is [v0.1.1 — Alfa](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1046). Historical `preview-*` releases and assets have been removed; their Git tags and source history remain. CI validates every main push; distribution requires the separately approved configured-alpha gate, currently disabled. See [installation and CI](docs/android-previews.md) and [release presentation/versioning](docs/releases/README.md). Development builds are validation-only and are not publicly distributed.
 
 See [AGENTS.md](AGENTS.md) for development and Git practices.
 
