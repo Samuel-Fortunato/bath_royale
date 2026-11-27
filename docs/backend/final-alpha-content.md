@@ -1,5 +1,7 @@
 # A5.2 — Final alpha content and branding integration
 
+A5.2 is complete. The owner separately authorized A5.3 managed deployment; [current deployment and acceptance evidence](managed-alpha-acceptance.md) supersedes the historical pending-approval statements below. Configured publication remains disabled.
+
 Implementation is prepared for the managed deployment approval gate. No managed Supabase request, migration, Auth configuration, cost or configured publication is authorized or performed. The retained development catalogue/accounts/activity are not reseeded or imported into. [Operational handover and remaining decisions](alpha-release-preparation.md#a52-final-deployment-handover--awaiting-owner-approval).
 
 ## Delivered content

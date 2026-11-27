@@ -101,12 +101,17 @@ jobs:
           cp "$apk" preview/bath-royale.apk
           (cd preview && sha256sum ./*.apk > SHA256SUMS)
           {
-            echo "### Android preview $PREVIEW_BUILD_NUMBER"
+            echo "### Android validation $PREVIEW_BUILD_NUMBER"
             echo "Commit: $GITHUB_SHA"
-            echo 'Download bath-royale.apk from the repository Releases page.'
-            echo 'Install as an update; do not uninstall the existing app.'
+            if [ '${{ steps.build.outputs.configured_alpha }}' = true ]; then
+              echo 'Configured alpha: verified APK/checksum prepared for the approved release.'
+              echo 'Install as an update; do not uninstall the existing app.'
+            else
+              echo 'Publication gate disabled: no APK artifact or development release is distributed.'
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload APK and checksum
+        if: steps.build.outputs.configured_alpha == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: bath-royale-preview-${{ steps.version.outputs.build_number }}
@@ -119,7 +124,7 @@ jobs:
         run: rm -f "$RUNNER_TEMP/android-preview-signing/debug.keystore"
 
   prerelease:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && needs.verify-and-build.outputs.configured_alpha == 'true'
     needs: verify-and-build
     runs-on: ubuntu-24.04
     timeout-minutes: 5

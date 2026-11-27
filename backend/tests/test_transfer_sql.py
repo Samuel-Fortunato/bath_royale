@@ -12,6 +12,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import cloud_transfer as transfer
+from alpha_retention import plan as retention_plan
 
 
 @unittest.skipUnless(
@@ -92,6 +93,35 @@ class ReconcileSQLTests(unittest.TestCase):
                 )
                 self.assertNotEqual(failed.returncode, 0)
                 self.assertEqual(sql("select count(*) from public.example"), "0")
+                # Retention uses the privately observed review date, never submission age alone.
+                sql(
+                    "create table app_private.alpha_feedback(id uuid primary key, status text, submitted_at timestamptz);"
+                    "insert into app_private.alpha_feedback values "
+                    "('00000000-0000-4000-8000-000000000001','reviewed','2000-01-01'),"
+                    "('00000000-0000-4000-8000-000000000002','new','2000-01-01'),"
+                    "('00000000-0000-4000-8000-000000000003','resolved','2000-01-01'),"
+                    "('00000000-0000-4000-8000-000000000004','reviewed','2000-01-01');"
+                )
+                recent = sql("select (now()-interval '1 day')::text")
+                records = [
+                    {"id": f"00000000-0000-4000-8000-{i:012d}", "reviewed_at": date}
+                    for i, date in [
+                        (1, "2001-01-01T00:00:00Z"),
+                        (2, "2001-01-01T00:00:00Z"),
+                        (3, recent),
+                    ]
+                ]
+                sql(retention_plan(records))
+                self.assertEqual(sql("select count(*) from app_private.alpha_feedback"), "4")
+                sql(retention_plan(records, apply=True))
+                self.assertEqual(
+                    sql(
+                        "select string_agg(right(id::text,1),',' order by id) from app_private.alpha_feedback"
+                    ),
+                    "2,3,4",
+                )
+                sql(retention_plan(records, apply=True))
+                self.assertEqual(sql("select count(*) from app_private.alpha_feedback"), "3")
             finally:
                 run(["pg_ctl", "-D", str(database), "-m", "immediate", "-w", "stop"])
 

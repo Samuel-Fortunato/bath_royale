@@ -70,7 +70,7 @@ Owner-authorized after physical A3.1 review. [Consolidated decisions, superseded
 - [x] M4: Configurable global text feedback, private administration, anonymous abuse limits and safe retry.
 - [x] Verify rendered Flutter screens, migration/protocol/privacy/fixture/client regressions and Android/Linux releases; update the development APK in place with existing signing identity/data. Owner correction replaces the feedback dock with a floating overlay, without a blank strip; responsive forms reserve horizontal space for it.
 - [x] Owner accepted A4 physical UI/UX tests, including feedback submission and its administrative viewer.
-- [ ] Remaining technical release gates: real offline/reconnection/Keystore and second-device acceptance, managed Auth/abuse-limit verification and privacy/retention approval. Screenshots/shake remain deferred; managed deployment remains unapproved. A5.1 preparation is recorded below.
+- [ ] Remaining owner physical release gates: secure restart/offline/reconnection and the acceptance matrix recorded in A5.3. Managed Auth/abuse-limit verification and privacy/retention approval are now completed there. A second device is unavailable; screenshots/shake remain deferred.
 - [x] A5.1 implements and rehearses server-enforced current-password verification before password changes; managed configuration remains a deployment gate.
 
 Verified A4 locally on 2026-11-27: **235 Flutter tests pass** (five opt-in placeholders skipped), plus real-font phone/layout captures, strict analysis, formatting and whitespace. Thirty backend unit and thirteen tooling tests pass; backend Ruff and actionlint pass. Disposable A4 API/input/privacy/quota checks, 60 authorization assertions, 1,093 Unicode cases, 465 protocol assertions, eight real Flutter sync tests, 62 community API assertions, real two-account emoji/RGB/review sync and complete private export/restoration pass. The five-account HTTPS development suite verifies retained activity and anonymous feedback/admin access. Unconfigured Android/Linux and configured development releases build; fixture payload isolation is checked on actual APKs. The final development APK is installed with the original certificate/package/code and unchanged first-install timestamp. See the A4 evidence for exact scope, earlier corrected failures, owner feedback correction and acceptance steps. Hosted CI is reported separately after push; no remote success is inferred from local builds.
@@ -83,14 +83,14 @@ Verified A4 locally on 2026-11-27: **235 Flutter tests pass** (five opt-in place
 
 - [x] Owner accepted A4.1 before authorizing A5.1; remaining technical gates are separate.
 
-### A5.1 — Alpha release preparation (prepared; deployment/publication approval pending)
+### A5.1 — Alpha release preparation (historical preparation; deployment continued in A5.3)
 
 Open in-app registration is the owner-approved alpha model. Invitation codes, registration allowlists and manual account provisioning are rejected and supersede the earlier registration restriction gate. Managed deployment and configured APK publication require separate approval.
 
 - [x] Rehearse server-enforced password changes, non-email recovery, authentication/registration abuse limits and current privacy disclosures.
 - [x] Prepare ordered non-destructive deployment, backup/restore, deletion/retention, initial administrator and clean catalogue procedures without managed access.
 - [x] Prepare gated trusted-HTTPS universal APK publication with public client configuration, signing compatibility and feedback enabled; verify fixture exclusion.
-- [ ] Owner supplies the genuine bathroom catalogue, standard review tags and suggested emoji sets. Existing suggestions are provisional; never promote fictional fixtures into the managed catalogue.
+- [x] Owner supplies the genuine bathroom catalogue, standard review tags and suggested emoji sets; integrated and verified in A5.2. Never promote fictional fixtures into the managed catalogue.
 - [ ] **Mandatory public-launch gate:** remove the owner's personal support contact from the application, privacy notice and all public distribution materials, replacing it with a dedicated project support contact. The personal contact is approved for the initial alpha only.
 
 See [the exact A5.1 release handover](docs/backend/alpha-release-preparation.md) and [owner content maintenance](docs/content-maintenance.md). Privacy distinguishes public anonymous reviews from private history, email and feedback; recovery uses a saved 256-bit code rather than unverified email ownership. Existing production verification/recovery remains a separate configuration. Initial-alpha support is centralized for later replacement.
@@ -101,7 +101,7 @@ The trusted-HTTPS configured universal alpha `0.1.0-alpha.1036` is built private
 
 ### A5.2 — Final alpha content and branding integration
 
-Owner-approved catalogue, content standards and royal toilet-throne artwork. Managed deployment/publication remain unapproved.
+Owner-approved catalogue, content standards and royal toilet-throne artwork, completed before the separate A5.3 managed deployment authorization. Configured publication remains gated.
 
 - [x] Version the 34 exact genuine official entries with permanent key-derived identities; prepare an operator-only, dry-run/idempotent/conflict-detecting importer and private backup-preserved registry, with no fictional activity or client import API.
 - [x] Integrate 40 humorous tags, 40 emoji suggestions, 18 arbitrary-RGB-compatible swatches and ten absolute distinct-discovery decorative thresholds. Preserve draft stability, custom/search/history/legacy identities and rating descriptions.
@@ -112,12 +112,25 @@ Owner-approved catalogue, content standards and royal toilet-throne artwork. Man
 
 See [A5.2 evidence and device status](docs/backend/final-alpha-content.md), [content maintenance](docs/content-maintenance.md) and [the final deployment approval gate](docs/backend/alpha-release-preparation.md#a52-final-deployment-handover--awaiting-owner-approval). No managed access, configured publication, fixture reseed or cost was incurred.
 
+### A5.3 — Managed alpha deployment and release acceptance
+
+Managed deployment and automated acceptance are verified. The final local checks pass: 242 Flutter, 38 backend and 14 tooling tests, strict analysis/format/lint and Linux/Android releases. Owner physical acceptance and final configured publication remain open; see [exact deployment/restoration evidence](docs/backend/managed-alpha-acceptance.md).
+
+- [x] Inspect the actual existing Free project/schema/history/data; take an owner-encrypted, quiesced native backup and verify isolated restoration before migration. Preserve uncertain/owner activity and development namespaces.
+- [x] Apply non-destructive migrations through 017; hide the historically identified fictional sample through protected moderation and retire its exact accounts without deleting legacy records.
+- [x] Dry-run/import the 34 exact official catalogue entries; verify stable UUIDs, names, emoji/RGB/classification, idempotency, anonymous visibility and no fabricated activity on official entries.
+- [x] Configure the approved open alpha Auth policy and pass 104 actual managed API checks. Provision administration/creation only from the owner's independently proven UUID.
+- [x] Resolve the final encrypted-backup restoration failure by reconstructing two exact source CHECK definitions, with regression coverage and unchanged strict preservation checks; pass fresh isolated restore/verification and 86 runtime/protocol assertions. No live project access during the blocker resumption.
+- [x] Prepare and install signed managed alpha 1038 in place, preserving identity/data; prepare public Actions configuration, release notes, manual retention/backup duties and privacy notice. Keep `ALPHA_RELEASE_APPROVED=false`; unconfigured CI builds are not distributed.
+- [ ] Owner completes the separate physical restart/offline/reconnection/visit/feedback/replacement-recovery-code acceptance. No second physical device is available; simulated or API checks do not replace it.
+- [ ] Owner approves the final configured GitHub publication after acceptance. Do not publish or enable the gate before approval.
+
 ### Private alpha release gates and subsequent scope
 
-- [ ] Verify open registration with server-side abuse limits before initial alpha exposure. No invitations, allowlists or manual account approval. Managed changes remain behind the deployment approval gate.
+- [x] Verify managed open registration with server-side abuse limits in A5.3. No invitations, allowlists or manual account approval; configured publication remains gated.
 - [x] Approve and implement bounded A2 private account synchronization below. Guest association, shared catalogue and public identity remain deferred; A2 supersedes only the private-sync portion of historical Phase 2.3C.
 - [x] Address accumulated Explore + / empty-state / filter / fictional-content feedback through A4. Remove the review FAB and distinguish personal discovery from published community scores. Owner physical acceptance of the final correction is recorded above.
-- [ ] Before initial alpha exposure, apply and verify the prepared non-destructive migrations, Auth protections, private deletion/recovery, backup and approved retention/privacy procedures on managed infrastructure. Production email ownership verification/delivery remains a later public-release gate; the approved alpha does not require it.
+- [x] Apply and automatically verify the managed migrations, Auth protections, private deletion/recovery, encrypted backup/restoration and approved manual retention/privacy procedures in A5.3. Owner physical acceptance and configured publication remain open. Verified-email authentication/recovery remains a mandatory public-launch gate.
 
 ## Phase 0 — Development environment (completed)
 

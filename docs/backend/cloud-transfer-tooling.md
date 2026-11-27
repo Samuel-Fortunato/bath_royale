@@ -2,18 +2,9 @@
 
 Current alpha release/security/deployment procedure: [A5.1 preparation](alpha-release-preparation.md). Historical reset, guest, private-only catalogue and email-recovery statements below do not authorize deployment or override that procedure.
 
-`backend/cloud_transfer.py` extracts the Python execution scripts retained in the
-private Phase 2.1C evidence bundle. The end-to-end rehearsal passed at **9b634c9**;
-[its measurements, identities, compatibility findings and assertion counts](cloud-migration.md)
-remain historical evidence. This refactoring has **offline** regression coverage
-and a read-only comparison against the original private adaptations. It has not
-been run against managed or local databases end to end. Do not attribute the
-previous 231/226 assertions or timings to this new command.
+`backend/cloud_transfer.py` now has A5.3 managed export and fresh isolated restore evidence for the complete current 21-table preservation scope. See [managed deployment and the resolved restoration blocker](managed-alpha-acceptance.md). The earlier Phase 2.1C measurements at **9b634c9** remain historical; their 231/226 assertions are not attributed to this command.
 
-This remains the reduced fictional-data PostgreSQL/Auth/PostgREST scope of 2.1C.
-Storage, MFA population, production migrations, ARM and Phase 2.2 remain outside
-scope. No fixture reset, cleanup, automatic retry, volume deletion, source Auth
-login or source database write is performed by these commands.
+The current scope includes the official registry, private feedback/recovery/quota data and synchronization metadata. An explicit `--legacy-core` export supports only the exact original core migration ledger/checksum and table set, for native backup before upgrade. Unknown populated Auth/Storage/application sections still fail; sessions are deliberately excluded only from restoration. Storage/MFA population, unrelated features and platform-role equivalence remain outside the verified scope. No fixture reset, cleanup, source Auth login or source database write is performed by these commands.
 
 ## Environment and private inputs
 
@@ -137,6 +128,16 @@ Foreign keys are dropped/re-added inside **rolled-back local transactions** to
 check actual rows. Therefore destination verification requires local DDL privileges;
 it is not purely read-only SQL. Platform roles/memberships, extension versions,
 server version and Auth migration history are inventoried without claiming equality.
+
+## Exact feedback CHECK reconstruction
+
+A5.3 exposed a real source/destination constraint-definition mismatch after all rows and ACLs had already matched. The two migration-012 feedback version checks use BETWEEN plus another predicate. PostgreSQL deparsing/reparsing flattened their nested AND structure. The corrected restore reconstructs the original BETWEEN syntax only for the two exact reviewed source and quoted dump definitions. It writes `schema-restore.sql` and compatibility decisions into the new destination evidence, preserving the sealed source files unchanged.
+
+There is **no normalization of these comparisons**: complete catalog constraint definitions must match afterward, as must all other inventory sections and effective ACLs. Changed bounds and duplicate definitions fail rather than being overwritten. The synthetic Unix-socket PostgreSQL regression in `backend/tests/test_restore_constraints.py` reproduces the failure, checks exact reconstruction/data preservation and exercises invalid-input rejection. Original migration checksums are unchanged.
+
+A fresh decrypted copy of the unchanged final encrypted backup passed `restore` and separate `verify`, followed by 86 isolated catalogue/private-data/feedback/sync/Auth assertions. All exact preservation checks happen before any login or intentional local runtime mutation. Two explicitly known retired fictional accounts were unbanned only in the isolated copy for original-password/UUID compatibility; the real owner password was not requested or reset. Runtime changes were never replayed to managed Supabase. The failed target was not reused as the successful target.
+
+Encrypt private diagnostic/verification evidence before removing disposable containers/volumes and decrypted work. Check the exact `transfer.json` destination/bundle binding before deleting target resources; never use global prune or remove retained `bath-royale-poc*` installations. Preserve the original encrypted backups and sealed exports under their recorded expiry policy. `restore` deliberately retains failed state and does not clean it automatically.
 
 ## Optional runtime preservation checks
 

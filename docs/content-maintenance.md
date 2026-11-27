@@ -1,6 +1,6 @@
 # Owner-maintained alpha content
 
-A5.2 integrates the owner's approved content. Maintain only these sources:
+A5.2 integrates the owner's approved content. A5.3 deployment status is recorded in [managed acceptance](backend/managed-alpha-acceptance.md); [manual alpha operations](backend/alpha-operations.md) define backup and retention responsibilities. Maintain only these sources:
 
 | Source | Purpose |
 | --- | --- |

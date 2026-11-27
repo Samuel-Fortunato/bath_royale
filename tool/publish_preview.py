@@ -63,6 +63,9 @@ def publish(directory):
                  'recente se o Android recusar uma versão anterior.\n\n'
                  'Versão de teste com assinatura de desenvolvimento; não é uma versão '
                  'estável de produção.')
+        if alpha:
+            notes += '\n\n' + (Path(__file__).resolve().parents[1] /
+                                 'docs/releases/alpha-notes.md').read_text().strip()
         release = api(f'repos/{repo}/releases', '-f', f'tag_name={tag}',
                       '-f', f'target_commitish={sha}', '-F', 'draft=true',
                       '-F', 'prerelease=true', '-f', 'make_latest=false',

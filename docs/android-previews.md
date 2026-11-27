@@ -1,6 +1,6 @@
 # Android previews and CI
 
-A5.1 adds an explicitly gated configured alpha build and current-password/code recovery. See [the release handover](backend/alpha-release-preparation.md); historical unconfigured-only statements below describe earlier milestones. Managed deployment/configured publication remain unapproved.
+A5.1 adds an explicitly gated configured alpha build and current-password/code recovery. See [the release handover](backend/alpha-release-preparation.md); historical unconfigured-only statements below describe earlier milestones. A5.3 managed deployment is separately authorized; [actual managed acceptance](backend/managed-alpha-acceptance.md) records progress. Configured publication remains disabled. CI now validates unconfigured builds without uploading or publishing development APKs.
 
 ## Download and install from a phone
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## A5.3 — Managed deployment and automated release acceptance
+
+- Deploy the prepared non-destructive schema through 017 to the verified existing Supabase Free project after encrypted backup/restoration; protect and retain the identified historical fictional sample while publishing only the exact 34 genuine official entries.
+- Verify managed open email/password registration, current-password enforcement, non-email recovery, hooks/limits, RLS/privacy and feedback with 104 direct API assertions; provision owner administration/creation by consumed UUID-bound recovery proof.
+- Fix final-backup restoration by rebuilding two exact BETWEEN-based feedback CHECK definitions instead of weakening comparison; add a real PostgreSQL regression and verify fresh full restoration plus 86 isolated Auth/catalogue/private-data/synchronization assertions.
+- Prepare/install the signed managed APK in place, document manual privacy/retention/backup duties and Portuguese release notes, and stop unconfigured APK distribution. Keep configured publication disabled and owner physical acceptance explicitly pending.
+
 ## A5.2 — Final alpha content and branding integration
 
 - Add the 34 approved official catalogue entries, permanent identities and private operator SQL import with dry-run validation, idempotency, conflict detection and backup-preserved correction baselines; create no synthetic activity.
