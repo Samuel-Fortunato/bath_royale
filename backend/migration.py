@@ -49,7 +49,7 @@ TABLES = [
 ]
 
 
-def snapshot(env):
+def snapshot(env, tables=None):
     # Canonical complete rows include hashes privately; never print this structure.
     return {
         table: json.loads(
@@ -58,7 +58,7 @@ def snapshot(env):
                 f"(select to_jsonb(t) r from {table} t) x"
             )
         )
-        for table in TABLES
+        for table in (TABLES if tables is None else tables)
     }
 
 

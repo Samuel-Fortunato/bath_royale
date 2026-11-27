@@ -22,6 +22,17 @@ import poc
 require = cloud.require
 SCHEMAS = "('public','app_private','bath_royale_migrations')"
 SESSIONS = {"auth.sessions", "auth.refresh_tokens", "auth.mfa_amr_claims"}
+LEGACY_CORE = [
+    "auth.users",
+    "auth.identities",
+    "public.profiles",
+    "public.bathrooms",
+    "public.visits",
+    "public.reviews",
+    "public.favourites",
+    "app_private.moderators",
+    "bath_royale_migrations.applied",
+]
 EMPTY_OMISSIONS = {
     "auth.custom_oauth_providers",
     *(
@@ -209,8 +220,29 @@ def export_bundle(args):
     private_path(directory.parent, directory=True)
     require(not directory.exists() and not directory.is_symlink(), "Bundle already exists")
     remote = managed(args.source_state, args.project)
+    scope = migration.TABLES
+    if getattr(args, "legacy_core", False):
+        scope = LEGACY_CORE
+        core = poc.ROOT / "supabase/migrations/202611250001_core.sql"
+        require(
+            json_query(remote, "select name,sha256 from bath_royale_migrations.applied")
+            == [{"name": core.name, "sha256": hashlib.sha256(core.read_bytes()).hexdigest()}],
+            "Legacy export requires the exact, unchanged core migration ledger",
+        )
+        actual = json_query(
+            remote,
+            "select n.nspname||'.'||c.relname name from pg_class c "
+            "join pg_namespace n on n.oid=c.relnamespace where "
+            f"n.nspname in {SCHEMAS} and c.relkind='r'",
+        )
+        require(
+            {r["name"] for r in actual} == {t for t in scope if not t.startswith("auth.")},
+            "Legacy export requires exactly the core application tables",
+        )
     directory.mkdir(mode=0o700)
-    before = migration.snapshot(remote)
+    before = (
+        migration.snapshot(remote, scope) if scope == LEGACY_CORE else migration.snapshot(remote)
+    )
     write_json(directory / "before.json", before)
     write_json(directory / "inventory.json", inventory(remote))
     write_json(directory / "acls.json", acls(remote))
@@ -246,7 +278,7 @@ def export_bundle(args):
         )
         require(result.returncode == 0, "Filtered export failed; diagnostics suppressed")
         poc.secure_write(directory / (name + ".sql"), result.stdout)
-    require(migration.snapshot(remote) == before, "Source changed during export")
+    require(migration.snapshot(remote, scope) == before, "Source changed during export")
     write_json(
         directory / "components.json",
         {
@@ -257,7 +289,7 @@ def export_bundle(args):
             "compose_sha256": hashlib.sha256(
                 (poc.ROOT / "backend/compose.yml").read_bytes()
             ).hexdigest(),
-            "scope": migration.TABLES,
+            "scope": scope,
             "consistency": "operator-quiesced; not a maintenance lock",
         },
     )
@@ -266,8 +298,9 @@ def export_bundle(args):
     print("PASS: private filtered export sealed; no source writes")
 
 
-def adapt_data(text, columns):
+def adapt_data(text, columns, scope=None):
     """Fail closed on unknown or populated incompatible sections; retain originals."""
+    scope = migration.TABLES if scope is None else scope
     lines = text.splitlines(keepends=True)
     out, decisions, seen = [], [], set()
     i = 0
@@ -298,7 +331,7 @@ def adapt_data(text, columns):
                 decisions.append([table, 0, "explicit empty compatibility omission"])
             else:
                 require(
-                    count == 0 or table in migration.TABLES,
+                    count == 0 or table in scope,
                     "Populated section outside verified preservation scope",
                 )
                 require(
@@ -324,8 +357,52 @@ def adapt_data(text, columns):
             decisions.append(["auth.refresh_tokens_id_seq", 0, "excluded session sequence"])
         else:
             out.append(line)
-    require(set(migration.TABLES) <= seen, "Missing preservation COPY sections")
+    require(set(scope) <= seen, "Missing preservation COPY sections")
     return "".join(out), decisions
+
+
+def restore_schema(text, source_inventory):
+    """Reconstruct two migration-012 BETWEEN checks, retaining exact source structure.
+
+    PostgreSQL expands BETWEEN into a nested BoolExpr. Deparsing to comparisons
+    and reparsing flattens its AND; writing BETWEEN again preserves the original
+    catalog definition. Match the complete source and dump definitions, never
+    normalize the preservation comparison or rewrite an unfamiliar constraint.
+    """
+    decisions = []
+    for column, maximum, operator, pattern in (
+        ("app_version", 64, "~", "^[A-Za-z0-9.+_-]+$"),
+        ("platform_version", 96, "!~", "[[:cntrl:]]"),
+    ):
+        name = f"alpha_feedback_{column}_check"
+        source = (
+            f"CHECK ((((length({column}) >= 1) AND (length({column}) <= {maximum})) "
+            f"AND ({column} {operator} '{pattern}'::text)))"
+        )
+        if (
+            f"app_private|alpha_feedback|{name}|{source}|t"
+            not in source_inventory["constraints"].splitlines()
+        ):
+            continue
+        dumped = (
+            f'CONSTRAINT "{name}" CHECK (((("length"("{column}") >= 1) '
+            f'AND ("length"("{column}") <= {maximum})) '
+            f'AND ("{column}" {operator} \'{pattern}\'::"text")))'
+        )
+        require(text.count(dumped) == 1, "Source/dump CHECK definition mismatch: " + name)
+        rebuilt = (
+            f'CONSTRAINT "{name}" CHECK ("length"("{column}") BETWEEN 1 AND {maximum} '
+            f'AND "{column}" {operator} \'{pattern}\'::"text")'
+        )
+        text = text.replace(dumped, rebuilt, 1)
+        decisions.append(
+            [
+                "app_private." + name,
+                0,
+                "reconstruct source BETWEEN syntax; strict equality retained",
+            ]
+        )
+    return text, decisions
 
 
 def destination(name, ports=None):
@@ -408,15 +485,26 @@ END; $reconcile$;
 """ + grants(source)
 
 
+def bundle_scope(bundle):
+    scope = json.loads(bundle["components.json"])["scope"]
+    require(scope == migration.TABLES or scope == LEGACY_CORE, "Unreviewed preservation scope")
+    require(set(json.loads(bundle["before.json"])) == set(scope), "Snapshot scope differs")
+    return scope
+
+
 def preservation(target, bundle, revalidate=True):
-    require(migration.snapshot(target) == json.loads(bundle["before.json"]), "Complete rows differ")
+    scope = bundle_scope(bundle)
+    require(
+        migration.snapshot(target, scope) == json.loads(bundle["before.json"]),
+        "Complete rows differ",
+    )
     actual, expected = inventory(target), json.loads(bundle["inventory.json"])
     for key in INVENTORY_KEYS:
         require(actual[key] == expected[key], "Application inventory differs: " + key)
     require(acls(target) == json.loads(bundle["acls.json"]), "Effective ACLs differ")
     # Roles/memberships/extensions/Auth migrations/server differ intentionally; retain inventory.
     if revalidate:
-        for table in migration.TABLES:
+        for table in scope:
             constraints = json_query(
                 target,
                 "select conname,pg_get_constraintdef(oid) definition "
@@ -434,6 +522,7 @@ def preservation(target, bundle, revalidate=True):
 def restore_bundle(args):
     require(args.disposable, "Explicit --disposable acknowledgement required")
     bundle = load_bundle(args.bundle)
+    scope = bundle_scope(bundle)
     components = json.loads(bundle["components.json"])
     require(
         components["compose_sha256"]
@@ -473,11 +562,15 @@ def restore_bundle(args):
     columns = {}
     for row in json.loads(bundle["columns.json"]):
         table, col = row["tab"], row["col"]
-        if table in migration.TABLES and not table.startswith("auth."):
+        if table in scope and not table.startswith("auth."):
             columns.setdefault(table, []).append(col)  # Created by imported schema.
         elif target_columns.get((table, col)) == (row["data_type"], row["udt_name"]):
             columns.setdefault(table, []).append(col)
-    data, decisions = adapt_data(bundle["data.sql"], columns)
+    data, decisions = adapt_data(bundle["data.sql"], columns, scope)
+    schema, schema_decisions = restore_schema(
+        bundle["schema.sql"], json.loads(bundle["inventory.json"])
+    )
+    decisions.extend(schema_decisions)
     roles = bundle["roles.sql"].replace(
         REALTIME_GRANT, "-- Realtime absent: parameter grant omitted."
     )
@@ -487,6 +580,7 @@ def restore_bundle(args):
     # Evidence goes into fresh destination state, never changes a sealed export bundle.
     for name, content in [
         ("roles-restore.sql", roles),
+        ("schema-restore.sql", schema),
         ("data-restore.sql", data),
         ("acl-reconcile.sql", reconcile_sql(json.loads(bundle["acls.json"]))),
     ]:
@@ -496,7 +590,7 @@ def restore_bundle(args):
         "begin;\n"
         + roles
         + "\n"
-        + bundle["schema.sql"]
+        + schema
         + "\nset local session_replication_role=replica;\n"
         + data
         + "\n"
@@ -505,7 +599,7 @@ def restore_bundle(args):
     )
     preservation(target, bundle)
     write_json(target.STATE / "target-inventory.json", inventory(target))
-    write_json(target.STATE / "after.json", migration.snapshot(target))
+    write_json(target.STATE / "after.json", migration.snapshot(target, scope))
     seal(target.STATE)
     print("PASS: atomic restore, ACL reconciliation, exact preservation and FK revalidation")
     print("Destination DB retained; Auth/API remain stopped; no fixture matrix executed")
@@ -552,6 +646,10 @@ def verify_bundle(args):
         preservation(target, bundle)
         print("PASS: exact rows, application definitions, effective ACLs and rolled-back FK checks")
         if args.runtime:
+            require(
+                bundle_scope(bundle) == migration.TABLES,
+                "Legacy backup supports preservation verification only",
+            )
             require(
                 args.accounts and args.source_sessions,
                 "Private accounts and source sessions required",
@@ -605,6 +703,11 @@ def main():
     export.add_argument("--source-state", type=Path, required=True)
     export.add_argument("--project", required=True)
     export.add_argument("--quiesced", action="store_true", required=True)
+    export.add_argument(
+        "--legacy-core",
+        action="store_true",
+        help="Native backup of the exact unchanged core-only schema before upgrade",
+    )
     restore = sub.add_parser(
         "restore", help="Bootstrap and import into a never-used disposable target"
     )

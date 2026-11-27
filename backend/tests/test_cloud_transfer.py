@@ -47,6 +47,27 @@ class CompatibilityTests(unittest.TestCase):
         for name in ["sync_clock", "sync_records", "sync_changes", "sync_receipts", "sync_cursors"]:
             self.assertIn("app_private." + name, migration.TABLES)
 
+    def test_legacy_native_backup_preserves_core_and_rejects_unreviewed_scopes(self):
+        text = "".join(section(t, "fictional\n") for t in transfer.LEGACY_CORE)
+        self.assertEqual(transfer.adapt_data(text, self.columns, transfer.LEGACY_CORE)[0], text)
+        with self.assertRaises(RuntimeError):
+            transfer.adapt_data(text, self.columns)
+        with self.assertRaises(RuntimeError):
+            transfer.adapt_data(
+                text + section("app_private.sync_records", "unexpected\n"),
+                self.columns,
+                transfer.LEGACY_CORE,
+            )
+        for scope in [transfer.LEGACY_CORE, migration.TABLES]:
+            bundle = {
+                "components.json": json.dumps({"scope": scope}),
+                "before.json": json.dumps({t: [] for t in scope}),
+            }
+            self.assertEqual(transfer.bundle_scope(bundle), scope)
+            bundle["components.json"] = json.dumps({"scope": scope[:-1]})
+            with self.assertRaises(RuntimeError):
+                transfer.bundle_scope(bundle)
+
     def test_populated_unsupported_sections_and_new_sequence_fail(self):
         for extra in (
             section("storage.objects", "object\n"),
@@ -163,6 +184,24 @@ class BundleTests(unittest.TestCase):
 
 
 class ExportTests(unittest.TestCase):
+    def test_legacy_export_refuses_drift_before_creating_a_bundle(self):
+        with tempfile.TemporaryDirectory() as name:
+            parent = Path(name)
+            parent.chmod(0o700)
+            args = SimpleNamespace(
+                bundle=parent / "new", source_state=parent, project="a" * 20, legacy_core=True
+            )
+            core = poc.ROOT / "supabase/migrations/202611250001_core.sql"
+            ledger = [{"name": core.name, "sha256": hashlib.sha256(core.read_bytes()).hexdigest()}]
+            for responses in [[[]], [ledger, [{"name": "public.unknown"}]]]:
+                with (
+                    patch.object(transfer, "managed", return_value=Mock()),
+                    patch.object(transfer, "json_query", side_effect=responses),
+                    self.assertRaises(RuntimeError),
+                ):
+                    transfer.export_bundle(args)
+                self.assertFalse(args.bundle.exists())
+
     def test_export_uses_three_cli_scripts_verified_environment_and_seals_originals(self):
         with tempfile.TemporaryDirectory() as name:
             parent = Path(name)
@@ -329,14 +368,19 @@ class PreservationTests(unittest.TestCase):
 
     def test_row_inventory_and_acl_differences_fail(self):
         bundle = {
-            "before.json": "{}",
+            "before.json": json.dumps({t: [] for t in migration.TABLES}),
+            "components.json": json.dumps({"scope": migration.TABLES}),
             "inventory.json": json.dumps({k: "" for k in transfer.INVENTORY_KEYS}),
             "acls.json": "{}",
         }
         for rows, inventory, acls in (
             ({"different": []}, {}, {}),
-            ({}, {"schemas": "changed"}, {}),
-            ({}, {k: "" for k in transfer.INVENTORY_KEYS}, {"different": []}),
+            ({t: [] for t in migration.TABLES}, {"schemas": "changed"}, {}),
+            (
+                {t: [] for t in migration.TABLES},
+                {k: "" for k in transfer.INVENTORY_KEYS},
+                {"different": []},
+            ),
         ):
             with (
                 patch.object(migration, "snapshot", return_value=rows),
@@ -348,13 +392,14 @@ class PreservationTests(unittest.TestCase):
 
     def test_fk_revalidation_is_rolled_back_and_names_are_quoted(self):
         bundle = {
-            "before.json": "{}",
+            "before.json": json.dumps({t: [] for t in migration.TABLES}),
+            "components.json": json.dumps({"scope": migration.TABLES}),
             "inventory.json": json.dumps({k: "" for k in transfer.INVENTORY_KEYS}),
             "acls.json": "{}",
         }
         target = SimpleNamespace(sql=Mock())
         with (
-            patch.object(migration, "snapshot", return_value={}),
+            patch.object(migration, "snapshot", return_value={t: [] for t in migration.TABLES}),
             patch.object(
                 transfer, "inventory", return_value={k: "" for k in transfer.INVENTORY_KEYS}
             ),
@@ -390,6 +435,8 @@ class PreservationTests(unittest.TestCase):
                 rest_port=55562,
             )
             bundle = {
+                "before.json": json.dumps({t: [] for t in migration.TABLES}),
+                "inventory.json": '{"constraints": ""}',
                 "roles.sql": "ROLES;",
                 "schema.sql": "SCHEMA;",
                 "data.sql": fixture(),
@@ -402,9 +449,10 @@ class PreservationTests(unittest.TestCase):
                 "acls.json": '{"objects": [], "columns": []}',
                 "components.json": json.dumps(
                     {
+                        "scope": migration.TABLES,
                         "compose_sha256": hashlib.sha256(
                             (poc.ROOT / "backend/compose.yml").read_bytes()
-                        ).hexdigest()
+                        ).hexdigest(),
                     }
                 ),
             }

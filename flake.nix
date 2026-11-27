@@ -42,6 +42,7 @@
           podman-compose
           python3
           ruff
+          age
         ];
       };
 
