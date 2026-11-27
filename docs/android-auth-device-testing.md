@@ -201,3 +201,24 @@ The integration suite automates these scenarios with two independent SQLite stor
 
 
 A2 update executed on 2026-11-27: SM A166B reports `0.1.0-alpha-a2.1023` / code 1023. The existing certificate was checked before building and against the installed APK, the universal AOT/non-debuggable release was verified (59,411,322 bytes), and `adb install -r` returned Success. First installation remains `2026-11-26 22:40:55`; only the update timestamp changed. USB `tcp:55474` forwarding is present and Android accepted the launch. This demonstrates update compatibility, not byte-level inspection of private SQLite/Keystore storage or physical acceptance. No domain-upload consent was enabled on the owner's behalf.
+
+
+## A3 installed private alpha and acceptance
+
+A3 replaces the historical A2 enable/pause controls. On each unaccepted account/device, the app explains automatic storage of existing and new private account data before any transfer. Accept offline or log out and browse the catalogue without an account. Existing A2 storage consent is retained; no acceptance was clicked automatically during installation. Guest archives and examples remain excluded.
+
+The final `0.1.0-alpha-a3.1023` / code 1023 was installed on SM A166B with `adb install -r` (Success), using the existing package and verified original certificate. App ID 10419 and first installation `2026-11-26 22:40:55` are unchanged. The app launches, and screen inspection shows retained personal records/favourites with explicit private labels. This does not establish byte-level SQLite/Keystore preservation or full physical acceptance.
+
+Private APK: `/tmp/bath-auth-acceptance-0m55gulo/bath-royale-alpha-a3.apk` (59,608,574 bytes). SHA-256: `711d0e7af6d5c7d2f29a9860cc279e218baa502bca9b17293982c84a8b3172a9`. Do not publish it. The update-only installer now uses `alpha-a3`, preserves the installed code/certificate, and never uninstalls or clears data. The retained local Auth database received the verified additive A3 migration; disposable community/protocol tests use separate stacks and are stopped.
+
+Physical owner checks:
+
+1. Confirm retained visits/reviews/favourites and account restoration. An unaccepted account must show storage disclosure before upload; accepting must permit offline use. Previously accepted A2 accounts synchronize automatically. There are no normal enable/pause controls.
+2. Log out and use **Explorar catálogo sem conta**. Cached catalogue/details/rankings must remain readable; personal writes require login. Empty shared content should not be confused with archived guest examples.
+3. Use **Adicionar trono** to contribute explicitly public content. After synchronization it becomes usable without a manual refresh. Duplicate names must be rejected safely; correct or archive the queued contribution through synchronization recovery. Pending contributions cannot collect visits.
+4. An existing private record remains labelled **Privado · por associar ao catálogo**. Explicitly associate only the same actual place; the original visits/reviews/favourites must remain, and nothing is published by linking. Associations are immutable in this alpha.
+5. Choose a public username in Profile. In a personal visit/experience, explicitly publish its review. A second account/anonymous browser sees the username, scores, tags and comment, with no visit ID/date, favourites or email. Edit or withdraw the published review and check the refreshed community ranking. Pending offline withdrawal takes effect when delivered.
+6. Report public content. Ordinary accounts must be denied moderation access; a separately provisioned test moderator can hide/restore it. Hiding must remove community scores while retaining personal history.
+7. Remove only `tcp:55474` forwarding, restart/use the app offline, then restore forwarding. Cached catalogue and private records must survive; pending changes retry safely. Exercise logout/relogin and A/B isolation without uninstalling or clearing storage. Keystore, touchscreen/keyboard and genuine two-human-device acceptance remain pending.
+
+See [A3 architecture and executed verification](backend/community-alpha.md). Remote hosting/registration restrictions remain a separate release gate. No managed project, paid service, A4 or A5 was introduced.

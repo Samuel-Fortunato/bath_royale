@@ -201,8 +201,12 @@ class CollectibleCatalogue extends StatelessWidget {
     final state = context.watch<AppState>();
     final entries = state.entries;
     if (entries.isEmpty) {
-      return const Center(
-        child: Text('O catálogo local ainda não tem tronos.'),
+      return Center(
+        child: Text(
+          state.communityEnabled
+              ? 'Ainda não há tronos guardados. Atualiza o catálogo no Explorar.'
+              : 'O catálogo local ainda não tem tronos.',
+        ),
       );
     }
     return LayoutBuilder(

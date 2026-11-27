@@ -35,7 +35,7 @@ class LocalStore {
         throw StateError('Database integrity check failed');
       }
       final version = database.userVersion;
-      if (version > 7) {
+      if (version > 8) {
         throw StateError('Database was created by a newer application');
       }
       // SQLite's documented table-rebuild procedure keeps child references intact.
@@ -145,6 +145,13 @@ class LocalStore {
             CREATE TABLE sync_resolutions (operation_id TEXT PRIMARY KEY REFERENCES outbox(operation_id), resolution TEXT NOT NULL);
           ''');
           database.userVersion = 7;
+        }
+        if (version < 8) {
+          database.execute('''
+            CREATE TABLE catalogue_bathrooms (id TEXT PRIMARY KEY REFERENCES bathrooms(id));
+            CREATE TABLE bathroom_links (private_id TEXT PRIMARY KEY REFERENCES bathrooms(id), shared_id TEXT NOT NULL REFERENCES bathrooms(id));
+          ''');
+          database.userVersion = 8;
         }
         if (database.select('SELECT scope FROM namespace').single['scope'] !=
             this.namespace.key) {

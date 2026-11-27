@@ -7,6 +7,7 @@ import '../models/ranking.dart';
 import '../models/bathroom_descriptions.dart';
 import '../state/app_state.dart';
 import 'review_form.dart';
+import 'community_controls.dart';
 import 'experience_details.dart';
 import '../widgets/bathroom_identity.dart';
 
@@ -30,7 +31,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bathroomId = widget.bathroomId;
+    final bathroomId = stateIdentity(context, widget.bathroomId);
     final state = context.watch<AppState>();
     final entry = state.entries.firstWhere((e) => e.bathroom.id == bathroomId);
     final reviews =
@@ -39,6 +40,10 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
             final order = b.createdAt.compareTo(a.createdAt);
             return order == 0 ? b.id.compareTo(a.id) : order;
           });
+    final publicReviews = state.communityReviewsFor(bathroomId);
+    final scoreReviews = <ReviewScores>[
+      if (state.communityEnabled) ...publicReviews else ...reviews,
+    ];
     final visits = state.visitsFor(bathroomId);
     void openForm([Review? review, String? visitId]) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -47,7 +52,13 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
           builder: (_) => ChangeNotifierProvider.value(
             value: state,
             child: ReviewFormPage(
-              bathroomId: bathroomId,
+              bathroomId:
+                  review?.bathroomId ??
+                  (visitId == null
+                      ? bathroomId
+                      : state.visits
+                            .firstWhere((v) => v.id == visitId)
+                            .bathroomId),
               review: review,
               visitId: visitId,
             ),
@@ -229,6 +240,8 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
             children: [
               if (review != null)
                 Text('${review.hygieneText} · ${review.paperText}'),
+              if (review != null && state.canContribute)
+                CommunityPublicationButton(review: review),
               Text(
                 reviewDate(visit.visitedAt),
                 style: Theme.of(context).textTheme.bodySmall,
@@ -265,7 +278,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
 
     final personal = entry.personalReview;
     Widget summary() {
-      final empty = _personal ? personal == null : reviews.isEmpty;
+      final empty = _personal ? personal == null : scoreReviews.isEmpty;
       final score = _personal ? personal?.rating : entry.communityRating;
       final categories = RankingMetric.values.skip(1).toList();
       final descriptions = personal == null
@@ -314,7 +327,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
             Text(
               _personal
                   ? 'Última experiência avaliada · ${reviewDate(state.visits.firstWhere((v) => v.id == personal!.visitId).visitedAt)}'
-                  : '${reviews.length} ${reviews.length == 1 ? 'avaliação' : 'avaliações'} da comunidade · média das avaliações locais',
+                  : '${scoreReviews.length} ${scoreReviews.length == 1 ? 'avaliação' : 'avaliações'} da comunidade${state.communityEnabled ? ' · publicadas' : ' · média das avaliações locais'}',
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -352,7 +365,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                                   )
                                 else ...[
                                   Text(
-                                    '${ratingNumber(reviews.fold<double>(0, (sum, r) => sum + categories[i].score(r)) / reviews.length)} / ${categories[i].maximum}',
+                                    '${ratingNumber(scoreReviews.fold<double>(0, (sum, r) => sum + categories[i].score(r)) / scoreReviews.length)} / ${categories[i].maximum}',
                                     style: Theme.of(
                                       context,
                                     ).textTheme.titleLarge,
@@ -360,12 +373,12 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                                   const SizedBox(height: 8),
                                   LinearProgressIndicator(
                                     value:
-                                        reviews.fold<double>(
+                                        scoreReviews.fold<double>(
                                           0,
                                           (sum, r) =>
                                               sum + categories[i].score(r),
                                         ) /
-                                        reviews.length /
+                                        scoreReviews.length /
                                         categories[i].maximum,
                                     semanticsLabel: categories[i].label,
                                   ),
@@ -408,7 +421,9 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
               tooltip: entry.activity.isFavorite
                   ? 'Remover dos favoritos'
                   : 'Adicionar aos favoritos',
-              onPressed: () => state.toggleFavorite(bathroomId),
+              onPressed: state.readOnly || !state.isAvailable(bathroomId)
+                  ? null
+                  : () => state.toggleFavorite(bathroomId),
               icon: Icon(
                 entry.activity.isFavorite
                     ? Icons.favorite
@@ -434,18 +449,53 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                       runSpacing: 8,
                       children: [
                         FilledButton.icon(
-                          onPressed: _inviting ? null : registerVisit,
+                          onPressed:
+                              _inviting ||
+                                  state.readOnly ||
+                                  !state.isAvailable(bathroomId)
+                              ? null
+                              : registerVisit,
                           icon: const Icon(Icons.add_location_alt_outlined),
                           label: const Text('Estive aqui!'),
                         ),
                         OutlinedButton.icon(
-                          onPressed: () => openForm(),
+                          onPressed:
+                              state.readOnly || !state.isAvailable(bathroomId)
+                              ? null
+                              : () => openForm(),
                           icon: const Icon(Icons.rate_review_outlined),
                           label: const Text('Avaliar'),
                         ),
                       ],
                     ),
                   ),
+                  if (state.communityEnabled && !state.isAvailable(bathroomId))
+                    const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Text(
+                        'Este trono aguarda envio ou está indisponível no catálogo. O histórico privado continua guardado.',
+                      ),
+                    ),
+                  if (state.canContribute && !state.isShared(bathroomId)) ...[
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'Este registo é privado. Associa-o ao mesmo trono do catálogo para reunir as tuas experiências, sem publicar o histórico.',
+                      ),
+                    ),
+                    AssociateBathroomButton(bathroomId: bathroomId),
+                  ],
+                  if (state.canContribute &&
+                      state.isShared(bathroomId) &&
+                      state.isAvailable(bathroomId))
+                    TextButton(
+                      onPressed: () => reportCommunityContent(
+                        context,
+                        'bathroom',
+                        bathroomId,
+                      ),
+                      child: const Text('Denunciar trono'),
+                    ),
                   const TabBar(
                     tabs: [
                       Tab(text: 'Resumo'),
@@ -457,7 +507,24 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                     child: TabBarView(
                       children: [
                         summary(),
-                        reviews.isEmpty
+                        state.communityEnabled
+                            ? (publicReviews.isEmpty
+                                  ? const Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(24),
+                                        child: Text(
+                                          'Ainda sem avaliações publicadas. As tuas avaliações privadas estão nas Visitas.',
+                                        ),
+                                      ),
+                                    )
+                                  : ListView(
+                                      padding: const EdgeInsets.all(16),
+                                      children: [
+                                        for (final review in publicReviews)
+                                          CommunityReviewCard(review: review),
+                                      ],
+                                    ))
+                            : reviews.isEmpty
                             ? const Center(
                                 child: Text(
                                   'Ainda ninguém se sentou para avaliar. 🚽',
@@ -491,3 +558,6 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
     );
   }
 }
+
+String stateIdentity(BuildContext context, String id) =>
+    context.read<AppState>().sharedIdentity(id);

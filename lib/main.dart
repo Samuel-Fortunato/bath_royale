@@ -9,6 +9,11 @@ import 'widgets/account_state_provider.dart';
 import 'sync/namespace.dart';
 import 'pages/authentication.dart';
 import 'theme/theme.dart';
+import 'state/app_state.dart';
+import 'sync/community_catalogue.dart';
+import 'sync/http_remote_data_source.dart';
+import 'sync/sync_coordinator.dart';
+import 'sync/sync_store.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +41,8 @@ class AuthenticatedBootstrap extends StatefulWidget {
 class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap>
     with WidgetsBindingObserver {
   ProductionAuth? auth;
+  CommunityCatalogue? community;
+  AppState? publicState;
   AccountStateScope? scope;
   String? error;
   bool loading = true;
@@ -59,7 +66,36 @@ class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap>
             ),
             const PlatformCredentialVault(),
           );
+      final config = auth!.configuration;
+      final publicStore =
+          await (widget.openStore ?? (n) => openLocalStore(namespace: n))(
+            DataNamespace.publicCatalogue(config.environment),
+          );
+      final publicRemote = HttpRemoteDataSource(
+        endpoint: Uri.parse('${config.environment}/rest/v1/'),
+        environment: config.environment,
+        clientKey: config.clientKey,
+        accessToken: (_) => null,
+      );
+      community = CommunityCatalogue(
+        SyncCoordinator(
+          store: SyncStore(publicStore),
+          auth: FakeAuthSession(),
+          remote: publicRemote,
+          now: () => DateTime.now().millisecondsSinceEpoch,
+        ),
+        closeRemote: publicRemote.close,
+      );
+      publicState = AppState(
+        currentUserId: 'public',
+        bathrooms: [],
+        reviews: [],
+        visits: [],
+        activities: [],
+      )..attachCommunity(community!, anonymous: true);
+      community!.refresh();
       scope = AccountStateScope.device(
+        community: community,
         auth: auth!,
         openStore: widget.openStore ?? (n) => openLocalStore(namespace: n),
       );
@@ -125,7 +161,7 @@ class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap>
           ? ThemeMode.light
           : ThemeMode.dark,
       home: auth!.current == null && error == null
-          ? WelcomePage(canTransition: true)
+          ? WelcomePage(canTransition: true, catalogue: publicState)
           : AuthenticationPage(
               canTransition:
                   auth!.current == null ||
@@ -138,6 +174,7 @@ class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    community?.foreground(state == AppLifecycleState.resumed);
     scope?.state?.synchronization?.foreground(
       state == AppLifecycleState.resumed,
     );
@@ -149,6 +186,8 @@ class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap>
     auth?.removeListener(select);
     // Process teardown cannot persist memory-only drafts.
     if (scope?.state?.hasUncommittedWork != true) scope?.dispose();
+    publicState?.dispose();
+    community?.dispose();
     auth?.dispose();
     super.dispose();
   }

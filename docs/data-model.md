@@ -1,5 +1,8 @@
 # Local data model
 
+Current account/community semantics are documented in [A3](backend/community-alpha.md). Public `CommunityReview` scores are separate from private `Review`/`Visit` records; no fake visits or synthetic timestamps represent public content. Shared identities compose with private associations without reparenting stored history. Published-only community scores replace the earlier local "community" approximation in configured builds. Earlier prototype sections below remain historical.
+
+
 The prototype restores and persists local SQLite data. See [storage architecture and migrations](storage.md). These rules are not an authentication or backend contract.
 
 ## Bathrooms, visits and reviews

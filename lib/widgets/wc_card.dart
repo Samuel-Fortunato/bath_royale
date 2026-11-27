@@ -5,7 +5,7 @@ import 'bathroom_identity.dart';
 
 class WcCard extends StatelessWidget {
   final BathroomEntry entry;
-  final VoidCallback toggleFavorite;
+  final VoidCallback? toggleFavorite;
   final VoidCallback onTap;
 
   const WcCard({
@@ -51,6 +51,14 @@ class WcCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (entry.catalogueLabel != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    entry.catalogueLabel!,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
               if (entry.communityRating == null)
                 const Text('Comunidade: sem avaliações')
               else

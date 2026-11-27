@@ -1,18 +1,36 @@
 import 'package:characters/characters.dart';
 import 'tag_presentation.dart';
 
+/// Shared scoring contract; public reviews remain separate from personal visits.
+abstract interface class ReviewScores {
+  String get bathroomId;
+  String get authorId;
+  double get rating;
+  int get paperAvailability;
+  int get hygiene;
+  int get comfort;
+  int get aesthetics;
+}
+
 /// An individual, author-owned review. Repeat reviews are separate records.
-class Review {
+class Review implements ReviewScores {
   final String id;
   final String visitId;
+  @override
   final String bathroomId;
+  @override
   final String authorId;
   final DateTime createdAt;
   final DateTime updatedAt;
+  @override
   final double rating;
+  @override
   final int paperAvailability;
+  @override
   final int hygiene;
+  @override
   final int comfort;
+  @override
   final int aesthetics;
   final List<ReviewTagData> tags;
   final String? comment;

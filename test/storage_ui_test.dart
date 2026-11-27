@@ -26,6 +26,7 @@ import 'package:bath_royale/pages/bathroom_form.dart';
 import 'package:bath_royale/pages/review_form.dart';
 import 'package:bath_royale/main.dart';
 import 'package:bath_royale/models/review.dart';
+import 'package:bath_royale/models/bathroom.dart';
 import 'package:bath_royale/storage/local_store.dart';
 
 class SequenceClient extends DelayedLoginClient {
@@ -146,8 +147,8 @@ void main() {
       );
       var opens = 0;
       Future<LocalStore> open(DataNamespace n) async {
-        expect(n.isAccount, isTrue, reason: 'Guest file must never open in A1');
-        opens++;
+        expect(n.kind, isNot('guest'), reason: 'Guest files remain archived');
+        if (n.isAccount) opens++;
         return LocalStore(
           sqlite3.open('${directory.path}/${n.fileName}'),
           namespace: n,
@@ -163,9 +164,21 @@ void main() {
       expect(find.byType(HomePage), findsNothing);
       await auth.login('first@example.invalid', 'password');
       await tester.pumpAndSettle();
+      expect(find.byType(AccountStorageAcceptance), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('Aceitar e continuar'), 200);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Aceitar e continuar'));
+      await tester.pumpAndSettle();
       var state = tester.element(find.byType(HomePage)).read<AppState>();
       expect(state.allBathrooms, isEmpty);
-      final bathroom = state.createBathroom('Trono da conta A');
+      // Retained A2 private records are inserted through the private repository path.
+      final bathroom = Bathroom(
+        id: AppState.newEntityId(),
+        name: 'Trono da conta A',
+        createdBy: state.currentUserId,
+      );
+      state.repository!.createBathroom(bathroom);
+      state.reloadAccountData();
       final visit = state.recordVisit(
         bathroom.id,
         visitedAt: DateTime.utc(2026, 11, 26),
@@ -201,11 +214,15 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'Entrar'), findsOneWidget);
       await auth.login('second@example.invalid', 'password');
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('Aceitar e continuar'), 200);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Aceitar e continuar'));
+      await tester.pumpAndSettle();
       state = tester.element(find.byType(HomePage)).read<AppState>();
       expect(state.allBathrooms, isEmpty);
       expect(state.visits, isEmpty);
       expect(state.reviews, isEmpty);
-      state.createBathroom('Trono da conta B');
+      state.setPublicUsername('second_account');
       await auth.logout();
       await auth.login('first@example.invalid', 'password');
       await tester.pumpAndSettle();
@@ -226,7 +243,7 @@ void main() {
       expect(state.reviews.single.rating, 4.5);
       expect(state.activityFor(bathroom.id).isFavorite, isTrue);
       expect(state.repository!.syncContext, isNotNull);
-      expect(state.synchronization!.enabled, isFalse);
+      expect(state.synchronization!.enabled, isTrue);
       expect(legacyFile.readAsBytesSync(), original);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -402,8 +419,8 @@ void main() {
       await auth.login('second@example.invalid', 'password');
       gate.completeError(StateError('old account file failed'));
       await tester.pumpAndSettle();
-      expect(opened, [first.user.id, second.user.id]);
-      expect(find.widgetWithText(AppBar, 'Explorar'), findsOneWidget);
+      expect(opened, ['', first.user.id, second.user.id]);
+      expect(find.byType(AccountStorageAcceptance), findsOneWidget);
       expect(find.textContaining('ficheiros foram preservados'), findsNothing);
       expect(auth.current!.namespace.subject, second.user.id);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -561,7 +578,7 @@ void main() {
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
       expect(accountOpens, 2);
-      expect(find.widgetWithText(AppBar, 'Explorar'), findsOneWidget);
+      expect(find.byType(AccountStorageAcceptance), findsOneWidget);
       await auth.logout();
       await tester.pumpAndSettle();
       expect(find.widgetWithText(AppBar, 'Explorar'), findsNothing);
@@ -845,7 +862,7 @@ void main() {
     auth.dispose();
   });
   testWidgets(
-    'private synchronization explains consent, permits declining and fits narrow large-text screens',
+    'account storage explains acceptance, gates transfers and removes optional modes',
     (tester) async {
       tester.view.physicalSize = const Size(320, 850);
       tester.view.devicePixelRatio = 1;
@@ -890,23 +907,32 @@ void main() {
           home: PrivateSynchronizationPage(sync: sync),
         ),
       );
-      await tester.tap(find.text('Ativar sincronização privada'));
-      await tester.pumpAndSettle();
+      expect(remote.requests, isEmpty);
+      expect(sync.enabled, false);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AccountStorageAcceptance(sync: sync, logout: () {}),
+        ),
+      );
       expect(
         find.textContaining('não são importados nem enviados'),
         findsOneWidget,
       );
-      expect(find.textContaining('não são publicados'), findsOneWidget);
-      await tester.tap(find.text('Agora não'));
+      expect(
+        find.textContaining('incluindo os registos já existentes'),
+        findsOneWidget,
+      );
+      await tester.scrollUntilVisible(find.text('Aceitar e continuar'), 200);
       await tester.pumpAndSettle();
-      expect(remote.requests, isEmpty);
-      expect(sync.enabled, false);
-      await tester.tap(find.text('Ativar sincronização privada'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Ativar e enviar dados privados'));
+      await tester.tap(find.text('Aceitar e continuar'));
       await tester.pumpAndSettle();
       expect(sync.enabled, true);
       expect(remote.requests.length, 1);
+      await tester.pumpWidget(
+        MaterialApp(home: PrivateSynchronizationPage(sync: sync)),
+      );
+      expect(find.textContaining('Pausar'), findsNothing);
+      expect(find.textContaining('Ativar'), findsNothing);
       expect(find.text('Sincronização privada em dia'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());

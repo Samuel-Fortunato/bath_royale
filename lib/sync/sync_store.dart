@@ -388,12 +388,6 @@ class SyncStore {
     );
   });
 
-  void pause() => local.transaction(
-    () => local.database.execute(
-      'INSERT OR REPLACE INTO sync_preferences VALUES(1,0)',
-    ),
-  );
-
   int get pendingCount =>
       local.database
               .select(
@@ -474,7 +468,9 @@ class SyncStore {
           throw ArgumentError('Invalid bathroom name');
         }
         p['name'] = text;
-        p['normalized_name'] = text.toLowerCase();
+        if (p.containsKey('normalized_name')) {
+          p['normalized_name'] = text.toLowerCase();
+        }
         local.database.execute(
           'UPDATE bathrooms SET name=?,normalized_name=? WHERE id=?',
           [text, text.toLowerCase(), row['entity_id']],
@@ -528,6 +524,28 @@ class SyncStore {
   void useAccountVersion(String operationId) => local.transaction(() {
     if (!problems.any((r) => r['operation_id'] == operationId)) {
       throw StateError('Unknown problem');
+    }
+    final original = problems.singleWhere(
+      (r) => r['operation_id'] == operationId,
+    );
+    if (original['entity_type'] == 'link') {
+      local.database.execute('DELETE FROM bathroom_links WHERE private_id=?', [
+        original['entity_id'],
+      ]);
+    }
+    if (original['entity_type'] == 'contribution' &&
+        local.database.select('SELECT id FROM visits WHERE bathroom=?', [
+          original['entity_id'],
+        ]).isEmpty &&
+        local.database.select('SELECT user FROM favourites WHERE bathroom=?', [
+          original['entity_id'],
+        ]).isEmpty) {
+      local.database.execute('DELETE FROM catalogue_bathrooms WHERE id=?', [
+        original['entity_id'],
+      ]);
+      local.database.execute('DELETE FROM bathrooms WHERE id=?', [
+        original['entity_id'],
+      ]);
     }
     final branch = local.database.select(
       '''WITH RECURSIVE branch(id) AS (SELECT ? UNION

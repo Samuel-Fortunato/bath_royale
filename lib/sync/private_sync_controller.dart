@@ -37,7 +37,7 @@ class PrivateSyncController extends ChangeNotifier {
       coordinator.auth.current?.namespace == store.namespace;
 
   String get status {
-    if (!enabled) return 'Só neste dispositivo';
+    if (!enabled) return 'Aceita o armazenamento da conta para continuar';
     if (running) return 'A sincronizar…';
     if (state.hasUncommittedWork) {
       return 'Termina o editor ou a gravação local para sincronizar.';
@@ -55,16 +55,15 @@ class PrivateSyncController extends ChangeNotifier {
     return 'Sincronização privada em dia';
   }
 
-  Future<void> enable() async {
+  void acceptStorage() {
     store.consent();
-    await synchronize();
+    request();
+    notifyListeners();
   }
 
-  void pause() {
-    coordinator.cancel();
-    store.pause();
-    _timer?.cancel();
-    notifyListeners();
+  Future<void> enable() async {
+    acceptStorage();
+    await synchronize();
   }
 
   void foreground(bool value) {
@@ -135,8 +134,19 @@ class PrivateSyncController extends ChangeNotifier {
         // Reload only after an atomic projection. Open forms are never replaced.
         _applying = true;
         try {
-          AccountProjection(store).apply();
-          state.reloadAccountData();
+          // Reflect acknowledged contributions/publication without requiring a
+          // manual catalogue refresh. Suppress notifications from scheduling
+          // another idle account run while refreshing this public projection.
+          if (coordinator.lastFailure == null &&
+              !coordinator.authenticationRequired) {
+            await state.community?.refresh();
+          }
+          if (_disposed || !_accessible || !_foreground) return;
+          if (!state.hasUncommittedWork) {
+            state.materializeCatalogue();
+            AccountProjection(store).apply();
+            state.reloadAccountData();
+          }
         } finally {
           _applying = false;
         }
@@ -194,6 +204,8 @@ class PrivateSyncController extends ChangeNotifier {
 
   void useAccountVersion(String id) {
     store.useAccountVersion(id);
+    AccountProjection(store).apply();
+    state.reloadAccountData();
     request();
     notifyListeners();
   }

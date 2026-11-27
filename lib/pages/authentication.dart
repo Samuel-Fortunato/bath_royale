@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import '../auth/production_auth.dart';
 import '../sync/auth_session.dart';
+import '../state/app_state.dart';
+import '../app.dart';
 
 /// Dedicated private flow, also used as the unauthenticated application gate.
 class AuthenticationPage extends StatelessWidget {
@@ -57,8 +59,9 @@ class AuthenticationPage extends StatelessWidget {
 }
 
 class WelcomePage extends StatelessWidget {
+  final AppState? catalogue;
   final bool canTransition;
-  const WelcomePage({super.key, this.canTransition = true});
+  const WelcomePage({super.key, this.canTransition = true, this.catalogue});
   @override
   Widget build(BuildContext context) {
     void open(AuthFlow flow) {
@@ -99,9 +102,23 @@ class WelcomePage extends StatelessWidget {
                   onPressed: () => open(AuthFlow.registration),
                   child: const Text('Criar conta'),
                 ),
+                if (catalogue != null)
+                  TextButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => ChangeNotifierProvider.value(
+                          value: catalogue!,
+                          child: const MainApp(),
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.explore_outlined),
+                    label: const Text('Explorar catálogo sem conta'),
+                  ),
                 const SizedBox(height: 24),
                 const Text(
-                  'Os dados anteriores continuam guardados em separado. O catálogo partilhado ainda não está disponível.',
+                  'Os dados anteriores continuam guardados em separado.',
                 ),
               ],
             ),
@@ -123,7 +140,7 @@ class AuthenticationUnavailablePage extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Text(
-            'Esta versão não tem um serviço de contas configurado. Usa a versão privada de teste para entrar. Os dados anteriores continuam guardados neste dispositivo, sem serem associados a uma conta. A consulta do catálogo sem conta ficará disponível quando existir um catálogo partilhado.',
+            'Esta versão não tem um serviço de contas configurado. Usa a versão privada de teste para entrar. Os dados anteriores continuam guardados neste dispositivo, sem serem associados a uma conta. A versão privada configurada permite consultar o catálogo sem conta.',
           ),
         ),
       ),
@@ -263,12 +280,14 @@ class _AuthenticationPanelState extends State<AuthenticationPanel> {
                 const SizedBox(height: 8),
                 if (signedIn)
                   const Text(
-                    'Gere a tua sessão. A sincronização privada é opcional e está disponível no Perfil.',
+                    'Gere a tua sessão. Os dados da conta são guardados automaticamente após a tua aceitação.',
                   ),
                 if (signedIn) ...[
                   const SizedBox(height: 12),
                   if (auth.privateEmail != null) Text(auth.privateEmail!),
-                  const Text('Email privado, sem perfil público.'),
+                  const Text(
+                    'Email privado. O nome público é escolhido em separado.',
+                  ),
                   Text(
                     auth.status == SessionStatus.authenticated
                         ? 'Sessão iniciada'
@@ -504,7 +523,7 @@ class _AuthenticationPanelState extends State<AuthenticationPanel> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'O catálogo partilhado ainda não está disponível. Quando existir, poderás consultá-lo sem conta.',
+                    'Podes consultar o catálogo partilhado sem conta através do ecrã de boas-vindas.',
                     style: TextStyle(fontSize: 12),
                   ),
                 ],

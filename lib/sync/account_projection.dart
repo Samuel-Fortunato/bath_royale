@@ -48,7 +48,13 @@ class AccountProjection {
       );
     }
 
-    for (final type in ['bathroom', 'visit', 'review', 'favourite']) {
+    for (final type in [
+      'sharedBathroom',
+      'bathroom',
+      'visit',
+      'review',
+      'favourite',
+    ]) {
       for (final row in db.select(
         'SELECT * FROM remote_records WHERE entity_type=? ORDER BY revision',
         [type],
@@ -63,7 +69,7 @@ class AccountProjection {
         );
         final deleted = row['deleted'] == 1;
         final table = switch (type) {
-          'bathroom' => 'bathrooms',
+          'bathroom' || 'sharedBathroom' => 'bathrooms',
           'visit' => 'visits',
           'review' => 'reviews',
           _ => 'favourites',
@@ -97,7 +103,22 @@ class AccountProjection {
           continue;
         }
         if (p.isEmpty) continue;
-        if (type == 'bathroom') {
+        if (type == 'sharedBathroom') {
+          if (db.select('SELECT id FROM bathrooms WHERE id=?', [id]).isEmpty) {
+            upsert('bathrooms', {
+              'id': id,
+              'name': p['name'],
+              'normalized_name': (p['name'] as String).toLowerCase(),
+              'creator': 'catalogue',
+              'emoji': p['emoji'],
+              'accent': p['accent'],
+              'provenance': 'remote',
+            });
+          }
+          db.execute('INSERT OR IGNORE INTO catalogue_bathrooms VALUES(?)', [
+            id,
+          ]);
+        } else if (type == 'bathroom') {
           if (p['contributor_id'] != local.namespace.subject) {
             throw StateError('Foreign account bathroom');
           }
@@ -130,8 +151,7 @@ class AccountProjection {
             'provenance': 'remote',
           });
         } else if (type == 'review') {
-          if (p['author_id'] != local.namespace.subject ||
-              p['published'] != false) {
+          if (p['author_id'] != local.namespace.subject) {
             throw StateError('Invalid private review');
           }
           if (db.select('SELECT id FROM visits WHERE id=?', [
@@ -168,6 +188,23 @@ class AccountProjection {
             p['value'] == true || p['owner_id'] == local.namespace.subject,
           );
         }
+      }
+    }
+    for (final row in db.select(
+      "SELECT * FROM remote_records WHERE entity_type='link' AND deleted=0",
+    )) {
+      final id = row['entity_id'] as String;
+      if (dirty.contains(('link', id))) continue;
+      final p = jsonDecode(row['payload'] as String) as Map;
+      if (db.select('SELECT id FROM bathrooms WHERE id IN (?,?)', [
+            id,
+            p['shared_id'],
+          ]).length ==
+          2) {
+        db.execute(
+          'INSERT INTO bathroom_links VALUES(?,?) ON CONFLICT(private_id) DO UPDATE SET shared_id=excluded.shared_id',
+          [id, p['shared_id']],
+        );
       }
     }
     // Validate domain constructors before committing the projection.

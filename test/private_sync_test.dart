@@ -103,7 +103,7 @@ void main() {
     },
   );
   test(
-    'pausing cancels in-flight continuation, retains operation identity and stops next upload',
+    'backgrounding cancels continuation and retains durable operation identity',
     () async {
       state.createBathroom('Primeiro');
       state.createBathroom('Segundo');
@@ -115,14 +115,15 @@ void main() {
       final run = controller.enable();
       await entered.future;
       final original = store.ready(1000, 1).single.id;
-      controller.pause();
+      controller.foreground(false);
       released.complete();
       await run;
       expect(remote.requests.length, 1);
       expect(store.pendingCount, 2);
       expect(store.ready(1000, 1).single.id, original);
       remote.beforeSubmit = null;
-      await controller.enable();
+      controller.foreground(true);
+      await controller.synchronize();
       expect(remote.applications, 2);
       expect(store.pendingCount, 0);
     },

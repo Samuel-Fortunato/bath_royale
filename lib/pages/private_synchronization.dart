@@ -28,33 +28,6 @@ class PrivateSynchronizationPage extends StatelessWidget {
   final PrivateSyncController sync;
   const PrivateSynchronizationPage({super.key, required this.sync});
 
-  Future<void> enable(BuildContext context) async {
-    final accepted = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Ativar sincronização privada?'),
-        content: const SingleChildScrollView(
-          child: Text(
-            'As casas de banho que criaste nesta conta, visitas, avaliações e favoritos serão enviados para o serviço da conta e partilhados com os teus outros dispositivos. Inclui os registos já guardados nesta conta.\n\n'
-            'Estes dados são privados: não são publicados nem exigem um perfil público. Os dados antigos de convidado e os exemplos fictícios não são importados nem enviados.\n\n'
-            'Podes continuar a usar a aplicação offline. As alterações ficam pendentes até haver ligação. Podes pausar o envio neste dispositivo; isso não apaga as cópias já sincronizadas.',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Agora não'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Ativar e enviar dados privados'),
-          ),
-        ],
-      ),
-    );
-    if (accepted == true) await sync.enable();
-  }
-
   String description(Map<String, Object?> row) {
     final p = jsonDecode(row['payload'] as String) as Map;
     final review = p['review'] as Map?;
@@ -63,6 +36,16 @@ class PrivateSynchronizationPage extends StatelessWidget {
       return 'Avaliação: ${review['rating']} ★\nPapel: ${review['paper']} · Higiene: ${review['hygiene']} · Conforto: ${review['comfort']} · Estética: ${review['aesthetics']}\n'
           '${tags.map((t) => '${t['emoji']} ${t['label']}').join(' · ')}\n${review['comment'] ?? ''}';
     }
+    if (p['username'] != null) return 'Nome público: ${p['username']}';
+    if (p['shared_id'] != null) {
+      return 'Associação privada a um trono do catálogo';
+    }
+    if (p['review_id'] != null) {
+      return p['published'] == true
+          ? 'Publicar avaliação na comunidade'
+          : 'Retirar avaliação da comunidade';
+    }
+    if (p['reason'] != null) return 'Denúncia: ${p['reason']}';
     if (p['name'] != null) return '${p['emoji']} ${p['name']}';
     if (p['value'] != null) {
       return p['value'] == true ? 'Adicionar favorito' : 'Remover favorito';
@@ -223,28 +206,15 @@ class PrivateSynchronizationPage extends StatelessWidget {
                   'Casas de banho da conta, visitas, avaliações e favoritos. Privados, sem perfil público. Os dados de convidado e os exemplos ficam em separado.',
                 ),
                 const SizedBox(height: 12),
-                if (!sync.enabled)
-                  FilledButton(
-                    onPressed: () => enable(context),
-                    child: const Text('Ativar sincronização privada'),
-                  ),
                 if (sync.enabled) ...[
                   FilledButton(
                     onPressed: sync.running ? null : sync.retry,
-                    child: const Text('Sincronizar agora'),
+                    child: const Text('Tentar novamente'),
                   ),
                   TextButton(
                     onPressed: sync.running ? null : sync.replay,
                     child: const Text('Recarregar dados da conta'),
                   ),
-                  TextButton(
-                    onPressed: sync.pause,
-                    child: const Text('Pausar neste dispositivo'),
-                  ),
-                  if (sync.store.pendingCount > 0)
-                    Text(
-                      '${sync.store.pendingCount} alterações à espera de envio. Podes continuar a usar a aplicação.',
-                    ),
                 ],
                 for (final issue in sync.store.problems)
                   Card(
@@ -342,6 +312,16 @@ class PrivateSynchronizationPage extends StatelessWidget {
     if (p['comment'] != null || p['rating'] != null) {
       return '${p['rating']} ★\nPapel: ${p['paper']} · Higiene: ${p['hygiene']} · Conforto: ${p['comfort']} · Estética: ${p['aesthetics']}\n${(p['tags'] as List? ?? []).map((t) => '${t['emoji']} ${t['label']}').join(' · ')}\n${p['comment'] ?? ''}';
     }
+    if (p['username'] != null) return 'Nome público: ${p['username']}';
+    if (p['shared_id'] != null) {
+      return 'Associação privada a um trono do catálogo';
+    }
+    if (p['review_id'] != null) {
+      return p['published'] == true
+          ? 'Publicar avaliação na comunidade'
+          : 'Retirar avaliação da comunidade';
+    }
+    if (p['reason'] != null) return 'Denúncia: ${p['reason']}';
     if (p['name'] != null) return '${p['emoji']} ${p['name']}';
     if (p['visited_at'] != null) return 'Visita: ${p['visited_at']}';
     if (p['value'] != null) {
@@ -349,4 +329,73 @@ class PrivateSynchronizationPage extends StatelessWidget {
     }
     return 'Registo privado da conta';
   }
+}
+
+/// First-use disclosure also gates existing A2 accounts without upload consent.
+/// Acceptance commits locally before any transfer; failure never bypasses it.
+class AccountStorageAcceptance extends StatefulWidget {
+  final PrivateSyncController sync;
+  final VoidCallback logout;
+  const AccountStorageAcceptance({
+    super.key,
+    required this.sync,
+    required this.logout,
+  });
+  @override
+  State<AccountStorageAcceptance> createState() =>
+      _AccountStorageAcceptanceState();
+}
+
+class _AccountStorageAcceptanceState extends State<AccountStorageAcceptance> {
+  String? error;
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Os dados da tua conta')),
+    body: SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.all(24),
+            children: [
+              const Icon(Icons.cloud_outlined, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'A tua conta guarda automaticamente no serviço as casas de banho privadas, visitas, avaliações e favoritos, incluindo os registos já existentes nesta conta. Assim, ficam disponíveis nos teus outros dispositivos.',
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'As visitas, datas exatas e favoritos são privados. Publicar uma avaliação na comunidade exige uma ação tua. O email nunca é público. Os dados antigos de convidado e os exemplos fictícios não são importados nem enviados.',
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Podes usar a conta offline: as alterações ficam guardadas e são enviadas automaticamente quando volta a haver ligação. Ao aceitar, autorizas este armazenamento da conta.',
+              ),
+              if (error != null) Text(error!),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () {
+                  try {
+                    // Do not await networking: acceptance and offline access are local.
+                    widget.sync.acceptStorage();
+                  } catch (_) {
+                    setState(
+                      () => error =
+                          'Não foi possível guardar a aceitação. Os dados continuam preservados. Tenta novamente.',
+                    );
+                  }
+                },
+                child: const Text('Aceitar e continuar'),
+              ),
+              TextButton(
+                onPressed: widget.logout,
+                child: const Text('Terminar sessão'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }

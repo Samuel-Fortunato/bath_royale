@@ -85,6 +85,32 @@ class HttpRemoteDataSource implements RemoteDataSource {
     }
   }
 
+  Future<List<Map<String, dynamic>>> moderationReports(
+    SessionIdentity session,
+  ) async {
+    _scope(session.namespace);
+    final result = await _rpc('moderation_reports', {}, session);
+    return (result['reports'] as List)
+        .map((r) => Map<String, dynamic>.from(r as Map))
+        .toList();
+  }
+
+  Future<void> moderateContent(
+    SessionIdentity session,
+    String kind,
+    String id,
+    bool hide,
+    String reportId,
+  ) async {
+    _scope(session.namespace);
+    await _rpc('moderate_content', {
+      'content_kind': kind,
+      'content_id': id,
+      'hide': hide,
+      'report_id': reportId,
+    }, session);
+  }
+
   static RemoteChange _change(Map<String, dynamic> value) => RemoteChange(
     value['entityType'] as String,
     value['entityId'] as String,

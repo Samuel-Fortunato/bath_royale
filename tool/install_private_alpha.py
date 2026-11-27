@@ -38,7 +38,7 @@ def main():
     if not match:
         parser.error('Existing installation required; refusing a fresh installation')
     code = match[1]
-    name = f'0.1.0-alpha-a2.{code}'
+    name = f'0.1.0-alpha-a3.{code}'
     run(sys.executable, 'tool/verify_preview.py', 'key', args.keystore)
     paths = run('adb', 'shell', 'pm', 'path', PACKAGE, capture=True)
     base = next((p.removeprefix('package:').strip() for p in paths.splitlines()

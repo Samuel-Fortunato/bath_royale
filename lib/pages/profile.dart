@@ -1,4 +1,5 @@
 import 'private_synchronization.dart';
+import 'community_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
@@ -90,6 +91,7 @@ class ProfilePage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            if (state.canContribute) const CommunityProfileCard(),
             if (state.synchronization != null)
               PrivateSynchronizationCard(sync: state.synchronization!),
             Card(
@@ -128,7 +130,15 @@ class ProfilePage extends StatelessWidget {
                                 'O teu perfil',
                                 style: Theme.of(context).textTheme.titleLarge,
                               ),
-                              const Text('Explorador local'),
+                              Text(
+                                state.communityEnabled
+                                    ? (state.readOnly
+                                          ? 'Consulta sem conta'
+                                          : (state.publicUsername == null
+                                                ? 'Explorador'
+                                                : '@${state.publicUsername}'))
+                                    : 'Explorador local',
+                              ),
                             ],
                           ),
                         ),
@@ -201,7 +211,7 @@ class ProfilePage extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Text(
-                'A sincronização privada é opcional e pode ser gerida no Perfil. Os dados antigos e os exemplos fictícios estão preservados em separado.',
+                'Os dados da conta são sincronizados automaticamente após a aceitação inicial. As avaliações só são públicas quando as publicas. Os dados antigos de convidado e os exemplos fictícios ficam em separado.',
               ),
             ),
           ],
@@ -231,7 +241,9 @@ class FavouritesList extends StatelessWidget {
       itemCount: entries.length,
       itemBuilder: (context, index) => WcCard(
         entry: entries[index],
-        toggleFavorite: () => state.toggleFavorite(entries[index].bathroom.id),
+        toggleFavorite: state.readOnly
+            ? null
+            : () => state.toggleFavorite(entries[index].bathroom.id),
         onTap: () =>
             openCollectedBathroom(context, state, entries[index].bathroom.id),
       ),
@@ -266,7 +278,7 @@ class SettingsPage extends StatelessWidget {
                     'A tua escolha fica guardada neste dispositivo.',
                   ),
                   value: state.darkMode,
-                  onChanged: (_) => state.toggleTheme(),
+                  onChanged: state.readOnly ? null : (_) => state.toggleTheme(),
                 ),
                 const Divider(height: 32),
                 Text(
@@ -275,7 +287,7 @@ class SettingsPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'A sincronização privada é opcional e pode ser gerida no Perfil. Os dados antigos e os exemplos fictícios estão preservados em separado.',
+                  'Os dados da conta são sincronizados automaticamente após a aceitação inicial. As avaliações só são públicas quando as publicas. Os dados antigos de convidado e os exemplos fictícios ficam em separado.',
                 ),
               ],
             ),

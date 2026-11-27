@@ -1,4 +1,5 @@
 import 'bathroom_form.dart';
+import 'authentication.dart';
 import 'collection.dart';
 import 'rankings.dart';
 import 'profile.dart';
@@ -28,6 +29,14 @@ class _HomePageState extends State<HomePage> {
           const ['Explorar', 'Coleção', 'Rankings', 'Perfil'][tabIndex],
         ),
         actions: [
+          if (appState.readOnly)
+            TextButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(builder: (_) => const WelcomePage()),
+              ),
+              child: const Text('Entrar'),
+            ),
           if (tabIndex == 3)
             IconButton(
               tooltip: 'Definições',
@@ -63,9 +72,10 @@ class _HomePageState extends State<HomePage> {
           NavigationDestination(label: "Perfil", icon: Icon(Icons.person)),
         ],
       ),
-      floatingActionButton: tabIndex != 0
+      floatingActionButton: tabIndex != 0 || appState.readOnly
           ? null
-          : FloatingActionButton(
+          : FloatingActionButton.extended(
+              label: const Text('Adicionar trono'),
               tooltip: 'Criar casa de banho',
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
@@ -75,7 +85,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              child: const Icon(Icons.add),
+              icon: const Icon(Icons.add),
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(

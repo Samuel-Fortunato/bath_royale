@@ -187,6 +187,23 @@ class _ExplorePageState extends State<ExplorePage> {
             SliverToBoxAdapter(
               child: Column(
                 children: [
+                  if (appState.community != null)
+                    ListTile(
+                      dense: true,
+                      title: Text(
+                        appState.community!.error ??
+                            (appState.community!.running
+                                ? 'A atualizar o catálogo…'
+                                : 'Catálogo partilhado · avaliações publicadas'),
+                      ),
+                      trailing: IconButton(
+                        tooltip: 'Atualizar catálogo',
+                        onPressed: appState.community!.running
+                            ? null
+                            : appState.community!.refresh,
+                        icon: const Icon(Icons.refresh),
+                      ),
+                    ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 8, 8, 4),
                     child: Row(
@@ -320,7 +337,11 @@ class _ExplorePageState extends State<ExplorePage> {
                   padding: const EdgeInsets.all(24),
                   child: Text(
                     appState.entries.isEmpty
-                        ? 'Ainda não há tronos. Usa + para criar o primeiro! 🚽'
+                        ? (appState.communityEnabled
+                              ? (appState.readOnly
+                                    ? 'Ainda não há tronos no catálogo guardado. Atualiza com ligação à internet ou entra para contribuir. 🚽'
+                                    : 'Ainda não há tronos guardados. Atualiza o catálogo ou usa «Adicionar trono» para contribuir. 🚽')
+                              : 'Ainda não há tronos. Usa + para criar o primeiro! 🚽')
                         : 'Nenhum trono à vista. Experimenta limpar a pesquisa e os filtros. 🚽',
                   ),
                 ),
@@ -330,8 +351,10 @@ class _ExplorePageState extends State<ExplorePage> {
                 itemCount: filteredWCs.length,
                 itemBuilder: (context, i) => WcCard(
                   entry: filteredWCs[i],
-                  toggleFavorite: () =>
-                      appState.toggleFavorite(filteredWCs[i].bathroom.id),
+                  toggleFavorite: appState.readOnly
+                      ? null
+                      : () =>
+                            appState.toggleFavorite(filteredWCs[i].bathroom.id),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => ChangeNotifierProvider.value(

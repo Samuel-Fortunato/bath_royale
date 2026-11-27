@@ -6,6 +6,7 @@ import '../sync/sync_store.dart';
 import 'app_state.dart';
 import '../auth/production_auth.dart';
 import '../sync/private_sync_controller.dart';
+import '../sync/community_catalogue.dart';
 import '../sync/http_remote_data_source.dart';
 import '../sync/sync_coordinator.dart';
 
@@ -13,6 +14,7 @@ import '../sync/sync_coordinator.dart';
 /// Owns one selected state/connection; guest association is never implicit.
 /// Device selection enables local queueing, with transfer consent checked separately.
 class AccountStateScope extends ChangeNotifier {
+  final CommunityCatalogue? community;
   final bool offlineAccess;
   final bool accountOnly;
   final bool privateSync;
@@ -20,6 +22,7 @@ class AccountStateScope extends ChangeNotifier {
   final Future<LocalStore> Function(DataNamespace) openStore;
   final int Function() now;
   AccountStateScope.forTesting({
+    this.community,
     this.offlineAccess = false,
     this.accountOnly = false,
     this.privateSync = false,
@@ -31,9 +34,11 @@ class AccountStateScope extends ChangeNotifier {
   }
 
   AccountStateScope.device({
+    CommunityCatalogue? community,
     required AuthSession auth,
     required Future<LocalStore> Function(DataNamespace) openStore,
   }) : this.forTesting(
+         community: community,
          auth: auth,
          openStore: openStore,
          offlineAccess: true,
@@ -128,6 +133,7 @@ class AccountStateScope extends ChangeNotifier {
       store.close();
       rethrow;
     }
+    if (community != null) next.attachCommunity(community!);
     if (privateSync && auth is ProductionAuth) {
       final production = auth as ProductionAuth;
       final remote = HttpRemoteDataSource(

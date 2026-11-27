@@ -52,10 +52,13 @@ class _RankingsPageState extends State<RankingsPage> {
     final state = context.watch<AppState>();
     final rows = rankBathrooms(
       state.allBathrooms,
-      state.reviews,
+      !_personal && state.communityEnabled
+          ? state.community!.reviews
+          : state.reviews,
       _metric,
       userId: _personal ? state.currentUserId : null,
       worst: _worst,
+      bathroomIdentity: state.sharedIdentity,
     );
     return DefaultTabController(
       length: 4,
@@ -123,6 +126,8 @@ class _RankingsPageState extends State<RankingsPage> {
                     Text(
                       _personal
                           ? 'Média das tuas avaliações'
+                          : state.communityEnabled
+                          ? 'Média das avaliações publicadas'
                           : 'Média das avaliações locais',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),

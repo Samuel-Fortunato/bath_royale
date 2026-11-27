@@ -84,8 +84,10 @@ class _BathroomFormPageState extends State<BathroomFormPage> {
                 onFieldSubmitted: (_) => _save(),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Confirma que ainda não existe. Criar não conta como visita nem avaliação.',
+              Text(
+                context.read<AppState>().canContribute
+                    ? 'Este trono será público no catálogo comum. Confirma o edifício e o piso e procura duplicados antes de enviar. Criar não regista uma visita nem publica avaliações.'
+                    : 'Confirma que ainda não existe. Criar não conta como visita nem avaliação.',
               ),
               const SizedBox(height: 24),
               Center(

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- A3 app: replace normal enable/pause synchronization modes with clear, persistent onboarding acceptance and automatic account storage, preserving offline operations, conflict recovery, guest archives and genuine account records.
+- Add cached anonymous catalogue browsing, public contributions, explicit private/shared associations, public usernames, publication/withdrawal, reports and a small protected moderation screen. Compose personal visits/favourites with shared identities; use published-only community details, scores and rankings.
+- Preserve SQLite v7 data in v8; verify 224 Flutter regressions, offline cache/queue restart, narrow layouts, two-account community integration, real HTTPS authentication, backend/portability checks and release builds. Install private `0.1.0-alpha-a3.1023` in place with the original certificate and retained app identity/first-install date. Configured artifacts remain private; physical owner acceptance is separate from automated verification.
+
 - A3 backend: add a common anonymous catalogue with stable identities and duplicate prevention, explicit private bathroom associations, public usernames and separate published review/author identities. Preserve private visits, timestamps, favourites and email.
 - Add explicit owner publication/withdrawal, report deduplication and protected hide/restore moderation. Keep generic writes from bypassing publication, and serve current visibility when replaying historical public feeds.
 - Verify additive A2 preservation, direct HTTP authorization/isolation and populated community metadata export/restoration in isolated local infrastructure; retain the existing receipt/CAS/offline protocol and extend its export allowlist.

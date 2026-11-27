@@ -1,5 +1,8 @@
 # Authentication roadmap — Private alpha
 
+Current behavior: [A3 community alpha](community-alpha.md) supersedes the earlier optional enable/pause modes and adds anonymous catalogue browsing. Account storage requires clear initial acceptance and then synchronizes automatically. Public publication remains a separate explicit action; archived guests/examples stay excluded. The A1/A2 evidence below is historical.
+
+
 Current application integration: [A2 private account synchronization](private-account-synchronization.md). A1.1 UX is owner-accepted; A2 enables explicit-consent private synchronization and recovery without guest association/public identity. Test-only/disabled statements below describe the historical foundation milestone, not the current configured app.
 
 

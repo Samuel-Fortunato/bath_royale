@@ -1,5 +1,8 @@
 # A2 — Private account synchronization
 
+Current behavior: [A3 community alpha](community-alpha.md) supersedes the earlier optional enable/pause modes and adds anonymous catalogue browsing. Account storage requires clear initial acceptance and then synchronizes automatically. Public publication remains a separate explicit action; archived guests/examples stay excluded. The A1/A2 evidence below is historical.
+
+
 A2 is the approved continuation of A1/A1.1. The application now connects the existing transactional SQLite outbox, Auth session generation, authenticated HTTP adapter and server receipt/CAS/pull protocol. This does not enable a public catalogue, guest association, public profiles or publication. The managed project is not a deployment target for this work.
 
 ## Consent and account boundaries

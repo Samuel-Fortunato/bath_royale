@@ -120,29 +120,37 @@ class BathroomRepository {
         );
       });
   void setFavourite(String user, String bathroom, bool value) =>
+      store.transaction(() => _setFavourite(user, bathroom, value));
+  void setRelatedFavourites(String user, List<String> ids, bool value) =>
       store.transaction(() {
-        _owner(user);
-        final existing = store.database.select(
-          'SELECT provenance FROM favourites WHERE user=? AND bathroom=?',
-          [user, bathroom],
-        );
-        final eligible =
-            store.bathroomProvenance(bathroom).child.allowsFutureUpload &&
-            (existing.isEmpty ||
-                [
-                  Provenance.userCreated.value,
-                  Provenance.remote.value,
-                ].contains(existing.single['provenance']));
-        store.setFavourite(user, bathroom, value);
-        _queue(
-          'favourite',
-          bathroom,
-          'setFavourite',
-          {'user': user, 'bathroom': bathroom, 'value': value},
-          eligible: eligible,
-          references: [('bathroom', bathroom)],
-        );
+        for (final id in ids) {
+          _setFavourite(user, id, value);
+        }
       });
+  void _setFavourite(String user, String bathroom, bool value) {
+    _owner(user);
+    final existing = store.database.select(
+      'SELECT provenance FROM favourites WHERE user=? AND bathroom=?',
+      [user, bathroom],
+    );
+    final eligible =
+        store.bathroomProvenance(bathroom).child.allowsFutureUpload &&
+        (existing.isEmpty ||
+            [
+              Provenance.userCreated.value,
+              Provenance.remote.value,
+            ].contains(existing.single['provenance']));
+    store.setFavourite(user, bathroom, value);
+    _queue(
+      'favourite',
+      bathroom,
+      'setFavourite',
+      {'user': user, 'bathroom': bathroom, 'value': value},
+      eligible: eligible,
+      references: [('bathroom', bathroom)],
+    );
+  }
+
   void setDarkMode(bool value) =>
       store.transaction(() => store.setDarkMode(value));
 }

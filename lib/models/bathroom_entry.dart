@@ -10,18 +10,24 @@ class BathroomEntry {
   final Review? personalReview;
   final double? communityRating;
   final int reviewCount;
+  final String? catalogueLabel;
 
   BathroomEntry({
     required this.bathroom,
     required this.activity,
     required Iterable<Review> reviews,
     required Iterable<Visit> visits,
+    Iterable<ReviewScores>? communityReviews,
+    this.catalogueLabel,
   }) : personalReview = _latestPersonal(reviews, activity.userId, visits),
-       reviewCount = reviews.length,
-       communityRating = reviews.isEmpty
+       reviewCount = (communityReviews ?? reviews).length,
+       communityRating = (communityReviews ?? reviews).isEmpty
            ? null
-           : reviews.fold<double>(0, (sum, review) => sum + review.rating) /
-                 reviews.length;
+           : (communityReviews ?? reviews).fold<double>(
+                   0,
+                   (sum, review) => sum + review.rating,
+                 ) /
+                 (communityReviews ?? reviews).length;
 
   static Review? _latestPersonal(
     Iterable<Review> reviews,

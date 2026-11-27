@@ -1,6 +1,6 @@
 # Local storage
 
-Current schema is **v7**. A1 requires an authenticated account and archives the original guest file. [A2 private synchronization](backend/private-account-synchronization.md) integrates the existing account/outbox/cache foundations with explicit per-device consent, safe projection and durable recovery. v6 → v7 preserves local records and protocol metadata, adds consent/archive tables and removes account-only name uniqueness to support concurrent independent creation. No reset or guest association occurs. Earlier descriptions below document the foundation milestones.
+Current schema is **v8**. [A3](backend/community-alpha.md) adds non-destructive shared-parent markers and explicit private/shared associations. Account-domain rows, original IDs, visits, reviews, favourites, settings, outbox and consent remain intact across v7 → v8. Public catalogue/review data uses the separate environment-scoped public cache. Public pulls never overwrite private domain rows; projections materialize only missing shared parents. A3 account synchronization is automatic after acceptance, with no normal enable/pause modes. A1 guest archives remain untouched. Earlier v6/v7 and prototype descriptions below document foundation milestones.
 
 ## Architecture and durability (Phase 2.2A)
 

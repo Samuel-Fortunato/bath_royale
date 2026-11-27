@@ -11,7 +11,7 @@ enum RankingMetric {
   final String label;
   final int maximum;
   const RankingMetric(this.label, this.maximum);
-  double score(Review r) => switch (this) {
+  double score(ReviewScores r) => switch (this) {
     overall => r.rating,
     hygiene => r.hygiene.toDouble(),
     comfort => r.comfort.toDouble(),
@@ -29,17 +29,19 @@ class RankedBathroom {
 
 List<RankedBathroom> rankBathrooms(
   Iterable<Bathroom> bathrooms,
-  Iterable<Review> reviews,
+  Iterable<ReviewScores> reviews,
   RankingMetric metric, {
   String? userId,
   bool worst = false,
+  String Function(String)? bathroomIdentity,
 }) {
   final result = <RankedBathroom>[];
   for (final b in bathrooms) {
     final matching = reviews
         .where(
           (r) =>
-              r.bathroomId == b.id && (userId == null || r.authorId == userId),
+              (bathroomIdentity?.call(r.bathroomId) ?? r.bathroomId) == b.id &&
+              (userId == null || r.authorId == userId),
         )
         .toList();
     if (matching.isNotEmpty) {

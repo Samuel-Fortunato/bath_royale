@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import 'package:bath_royale/state/app_state.dart';
 import 'package:bath_royale/pages/home.dart';
+import 'pages/private_synchronization.dart';
+import 'auth/production_auth.dart';
 
 class MainApp extends StatelessWidget {
   // final ColorScheme lightColorScheme;
@@ -41,7 +43,17 @@ class MainApp extends StatelessWidget {
                 ),
               ),
             ),
-      home: HomePage(),
+      home: appState.synchronization == null
+          ? const HomePage()
+          : ListenableBuilder(
+              listenable: appState.synchronization!,
+              builder: (context, _) => appState.synchronization!.enabled
+                  ? const HomePage()
+                  : AccountStorageAcceptance(
+                      sync: appState.synchronization!,
+                      logout: () => context.read<ProductionAuth>().logout(),
+                    ),
+            ),
     );
   }
 }
