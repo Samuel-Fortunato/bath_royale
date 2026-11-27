@@ -1,11 +1,6 @@
 key,name,emoji,color
 ua-dlc,DLC,🗣️,#8B5CF6
-ua-deti-p1-e,DETI — Piso 1 Este,💻,#2563EB
-ua-deti-p1-o,DETI — Piso 1 Oeste,💻,#2563EB
-ua-deti-p2-e,DETI — Piso 2 Este,💻,#2563EB
-ua-deti-p2-o,DETI — Piso 2 Oeste,💻,#2563EB
-ua-deti-p3-e,DETI — Piso 3 Este,💻,#2563EB
-ua-deti-p3-o,DETI — Piso 3 Oeste,💻,#2563EB
+ua-deti,DETI,💻,#2563EB
 ua-dep,DEP,🧠,#EC4899
 ua-dao,DAO,🌍,#059669
 ua-dbio,DBIO,🧬,#65A30D
@@ -30,6 +25,7 @@ ua-isca,ISCA,🧮,#16A34A
 ua-biblioteca-p1,Biblioteca — Piso 1,📚,#4338CA
 ua-biblioteca-p2,Biblioteca — Piso 2,📚,#4338CA
 ua-biblioteca-p3,Biblioteca — Piso 3,📚,#4338CA
-ua-catacumbas,Catacumbas,💀,#52525B
+ua-catacumbas,Catacumbas,🕳️,#52525B
 ua-reitoria,Reitoria,🏛️,#B45309
 ua-antiga-reitoria,Antiga Reitoria,🕰️,#92400E
+ua-cantina,Cantina,🍴,#EA580C
