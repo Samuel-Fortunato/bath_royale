@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 
-# Every successful build gets its own publication; newer pushes cannot cancel it.
+# Validation runs independently; only approved configured alphas may publish.
 concurrency:
   group: android-preview-${{ github.run_id }}
   cancel-in-progress: false

@@ -160,7 +160,7 @@ Managed deployment and automated acceptance are verified. The final local checks
 - [x] Verify GitHub Actions using the locked Nix/Flutter/Android environment, formatting, precise Material-deprecation handling and automated tests.
 - [x] Verify an installable APK artifact from an actual successful GitHub Actions run on `main`, with manual dispatch, dependency caching, minimal permissions and 14-day retention.
 - [x] Compare the existing Android installation's identity/certificate with the local development key and configure the approved key as a GitHub Actions secret.
-- [x] Verify predictable preview versioning and APK signing; provide automatic GitHub development pre-release distribution.
+- [x] Verify predictable preview versioning and APK signing; provide automatic GitHub development pre-release distribution (historical milestone; superseded by configured-alpha-only distribution and owner-approved preview release/asset cleanup, with tags retained).
 - [x] Document phone installation, data-preserving update requirements and automatic verified commits/pushes.
 
 See [Android preview operations](docs/android-previews.md). Production signing and store release preparation remain open. This milestone does not start backend implementation.

@@ -49,6 +49,8 @@ def release_presentation(number, alpha):
 
 
 def publish(directory):
+    require(os.environ.get('CONFIGURED_ALPHA') == 'true',
+            'Development builds must not publish releases or assets')
     repo = os.environ['GH_REPO']
     sha = os.environ['GITHUB_SHA']
     number = os.environ['BUILD_NUMBER']

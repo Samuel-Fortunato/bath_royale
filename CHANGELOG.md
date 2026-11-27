@@ -1,5 +1,10 @@
 # Changelog
 
+## Historical development release cleanup
+
+- Remove all 24 historical preview releases and their 46 assets with owner approval; preserve all Git tags/source history and the sole remaining alpha release unchanged.
+- Retain historical verification evidence without removed-release links; independently block development publication in tooling and verify the alpha anonymous download/checksum with the gate disabled.
+
 ## GitHub alpha presentation
 
 - Present the initial alpha as v0.1.0 with Portuguese introduction, features, installation and limitations; highlight the approved icon and direct APK/checksum links in the README.

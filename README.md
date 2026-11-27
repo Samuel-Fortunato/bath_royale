@@ -65,7 +65,7 @@ Linux builds require a working Linux desktop toolchain. Android production and w
 
 ## Android releases and CI
 
-The current managed alpha is [v0.1.0 — Primeira Alfa](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1039). Historical `preview-*` releases are development builds. CI validates every main push; distribution requires the separately approved configured-alpha gate, currently disabled. See [installation and CI](docs/android-previews.md) and [release presentation/versioning](docs/releases/README.md). Never select a historical preview just because its internal build number is prominent.
+The current managed alpha is [v0.1.0 — Primeira Alfa](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1039). Historical `preview-*` releases and assets have been removed; their Git tags and source history remain. CI validates every main push; distribution requires the separately approved configured-alpha gate, currently disabled. See [installation and CI](docs/android-previews.md) and [release presentation/versioning](docs/releases/README.md). Development builds are validation-only and are not publicly distributed.
 
 See [AGENTS.md](AGENTS.md) for development and Git practices.
 

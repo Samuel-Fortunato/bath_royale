@@ -23,6 +23,16 @@ class PublicationTest(unittest.TestCase):
             else:
                 self.assertIn('sem configuração', notes)
 
+    def test_development_publication_is_blocked_before_io(self):
+        for configured in ('false', ''):
+            with patch.dict(os.environ, CONFIGURED_ALPHA=configured), \
+                    patch.object(publisher, 'api') as api, \
+                    patch.object(publisher, 'gh') as gh:
+                with self.assertRaisesRegex(RuntimeError, 'Development builds'):
+                    publisher.publish(Path('/nonexistent/artifact'))
+                api.assert_not_called()
+                gh.assert_not_called()
+
     def test_checkout_precedes_artifact_download(self):
         workflow = (Path(__file__).resolve().parents[1] /
                     '.github/workflows/android-preview.yml').read_text()
@@ -34,17 +44,17 @@ class PublicationTest(unittest.TestCase):
         self.assertIn('flutter build apk --release --no-pub', workflow)
         self.assertNotIn('--split-per-abi', workflow)
         self.assertIn('app-release.apk', workflow)
+        self.assertIn("if: steps.build.outputs.configured_alpha == 'true'", workflow)
+        self.assertIn("needs.verify-and-build.outputs.configured_alpha == 'true'", publication)
         self.assertLess(workflow.index('python3 tool/verify_preview.py key'),
                         workflow.index('flutter build apk'))
         self.assertLess(workflow.index('python3 tool/verify_preview.py apk'),
                         workflow.index('Upload APK and checksum'))
 
     def test_publication_scenarios(self):
-        for case in ('new', 'partial', 'complete', 'wrong-tag', 'wrong-asset',
-                     'bad-checksum', 'incomplete-public', 'interrupted',
-                     'alpha/new', 'alpha/partial', 'alpha/complete', 'alpha/interrupted'):
-            alpha = case.startswith('alpha/')
-            scenario = case.split('/')[-1]
+        for scenario in ('new', 'partial', 'complete', 'wrong-tag', 'wrong-asset',
+                         'bad-checksum', 'incomplete-public', 'interrupted'):
+            alpha = True
             tag = 'alpha-1001' if alpha else 'preview-1001'
             with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as tmp:
                 directory = Path(tmp)
