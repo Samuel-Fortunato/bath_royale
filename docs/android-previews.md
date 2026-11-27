@@ -1,5 +1,7 @@
 # Android previews and CI
 
+A5.1 adds an explicitly gated configured alpha build and current-password/code recovery. See [the release handover](backend/alpha-release-preparation.md); historical unconfigured-only statements below describe earlier milestones. Managed deployment/configured publication remain unapproved.
+
 ## Download and install from a phone
 
 1. Open [Releases](https://github.com/Samuel-Fortunato/bath_royale/releases), select the development pre-release with the highest build number and download **bath-royale.apk** under **Assets**. No GitHub login or ZIP extraction is needed for this public repository. `/releases/latest` excludes pre-releases and must not be used.

@@ -66,7 +66,9 @@ class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap>
       auth =
           widget.createAuth?.call() ??
           ProductionAuth(
-            AuthConfiguration(
+            (const bool.fromEnvironment('BATH_PUBLIC_ALPHA')
+                ? AuthConfiguration.alpha
+                : AuthConfiguration.new)(
               const String.fromEnvironment('SUPABASE_URL'),
               const String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY'),
             ),

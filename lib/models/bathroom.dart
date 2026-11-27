@@ -12,6 +12,7 @@ class Bathroom {
   String get emoji => _emoji ?? defaultEmoji(id, name);
   int get accent => _accent ?? stableIndex(id) % 6;
 
+  // Historical identity fallback: do not reorder or replace; picker suggestions live separately.
   static const emojis = ['🚽', '👑', '📚', '🌿', '🔧', '🌈', '🏛️', '🧪'];
   static const emojiNames = [
     'Sanita',

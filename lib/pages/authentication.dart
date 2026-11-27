@@ -1,3 +1,4 @@
+import '../auth/alpha_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
@@ -185,6 +186,7 @@ enum AuthFlow {
 class _AuthenticationPanelState extends State<AuthenticationPanel> {
   final email = TextEditingController();
   final password = TextEditingController();
+  final currentPassword = TextEditingController();
   final code = TextEditingController();
   late AuthFlow flow;
   @override
@@ -203,6 +205,7 @@ class _AuthenticationPanelState extends State<AuthenticationPanel> {
     passwordFocus.dispose();
     email.dispose();
     password.dispose();
+    currentPassword.dispose();
     code.dispose();
     super.dispose();
   }
@@ -218,6 +221,69 @@ class _AuthenticationPanelState extends State<AuthenticationPanel> {
         ),
       ),
     );
+  }
+
+  Future<void> recoveryCode(ProductionAuth auth) async {
+    var input = '';
+    final password = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Código de recuperação'),
+        content: TextField(
+          onChanged: (v) => input = v,
+          obscureText: true,
+          autocorrect: false,
+          enableSuggestions: false,
+          decoration: const InputDecoration(
+            labelText: 'Palavra-passe atual',
+            helperText: 'Um novo código substitui o anterior.',
+            helperMaxLines: 2,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, input),
+            child: const Text('Criar código'),
+          ),
+        ],
+      ),
+    );
+    if (password == null || !mounted) return;
+    final code = await auth.createRecoveryCode(password);
+    if (code == null || !mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Guarda este código'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Guarda-o num local seguro fora do telefone. Será pedido pelo suporte se perderes o acesso. Nunca envies a palavra-passe.',
+              ),
+              SelectableText(code),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String takeCurrentPassword() {
+    final value = currentPassword.text;
+    currentPassword.clear();
+    return value;
   }
 
   Future<void> submit(
@@ -299,7 +365,7 @@ class _AuthenticationPanelState extends State<AuthenticationPanel> {
                   const SizedBox(height: 12),
                   if (auth.privateEmail != null) Text(auth.privateEmail!),
                   const Text(
-                    'Email privado. O nome público é escolhido em separado.',
+                    'Email privado; nesta alfa não comprova a identidade do titular.',
                   ),
                   Text(
                     auth.status == SessionStatus.authenticated
@@ -313,6 +379,11 @@ class _AuthenticationPanelState extends State<AuthenticationPanel> {
                     ),
                   if (activeFlow != AuthFlow.password)
                     link('Alterar palavra-passe', AuthFlow.password),
+                  if (activeFlow != AuthFlow.password)
+                    TextButton(
+                      onPressed: auth.busy ? null : () => recoveryCode(auth),
+                      child: const Text('Guardar código de recuperação'),
+                    ),
                   if (activeFlow != AuthFlow.password)
                     TextButton(
                       onPressed: auth.busy
@@ -382,6 +453,21 @@ class _AuthenticationPanelState extends State<AuthenticationPanel> {
                         labelText: 'Email',
                         errorMaxLines: 3,
                       ),
+                    ),
+                  if (activeFlow == AuthFlow.password &&
+                      !auth.needsPasswordChange)
+                    TextFormField(
+                      controller: currentPassword,
+                      obscureText: true,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      decoration: const InputDecoration(
+                        labelText: 'Palavra-passe atual',
+                        errorMaxLines: 3,
+                      ),
+                      validator: (v) => v == null || v.isEmpty
+                          ? 'Introduz a palavra-passe atual.'
+                          : null,
                     ),
                   if (passwordFlow)
                     TextFormField(
@@ -453,9 +539,7 @@ class _AuthenticationPanelState extends State<AuthenticationPanel> {
                     ),
                   if (activeFlow == AuthFlow.recovery &&
                       !auth.configuration.passwordRecoveryAvailable)
-                    const Text(
-                      'A recuperação da palavra-passe não está disponível nesta alfa local. Guarda a tua palavra-passe; se a perderes, contacta quem gere o teste. Não precisas de criar outra conta para voltar a tentar entrar.',
-                    ),
+                    const Text(alphaRecoveryInformation),
                   if (activeFlow != AuthFlow.recovery ||
                       auth.configuration.passwordRecoveryAvailable)
                     FilledButton(
@@ -482,6 +566,7 @@ class _AuthenticationPanelState extends State<AuthenticationPanel> {
                                     ),
                                     AuthFlow.password => a.changePassword(
                                       secret,
+                                      currentPassword: takeCurrentPassword(),
                                     ),
                                   },
                               requireEmail: !signedIn,

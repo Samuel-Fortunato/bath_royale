@@ -71,6 +71,18 @@ class DelayedLoginClient extends GoTrueClient {
   Future<void> signOut({SignOutScope scope = SignOutScope.local}) async {}
 }
 
+class PasswordClient extends DelayedLoginClient {
+  UserAttributes? update;
+  @override
+  Future<UserResponse> updateUser(
+    UserAttributes attributes, {
+    String? emailRedirectTo,
+  }) async {
+    update = attributes;
+    return UserResponse.fromJson(fixtureSession().user.toJson());
+  }
+}
+
 Session fixtureSession() => Session(
   accessToken: 'fixture',
   refreshToken: 'fixture-refresh',
@@ -133,7 +145,7 @@ void main() {
   });
 
   test(
-    'alpha policy cannot target production or disable default confirmation',
+    'isolated policy remains scoped; explicit alpha keeps production recovery separate',
     () async {
       final production = AuthConfiguration(
         'https://production.example',
@@ -141,6 +153,19 @@ void main() {
       );
       expect(production.emailConfirmationRequired, isTrue);
       expect(production.passwordRecoveryAvailable, isTrue);
+      final alpha = AuthConfiguration.alpha(
+        'https://project.supabase.co',
+        'sb_publishable_example',
+      );
+      expect(alpha.emailConfirmationRequired, isFalse);
+      expect(alpha.passwordRecoveryAvailable, isFalse);
+      expect(
+        () => AuthConfiguration.alpha(
+          'http://project.supabase.co',
+          'sb_publishable_example',
+        ),
+        throwsArgumentError,
+      );
       expect(
         () => AuthConfiguration.localAlpha(
           'https://production.example',
@@ -168,9 +193,36 @@ void main() {
         client: DelayedLoginClient(),
       );
       await auth.recover('friend@example.invalid');
-      expect(auth.message, contains('não está disponível'));
+      expect(auth.message, contains('código de recuperação'));
       expect(auth.current, isNull);
       expect(vault.values, isEmpty);
+      auth.dispose();
+    },
+  );
+
+  test(
+    'password change forwards current password without persisting either password',
+    () async {
+      final vault = MemoryVault();
+      final client = PasswordClient();
+      final auth = ProductionAuth(
+        AuthConfiguration('https://password.example', 'client'),
+        vault,
+        restorationGuard: vault.guard,
+        client: client,
+        now: () => -1, // The synthetic session has expiry zero.
+      );
+      client.response.complete(AuthResponse(session: fixtureSession()));
+      await auth.login('fiction@example.invalid', 'old-secret');
+      await auth.changePassword('new-secret', currentPassword: 'old-secret');
+      expect(
+        client.update!.toJson(),
+        containsPair('current_password', 'old-secret'),
+      );
+      expect(client.update!.toJson(), containsPair('password', 'new-secret'));
+      expect(vault.values.values.join(), isNot(contains('old-secret')));
+      expect(vault.values.values.join(), isNot(contains('new-secret')));
+      expect(auth.message, 'Palavra-passe atualizada.');
       auth.dispose();
     },
   );

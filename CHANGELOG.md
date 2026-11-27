@@ -1,5 +1,13 @@
 # Changelog
 
+## A5.1 — Alpha release preparation
+
+- Preserve open registration/anonymous browsing; enforce current-password changes server-side and rehearse bounded registration, blocked unverified-email recovery and one-time private recovery codes.
+- Add operator-only scoped erasure, native Auth recovery/deletion rehearsal, recovery/quota backup coverage and ordered transactional migration-plan generation; retire managed fixture-writing workflows.
+- Clarify actual public/private data and unverified-email support; document non-destructive managed preparation, fixture retirement, backup/restoration, initial administrator, retention proposals and approval gates.
+- Prepare trusted-HTTPS universal signed alpha APKs and gated automatic GitHub publication with checksums, public configuration only, feedback enabled and development payload exclusion. Keep the configured build private; update the isolated development phone in place.
+- Centralize provisional owner-maintained tag/emoji suggestions without changing historical bathroom identity; require replacement of the personal support contact before public launch. Genuine final catalogue/content remains owner-supplied.
+
 ## A4.1 — Synchronization UX cleanup
 
 - Remove permanent Settings diagnostics and routine offline/pending warnings; show contextual resolution only for actionable synchronization issues.

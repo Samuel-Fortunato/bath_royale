@@ -1,5 +1,7 @@
 # A2 — Private account synchronization
 
+Current alpha release/security/deployment procedure: [A5.1 preparation](alpha-release-preparation.md). Historical reset, guest, private-only catalogue and email-recovery statements below do not authorize deployment or override that procedure.
+
 Current behavior: [A3.1](community-simplification.md) supersedes optional enable/pause modes, private/shared association, public usernames and explicit publication. Account storage requires concise initial acceptance and then synchronizes automatically. Newly submitted shared reviews are automatically public and anonymous after disclosure; historical private reviews and archived guests/examples stay private. Recovery and diagnostics live in Settings. The A1/A2 evidence below is historical.
 
 

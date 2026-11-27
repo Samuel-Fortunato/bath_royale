@@ -1,3 +1,5 @@
+import 'collection_profile_test.dart' show capture;
+import 'package:flutter/services.dart';
 import '../tool/local_development.dart' show developmentAccounts;
 import 'package:bath_royale/pages/private_synchronization.dart';
 import 'package:bath_royale/storage/bathroom_repository.dart';
@@ -11,7 +13,12 @@ import 'package:bath_royale/pages/authentication.dart';
 import 'package:bath_royale/pages/home.dart';
 import 'package:bath_royale/theme/theme.dart';
 import 'production_auth_test.dart'
-    show MemoryGuard, MemoryVault, DelayedLoginClient, fixtureSession;
+    show
+        MemoryGuard,
+        MemoryVault,
+        DelayedLoginClient,
+        PasswordClient,
+        fixtureSession;
 import 'package:supabase/supabase.dart'
     show AuthResponse, AuthException, Session;
 import 'package:flutter/material.dart';
@@ -44,6 +51,102 @@ class SequenceClient extends DelayedLoginClient {
 }
 
 void main() {
+  setUpAll(() async {
+    const font = String.fromEnvironment('SESSION3_FONT');
+    if (font.isEmpty) return;
+    final bytes = await File(font).readAsBytes();
+    await (FontLoader(
+      'Roboto',
+    )..addFont(Future.value(bytes.buffer.asByteData()))).load();
+    final icons = await rootBundle.load('fonts/MaterialIcons-Regular.otf');
+    await (FontLoader('MaterialIcons')..addFont(Future.value(icons))).load();
+  });
+  testWidgets(
+    'password change requires current proof with reachable keyboard actions',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+      for (final width in [320.0, 390.0]) {
+        for (final dark in [false, true]) {
+          for (final scale in [1.0, 1.5]) {
+            tester.view.physicalSize = Size(width, 780);
+            final vault = MemoryVault();
+            final client = PasswordClient();
+            final auth = ProductionAuth(
+              AuthConfiguration('https://password.test', 'client'),
+              vault,
+              restorationGuard: vault.guard,
+              client: client,
+              now: () => -1,
+            );
+            client.response.complete(AuthResponse(session: fixtureSession()));
+            await auth.login('fiction@example.invalid', 'old-secret');
+            await tester.pumpWidget(
+              ChangeNotifierProvider.value(
+                value: auth,
+                child: RepaintBoundary(
+                  child: MaterialApp(
+                    debugShowCheckedModeBanner: false,
+                    theme: dark ? AppTheme.darkTheme : AppTheme.lightTheme,
+                    builder: (context, child) => MediaQuery(
+                      data: MediaQuery.of(context).copyWith(
+                        textScaler: TextScaler.linear(scale),
+                        viewInsets: const EdgeInsets.only(bottom: 240),
+                      ),
+                      child: child!,
+                    ),
+                    home: const AuthenticationPage(
+                      initialFlow: AuthFlow.password,
+                    ),
+                  ),
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
+            final submit = find.widgetWithText(
+              FilledButton,
+              'Guardar palavra-passe',
+            );
+            await tester.ensureVisible(submit);
+            await tester.pumpAndSettle();
+            await tester.tap(submit);
+            await tester.pumpAndSettle();
+            expect(
+              find.text('Introduz a palavra-passe atual.'),
+              findsOneWidget,
+            );
+            expect(client.update, isNull);
+            final current = find.widgetWithText(
+              TextField,
+              'Palavra-passe atual',
+            );
+            final password = find.widgetWithText(
+              TextField,
+              'Nova palavra-passe',
+            );
+            await tester.ensureVisible(current);
+            await tester.pumpAndSettle();
+            await tester.enterText(current, 'old-secret');
+            expect(tester.widget<TextField>(current).obscureText, isTrue);
+            await tester.ensureVisible(password);
+            await tester.pumpAndSettle();
+            await tester.enterText(password, 'new-secret');
+            await tester.ensureVisible(submit);
+            await tester.pumpAndSettle();
+            await capture(tester, 'a51-password-$width-$dark-$scale');
+            await tester.tap(submit);
+            await tester.pumpAndSettle();
+            expect(client.update!.toJson()['current_password'], 'old-secret');
+            expect(find.text('Palavra-passe atualizada.'), findsOneWidget);
+            expect(tester.takeException(), isNull);
+            await tester.pumpWidget(const SizedBox.shrink());
+            auth.dispose();
+          }
+        }
+      }
+    },
+  );
   testWidgets(
     'development account selector is one tap and ordinary entry has no shortcut',
     (tester) async {
@@ -371,12 +474,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Esqueci-me da palavra-passe'));
       await tester.pumpAndSettle();
-      expect(
-        find.textContaining(
-          'A recuperação da palavra-passe não está disponível',
-        ),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Recuperação e eliminação:'), findsOneWidget);
       expect(find.text('Enviar instruções'), findsNothing);
       expect(find.byType(TextField), findsNothing);
       expect(find.text('Email ou palavra-passe incorretos.'), findsNothing);

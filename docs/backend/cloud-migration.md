@@ -1,5 +1,7 @@
 # Phase 2.1C — Managed migration rehearsal
 
+Current alpha release/security/deployment procedure: [A5.1 preparation](alpha-release-preparation.md). Historical reset, guest, private-only catalogue and email-recovery statements below do not authorize deployment or override that procedure.
+
 Status on 2026-11-26: **managed exit rehearsal passed for the tested scope; production acceptance deferred**.
 The owner authorized only the dedicated fictional-data **Bath Royale Test** project
 on Free, Frankfurt, reference `eiitfxbmavmqafqwfxiy`. No Phase 2.2, production hosting

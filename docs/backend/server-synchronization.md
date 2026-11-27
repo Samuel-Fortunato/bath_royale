@@ -1,5 +1,7 @@
 # Server synchronization protocol — Phase 2.2C
 
+Current alpha release/security/deployment procedure: [A5.1 preparation](alpha-release-preparation.md). Historical reset, guest, private-only catalogue and email-recovery statements below do not authorize deployment or override that procedure.
+
 Current application integration: [A2 private account synchronization](private-account-synchronization.md). A1.1 UX is owner-accepted; A2 enables explicit-consent private synchronization and recovery without guest association/public identity. Test-only/disabled statements below describe the historical foundation milestone, not the current configured app.
 
 

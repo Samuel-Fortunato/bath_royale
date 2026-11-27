@@ -37,6 +37,8 @@ TABLES = [
     "app_private.reports",
     "app_private.bathroom_creators",
     "app_private.alpha_feedback",
+    "app_private.alpha_recovery",
+    "app_private.alpha_signup_buckets",
     "app_private.sync_clock",
     "app_private.sync_records",
     "app_private.sync_changes",

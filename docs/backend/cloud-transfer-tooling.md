@@ -1,5 +1,7 @@
 # Managed export and fresh self-hosted restore tooling
 
+Current alpha release/security/deployment procedure: [A5.1 preparation](alpha-release-preparation.md). Historical reset, guest, private-only catalogue and email-recovery statements below do not authorize deployment or override that procedure.
+
 `backend/cloud_transfer.py` extracts the Python execution scripts retained in the
 private Phase 2.1C evidence bundle. The end-to-end rehearsal passed at **9b634c9**;
 [its measurements, identities, compatibility findings and assertion counts](cloud-migration.md)

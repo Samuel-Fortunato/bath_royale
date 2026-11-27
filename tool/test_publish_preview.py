@@ -27,8 +27,12 @@ class PublicationTest(unittest.TestCase):
                         workflow.index('Upload APK and checksum'))
 
     def test_publication_scenarios(self):
-        for scenario in ('new', 'partial', 'complete', 'wrong-tag', 'wrong-asset',
-                         'bad-checksum', 'incomplete-public', 'interrupted'):
+        for case in ('new', 'partial', 'complete', 'wrong-tag', 'wrong-asset',
+                     'bad-checksum', 'incomplete-public', 'interrupted',
+                     'alpha/new', 'alpha/partial', 'alpha/complete', 'alpha/interrupted'):
+            alpha = case.startswith('alpha/')
+            scenario = case.split('/')[-1]
+            tag = 'alpha-1001' if alpha else 'preview-1001'
             with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as tmp:
                 directory = Path(tmp)
                 (directory / 'bath-royale.apk').write_bytes(b'verified APK')
@@ -41,7 +45,7 @@ class PublicationTest(unittest.TestCase):
                     {'name': 'bath-royale.apk', 'id': 1}]
                 if scenario == 'complete':
                     assets.append({'name': 'SHA256SUMS', 'id': 2})
-                release = {'id': 42, 'tag_name': 'preview-1001', 'target_commitish': 'abc',
+                release = {'id': 42, 'tag_name': tag, 'target_commitish': 'abc',
                            'prerelease': True, 'draft': scenario not in
                            ('complete', 'incomplete-public'), 'assets': assets}
                 mutations = []
@@ -49,7 +53,7 @@ class PublicationTest(unittest.TestCase):
                 def api(path, *args):
                     if 'matching-refs' in path:
                         return [] if scenario == 'new' else [{
-                            'ref': 'refs/tags/preview-1001', 'object': {
+                            'ref': f'refs/tags/{tag}', 'object': {
                                 'type': 'commit', 'sha': 'other' if scenario ==
                                 'wrong-tag' else 'abc'}}]
                     if path.endswith('/git/refs'):
@@ -76,7 +80,7 @@ class PublicationTest(unittest.TestCase):
                                          else 'SHA256SUMS')).read_bytes()
 
                 with patch.dict(os.environ, GH_REPO='owner/repo', GITHUB_SHA='abc',
-                                BUILD_NUMBER='1001'), patch.object(publisher, 'api', api), \
+                                BUILD_NUMBER='1001', CONFIGURED_ALPHA='true' if alpha else 'false'), patch.object(publisher, 'api', api), \
                         patch.object(publisher, 'gh', gh), \
                         patch.object(publisher.subprocess, 'check_output', download):
                     if scenario in ('wrong-tag', 'wrong-asset', 'bad-checksum',

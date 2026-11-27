@@ -1,0 +1,13 @@
+# Isolated release-policy rehearsal. No SMTP/email-based alpha recovery.
+services:
+  auth:
+    environment:
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD: "true"
+      GOTRUE_HOOK_SEND_EMAIL_ENABLED: "true"
+      GOTRUE_HOOK_SEND_EMAIL_URI: pg-functions://postgres/public/alpha_no_email
+      GOTRUE_HOOK_BEFORE_USER_CREATED_ENABLED: "true"
+      GOTRUE_HOOK_BEFORE_USER_CREATED_URI: pg-functions://postgres/public/alpha_signup_limit
+      GOTRUE_RATE_LIMIT_SIGN_UPS: 30
+      GOTRUE_RATE_LIMIT_VERIFY: 30
+      GOTRUE_RATE_LIMIT_TOKEN_REFRESH: 150

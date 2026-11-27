@@ -36,7 +36,8 @@ def publish(directory):
     sha = os.environ['GITHUB_SHA']
     number = os.environ['BUILD_NUMBER']
     require(number.isdecimal(), 'Invalid build number')
-    tag = f'preview-{number}'
+    alpha = os.environ.get('CONFIGURED_ALPHA') == 'true'
+    tag = f"{'alpha' if alpha else 'preview'}-{number}"
     apk = directory / 'bath-royale.apk'
     expected = hashlib.sha256(apk.read_bytes()).hexdigest() + '  ./bath-royale.apk\n'
     require((directory / 'SHA256SUMS').read_text() == expected, 'Checksum mismatch')
@@ -51,7 +52,9 @@ def publish(directory):
     releases = api(f'repos/{repo}/releases?per_page=100', '--paginate', '--slurp')
     matches = [r for page in releases for r in page if r['tag_name'] == tag]
     if not matches:
-        notes = (f'Pré-lançamento Android de desenvolvimento — compilação {number}.\n\n'
+        title = 'Alfa' if alpha else 'Desenvolvimento'
+        introduction = 'Alfa Android: regista a tua conta na aplicação.' if alpha else 'Pré-lançamento Android de desenvolvimento.'
+        notes = (f'{introduction} Compilação {number}.\n\n'
                  f'Commit de origem: {sha}\n\n'
                  'Transfere bath-royale.apk nos Assets e abre-o no Android. Se necessário, '
                  'permite a instalação a partir do navegador. Escolhe Atualizar e mantém '
@@ -63,7 +66,7 @@ def publish(directory):
         release = api(f'repos/{repo}/releases', '-f', f'tag_name={tag}',
                       '-f', f'target_commitish={sha}', '-F', 'draft=true',
                       '-F', 'prerelease=true', '-f', 'make_latest=false',
-                      '-f', f'name=Bath Royale — Desenvolvimento {number}',
+                      '-f', f'name=Bath Royale — {title} {number}',
                       '-f', f'body={notes}')
     else:
         release = matches[0]

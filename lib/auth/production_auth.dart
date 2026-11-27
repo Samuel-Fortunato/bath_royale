@@ -1,3 +1,4 @@
+import 'alpha_policy.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -40,6 +41,14 @@ class AuthConfiguration {
       passwordRecoveryAvailable = true,
       endpoint = Uri.parse(url) {
     _validate(localTest);
+  }
+
+  /// Public alpha policy; unverified email is an account label, never recovery proof.
+  AuthConfiguration.alpha(String url, this.clientKey)
+    : emailConfirmationRequired = false,
+      passwordRecoveryAvailable = false,
+      endpoint = Uri.parse(url) {
+    _validate(false);
   }
 
   /// No ordinary dart-define can enable local alpha policy for a managed host.
@@ -298,8 +307,7 @@ class ProductionAuth extends ChangeNotifier implements AuthSession {
 
   Future<void> recover(String email) => _run(() async {
     if (!configuration.passwordRecoveryAvailable) {
-      message =
-          'A recuperação da palavra-passe não está disponível nesta alfa local.';
+      message = alphaRecoveryInformation;
       return;
     }
     await client.resetPasswordForEmail(email.trim());
@@ -333,16 +341,50 @@ class ProductionAuth extends ChangeNotifier implements AuthSession {
         _publish(response.session!);
       });
 
-  Future<void> changePassword(String password) => _run(() async {
-    if (storageBlocked || status != SessionStatus.authenticated) {
-      throw StateError('Reauthenticate first');
-    }
-    await client.updateUser(UserAttributes(password: password));
-    if (client.currentSession != null) {
-      await _persist(client.currentSession!, recovery: false);
-    }
-    message = 'Palavra-passe atualizada.';
-  });
+  Future<void> changePassword(String password, {String? currentPassword}) =>
+      _run(() async {
+        if (storageBlocked || status != SessionStatus.authenticated) {
+          throw StateError('Reauthenticate first');
+        }
+        await client.updateUser(
+          UserAttributes(password: password, currentPassword: currentPassword),
+        );
+        if (client.currentSession != null) {
+          await _persist(client.currentSession!, recovery: false);
+        }
+        message = 'Palavra-passe atualizada.';
+      });
+
+  Future<String?> createRecoveryCode(String currentPassword) async {
+    String? code;
+    await _run(() async {
+      if (current == null || privateEmail == null || storageBlocked) {
+        throw StateError('Sign in first');
+      }
+      final temporary = SupabaseClient(
+        configuration.environment,
+        configuration.clientKey,
+        authOptions: const AuthClientOptions(autoRefreshToken: false),
+      );
+      try {
+        final response = await temporary.auth.signInWithPassword(
+          email: privateEmail!,
+          password: currentPassword,
+        );
+        if (response.user?.id != current!.namespace.subject) {
+          throw StateError('Account mismatch');
+        }
+        code = await temporary.rpc('create_alpha_recovery_code') as String;
+      } finally {
+        try {
+          await temporary.auth.signOut(scope: SignOutScope.local);
+        } finally {
+          await temporary.dispose();
+        }
+      }
+    });
+    return code;
+  }
 
   Future<void>? _renewing;
   Future<void> renew({bool force = false}) {

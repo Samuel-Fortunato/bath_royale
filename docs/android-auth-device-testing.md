@@ -1,5 +1,7 @@
 # Private Android account preview
 
+A5.1 adds an explicitly gated configured alpha build and current-password/code recovery. See [the release handover](backend/alpha-release-preparation.md); historical unconfigured-only statements below describe earlier milestones. Managed deployment/configured publication remain unapproved.
+
 Current procedure and acceptance: [A3.1 development build](#a31-development-build-and-acceptance). Earlier A2/A3 sections retain historical evidence; their pause, manual association, username and publication instructions are superseded.
 
 The ordinary GitHub APK is intentionally **without Auth configuration** and A1 shows an account-service-unavailable screen: its `lib/main.dart` build has no `SUPABASE_URL` or `SUPABASE_PUBLISHABLE_KEY`. Do not add a development endpoint, CA, signing material or Auth credentials to that workflow or publish the APK described here. Backend deployment and public email delivery remain separate approval gates. This procedure uses only the independent `bath-royale-poc-auth` installation, fictional accounts, local mail capture and USB. It never needs the existing managed project, a paid service, a domain or a public listener.

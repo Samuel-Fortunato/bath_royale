@@ -129,6 +129,11 @@ def compose(*args):
             "-f",
             str(ROOT / "backend/compose.yml"),
             *(["-f", str(ROOT / "backend/auth-compose.yml")] if INSTANCE == "auth" else []),
+            *(
+                ["-f", str(ROOT / "backend/alpha-compose.yml")]
+                if INSTANCE in ("community", "protocol", "fixtures")
+                else []
+            ),
             "-p",
             PROJECT,
             *args,

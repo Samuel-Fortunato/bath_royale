@@ -1,3 +1,4 @@
+import '../models/content_suggestions.dart';
 import '../widgets/alpha_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -41,32 +42,6 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   final _comment = TextEditingController();
   String? _tagError;
   List<ReviewTagData>? _draftSuggestions;
-  static final _suggestions = [
-    '🪞 Espelho gigante',
-    '🎵 Música ambiente',
-    '🪴 Selva interior',
-    '🌅 Vista panorâmica',
-    '🎨 Arte nas paredes',
-    '🪝 Gancho para mochila',
-    '🤫 Silenciosa',
-    '🔒 Privacidade',
-    '♿ Acessível',
-    '🚰 Sem sabonete',
-    '🌬️ Bem ventilada',
-    '💡 Boa iluminação',
-    '🚪 Porta sem trinco',
-    '🧻 Papel macio',
-    '🫧 Sabonete disponível',
-    '💧 Chão molhado',
-    '👃 Cheiro duvidoso',
-    '🧼 Impecável',
-    '⏳ Fila demorada',
-    '👜 Sem apoio para malas',
-    '🪝 Cabide disponível',
-    '❄️ Fresquinha',
-    '🔥 Um forno',
-    '🛠️ Precisa de arranjos',
-  ].map(ReviewTagData.legacy).toList();
   int? _hygiene, _comfort, _aesthetics, _paper;
   @override
   void initState() {
@@ -479,7 +454,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
 
   Widget _tagStep(AppState state) {
     final known = <String, ReviewTagData>{
-      for (final t in _suggestions) TagPresentation.key(t): t,
+      for (final t in reviewTagSuggestions) TagPresentation.key(t): t,
       for (final r in state.reviews.where(
         (r) => r.authorId == state.currentUserId,
       ))

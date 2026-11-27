@@ -108,6 +108,19 @@ void main() {
         );
         expect(auth.current, isNotNull);
         expect(auth.privateEmail, accounts[index]['email']);
+        if (index == 4) {
+          final sessionBefore = Map.of(vault.values);
+          expect(await auth.createRecoveryCode('incorrect-password'), isNull);
+          final code = await auth.createRecoveryCode(
+            accounts[index]['password'] as String,
+          );
+          expect(code, startsWith('${auth.current!.namespace.subject}:'));
+          expect(code!.split(':').last.length, 64);
+          expect(
+            vault.values,
+            sessionBefore,
+          ); // Fresh proof never replaces primary credentials.
+        }
         final local = LocalStore(
           sqlite3.openInMemory(),
           namespace: auth.current!.namespace,

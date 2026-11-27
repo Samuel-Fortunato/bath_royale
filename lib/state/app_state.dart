@@ -228,6 +228,9 @@ class AppState extends ChangeNotifier {
   );
 
   static AppState restore(LocalStore store) {
+    if (const bool.fromEnvironment('BATH_PUBLIC_ALPHA')) {
+      throw StateError('Demo bootstrap is unavailable in alpha releases');
+    }
     if (store.namespace.kind != 'guest') {
       throw ArgumentError('Application bootstrap is guest-only');
     }
@@ -360,13 +363,24 @@ class AppState extends ChangeNotifier {
     List<Review>? reviews,
     List<Visit>? visits,
     List<BathroomActivity>? activities,
-  }) : _bathrooms = List.of(bathrooms ?? sampleBathrooms),
+  }) : _bathrooms = List.of(
+         bathrooms ??
+             (const bool.fromEnvironment('BATH_PUBLIC_ALPHA')
+                 ? <Bathroom>[]
+                 : sampleBathrooms),
+       ),
        _reviews = List.of(
-         reviews ?? (bathrooms == null ? createSampleReviews() : <Review>[]),
+         reviews ??
+             (bathrooms == null &&
+                     !const bool.fromEnvironment('BATH_PUBLIC_ALPHA')
+                 ? createSampleReviews()
+                 : <Review>[]),
        ),
        _visits = List.of(
          visits ??
-             (bathrooms == null && reviews == null
+             (bathrooms == null &&
+                     reviews == null &&
+                     !const bool.fromEnvironment('BATH_PUBLIC_ALPHA')
                  ? [
                      for (final r in createSampleReviews())
                        Visit(

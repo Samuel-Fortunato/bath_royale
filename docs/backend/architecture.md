@@ -1,5 +1,7 @@
 # Backend architecture evaluation
 
+Current alpha release/security/deployment procedure: [A5.1 preparation](alpha-release-preparation.md). Historical reset, guest, private-only catalogue and email-recovery statements below do not authorize deployment or override that procedure.
+
 Current implementation: [A3 community alpha](community-alpha.md) supersedes the historical proposals below for automatic accepted storage, catalogue/publication and moderation. The original evaluation remains design history.
 
 Historical priority: [A1 simplified authentication for a private alpha](authentication-roadmap.md). Personal actions require an account; guest files are archived without opening/import/upload, and unauthenticated shared-catalogue browsing is deferred until a shared catalogue exists. The secure Phase 2.3B session/account infrastructure is reused. Earlier optional guest/association descriptions below are historical proposals, superseded by A1 where they conflict. Domain synchronization, association and public-profile creation remain disabled.

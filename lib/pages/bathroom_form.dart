@@ -1,3 +1,4 @@
+import '../models/content_suggestions.dart';
 import '../widgets/alpha_feedback.dart';
 import '../widgets/emoji_input.dart';
 import '../widgets/accent_picker.dart';
@@ -111,7 +112,7 @@ class _BathroomFormPageState extends State<BathroomFormPage> {
                     Wrap(
                       spacing: 8,
                       children: [
-                        for (final emoji in Bathroom.emojis)
+                        for (final emoji in bathroomEmojiSuggestions)
                           IconButton(
                             tooltip: 'Escolher $emoji',
                             onPressed: () =>
