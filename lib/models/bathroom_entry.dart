@@ -2,6 +2,8 @@ import 'bathroom.dart';
 import 'bathroom_activity.dart';
 import 'review.dart';
 import 'visit.dart';
+import 'tag_presentation.dart';
+import 'community_review.dart';
 
 /// Derived screen data; personal ratings never stand in for community averages.
 class BathroomEntry {
@@ -10,6 +12,18 @@ class BathroomEntry {
   final Review? personalReview;
   final double? communityRating;
   final int reviewCount;
+  final List<ReviewScores> communityScores;
+  Iterable<ReviewTagData> get communityTags => communityScores.expand(
+    (r) => r is CommunityReview
+        ? r.tags
+        : r is Review
+        ? r.tags
+        : <ReviewTagData>[],
+  );
+  double? mean(int Function(ReviewScores) score) => communityScores.isEmpty
+      ? null
+      : communityScores.fold<double>(0, (sum, r) => sum + score(r)) /
+            communityScores.length;
   final String? catalogueLabel;
 
   BathroomEntry({
@@ -19,7 +33,8 @@ class BathroomEntry {
     required Iterable<Visit> visits,
     Iterable<ReviewScores>? communityReviews,
     this.catalogueLabel,
-  }) : personalReview = _latestPersonal(reviews, activity.userId, visits),
+  }) : communityScores = List.unmodifiable(communityReviews ?? reviews),
+       personalReview = _latestPersonal(reviews, activity.userId, visits),
        reviewCount = (communityReviews ?? reviews).length,
        communityRating = (communityReviews ?? reviews).isEmpty
            ? null

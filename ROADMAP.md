@@ -60,6 +60,16 @@ See [A3 architecture, reproducible milestones and verification](docs/backend/com
 - [x] Complete regression/API/fixture/isolation/build verification and update the connected phone without clearing data to the explicitly authorized development build. See [resumable A3.1 evidence](docs/backend/community-simplification.md).
 - [ ] Owner physical A3.1 acceptance: touchscreen/keyboard, account switching, anonymous submission/edit/deletion, offline restart/reconnection, Settings/recovery and Keystore restoration. Git delivery/current CI are recorded in the task report.
 
+### Phase A4 — Global UI/UX refinement and alpha feedback collection
+
+Owner-authorized after physical A3.1 review. [Consolidated decisions, superseded specifications and verification](docs/backend/ui-alpha-refinement.md).
+
+- [ ] M1: Explore community filters/anonymous discovery, details/history and concise Settings with protected recovery.
+- [ ] M2: Explicit arbitrary emoji/RGB customization, additive migrations and compact direct-selection review wizard, historical compatibility and tags/comments.
+- [ ] M3: Compact rankings, collapsing collection, profile and idempotent varied isolated fixtures.
+- [ ] M4: Configurable global text feedback, private administration, anonymous abuse limits and safe retry.
+- [ ] Final rendered/device/regression acceptance; preserve all data and signing identity. Screenshots/shake deferred; assess password reauthentication before distribution. No A5 or managed deployment.
+
 ### Private alpha release gates and subsequent scope
 
 - [ ] Restrict registration **on the server** before distributing a remotely connected private alpha. Approve the invite/allowlist mechanism and test direct API bypass attempts. APK secrecy and client controls are not access control. The current local listener is USB/loopback only; no managed-project change is authorized.

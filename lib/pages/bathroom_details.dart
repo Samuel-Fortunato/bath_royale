@@ -91,7 +91,10 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                     children: [
                       TextButton.icon(
                         onPressed: () => Navigator.pop(sheetContext, 'undo'),
-                        icon: const Icon(Icons.undo),
+                        icon: Icon(
+                          Icons.undo,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                         label: const Text('Desfazer'),
                       ),
                       IconButton(
@@ -109,7 +112,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Mais um trono!',
+                    'Visita registada!',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
@@ -239,7 +242,27 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (review != null)
-                Text('${review.hygieneText} · ${review.paperText}'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final pair in [
+                      ('Higiene', review.hygieneText),
+                      ('Conforto', review.comfortText),
+                      ('Estética', review.aestheticText),
+                      ('Papel', review.paperText),
+                    ])
+                      Tooltip(
+                        message: '${pair.$1}: ${pair.$2}',
+                        child: Semantics(
+                          label: '${pair.$1}: ${pair.$2}',
+                          child: ExcludeSemantics(
+                            child: Text(pair.$2.split(' ').first),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               Text(
                 reviewDate(visit.visitedAt),
                 style: Theme.of(context).textTheme.bodySmall,
@@ -249,15 +272,10 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
           trailing: PopupMenuButton<String>(
             tooltip: 'Ações da visita',
             onSelected: (action) {
-              if (action == 'details') openExperience(visit.id);
               if (action == 'review') openForm(review, visit.id);
               if (action == 'remove') removeExperience(context, state, visit);
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(
-                value: 'details',
-                child: Text('Ver experiência'),
-              ),
               PopupMenuItem(
                 value: 'review',
                 child: Text(
@@ -291,22 +309,23 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
         key: const PageStorageKey('summary'),
         padding: const EdgeInsets.all(16),
         children: [
-          Wrap(
-            spacing: 8,
-            children: [
-              ChoiceChip(
-                label: const Text('Comunidade'),
-                selected: !_personal,
-                onSelected: (_) => setState(() => _personal = false),
-              ),
-              if (!state.readOnly)
+          if (!state.readOnly)
+            Wrap(
+              spacing: 8,
+              children: [
                 ChoiceChip(
-                  label: const Text('A tua experiência'),
-                  selected: _personal,
-                  onSelected: (_) => setState(() => _personal = true),
+                  label: const Text('Comunidade'),
+                  selected: !_personal,
+                  onSelected: (_) => setState(() => _personal = false),
                 ),
-            ],
-          ),
+                if (!state.readOnly)
+                  ChoiceChip(
+                    label: const Text('A tua experiência'),
+                    selected: _personal,
+                    onSelected: (_) => setState(() => _personal = true),
+                  ),
+              ],
+            ),
           const SizedBox(height: 24),
           if (empty)
             Text(
@@ -416,6 +435,20 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
             ],
           ),
           actions: [
+            if (state.canContribute &&
+                state.isShared(bathroomId) &&
+                state.isAvailable(bathroomId))
+              PopupMenuButton<String>(
+                tooltip: 'Mais opções',
+                onSelected: (_) =>
+                    reportCommunityContent(context, 'bathroom', bathroomId),
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: 'correction',
+                    child: Text('Sugerir correção'),
+                  ),
+                ],
+              ),
             if (!state.readOnly)
               IconButton(
                 tooltip: entry.activity.isFavorite
@@ -481,17 +514,6 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                       child: Text(
                         'Este trono aguarda envio ou está indisponível no catálogo. O histórico privado continua guardado.',
                       ),
-                    ),
-                  if (state.canContribute &&
-                      state.isShared(bathroomId) &&
-                      state.isAvailable(bathroomId))
-                    TextButton(
-                      onPressed: () => reportCommunityContent(
-                        context,
-                        'bathroom',
-                        bathroomId,
-                      ),
-                      child: const Text('Denunciar trono'),
                     ),
                   TabBar(
                     tabs: [

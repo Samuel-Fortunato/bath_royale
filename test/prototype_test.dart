@@ -110,13 +110,13 @@ void main() {
       );
       await tester.tap(find.byTooltip('Filtros'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('✨ Avaliação positiva'));
+      await tester.tap(find.text('★ 4 ou mais'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Ver resultados'));
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Filtros'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('🚽 Não avaliadas'));
+      await tester.tap(find.text('Sem avaliações'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Ver resultados'));
       await tester.pumpAndSettle();
@@ -124,6 +124,9 @@ void main() {
       await tester.tap(find.byIcon(Icons.favorite_border).last);
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Filtros'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Os meus tronos'));
+      await tester.tap(find.text('Os meus tronos'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('♥ Favoritos'));
       await tester.tap(find.text('♥ Favoritos'));

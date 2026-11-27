@@ -1,6 +1,5 @@
 import 'authentication.dart';
 import 'bathroom_form.dart';
-import 'review_form.dart';
 import 'collection.dart';
 import 'rankings.dart';
 import 'profile.dart';
@@ -17,39 +16,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int tabIndex = 0;
-  Future<void> review(AppState state) async {
-    final id = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: ListView(
-          children: [
-            const ListTile(title: Text('Que trono vais avaliar?')),
-            for (final b in state.visibleBathrooms.where(
-              (b) => state.isAvailable(b.id),
-            ))
-              ListTile(
-                title: Text('${b.emoji} ${b.name}'),
-                onTap: () => Navigator.pop(context, b.id),
-              ),
-            if (state.visibleBathrooms.isEmpty)
-              const ListTile(title: Text('Ainda não há tronos disponíveis.')),
-          ],
-        ),
-      ),
-    );
-    if (id == null || !mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute<void>(
-        builder: (_) => ChangeNotifierProvider.value(
-          value: state,
-          child: ReviewFormPage(bathroomId: id),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
@@ -95,9 +61,11 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-          if (state.canCreateBathroom && index == 0)
+          if ((state.canCreateBathroom ||
+                  (!state.readOnly && !state.communityEnabled)) &&
+              index == 0)
             IconButton(
-              tooltip: 'Adicionar casa de banho',
+              tooltip: 'Criar casa de banho',
               icon: const Icon(Icons.add_business_outlined),
               onPressed: () => Navigator.push(
                 context,
@@ -119,29 +87,6 @@ class _HomePageState extends State<HomePage> {
             NavigationDestination(label: labels[i], icon: Icon(icons[i])),
         ],
       ),
-      floatingActionButton:
-          index == 0 && !state.readOnly && !state.communityEnabled
-          ? FloatingActionButton.extended(
-              tooltip: 'Criar casa de banho',
-              label: const Text('Adicionar trono'),
-              icon: const Icon(Icons.add),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => ChangeNotifierProvider.value(
-                    value: state,
-                    child: const BathroomFormPage(),
-                  ),
-                ),
-              ),
-            )
-          : index == 0 && !state.readOnly
-          ? FloatingActionButton.extended(
-              label: const Text('Avaliar'),
-              icon: const Icon(Icons.rate_review_outlined),
-              onPressed: () => review(state),
-            )
-          : null,
       body: SafeArea(
         top: false,
         child: IndexedStack(index: index, children: tabs),

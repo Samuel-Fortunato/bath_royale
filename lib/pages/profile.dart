@@ -189,13 +189,6 @@ class ProfilePage extends StatelessWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => open('Os meus favoritos', const FavouritesList()),
             ),
-            const Divider(height: 1),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Text(
-                'Os dados da conta são sincronizados automaticamente após a aceitação inicial. As novas avaliações são públicas e anónimas. Os dados antigos de convidado e os exemplos fictícios ficam em separado.',
-              ),
-            ),
           ],
         ),
       ),
@@ -256,9 +249,7 @@ class SettingsPage extends StatelessWidget {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Modo escuro'),
-                  subtitle: const Text(
-                    'A tua escolha fica guardada neste dispositivo.',
-                  ),
+
                   value: state.darkMode,
                   onChanged: state.readOnly ? null : (_) => state.toggleTheme(),
                 ),
@@ -287,7 +278,18 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ),
                 if (state.synchronization != null)
-                  PrivateSynchronizationCard(sync: state.synchronization!),
+                  ListTile(
+                    leading: const Icon(Icons.build_outlined),
+                    title: const Text('Diagnóstico e recuperação'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => PrivateSynchronizationPage(
+                          sync: state.synchronization!,
+                        ),
+                      ),
+                    ),
+                  ),
                 if (state.isModerator)
                   TextButton(
                     onPressed: () => Navigator.push(
@@ -329,16 +331,7 @@ class SettingsPage extends StatelessWidget {
                       builder: (_) => const PrivacyPage(),
                     ),
                   ),
-                  child: const Text('Privacidade'),
-                ),
-                const Divider(height: 32),
-                Text(
-                  'Dados locais',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Os dados da conta são sincronizados automaticamente após a aceitação inicial. As novas avaliações são públicas e anónimas. Os dados antigos de convidado e os exemplos fictícios ficam em separado.',
+                  child: const Text('Política de privacidade'),
                 ),
               ],
             ),

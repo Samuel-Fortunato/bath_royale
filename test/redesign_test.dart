@@ -69,7 +69,7 @@ void main() {
   );
 
   testWidgets(
-    'single filter entry, active chips, discovery independent of review and reset',
+    'single filter entry, personal section, discovery independent of reviews and reset',
     (tester) async {
       final state = AppState();
       addTearDown(state.dispose);
@@ -78,23 +78,28 @@ void main() {
       expect(find.byType(InputChip), findsNothing);
       expect(find.text('♥ Favoritos'), findsNothing);
       await tap(tester, find.byTooltip('Filtros'));
+      await tap(tester, find.text('Os meus tronos'));
       await tap(tester, find.text('Visitadas'));
-      await tap(tester, find.text('🚽 Não avaliadas'));
+      await tap(tester, find.text('Sem avaliações'));
       await tap(tester, find.text('Ver resultados'));
       expect(find.text('Nome de Teste'), findsOneWidget);
       expect(find.text('1 resultados'), findsOneWidget);
       expect(find.text('✓ Descoberta'), findsOneWidget);
-      expect(find.byType(InputChip), findsNWidgets(2));
+      expect(find.byType(InputChip), findsNothing);
       expect(
         tester.widget<Badge>(find.byType(Badge)).label,
         isA<Text>().having((t) => t.data, 'count', '2'),
       );
       await tap(tester, find.byTooltip('Filtros'));
+      await tap(tester, find.text('Os meus tronos'));
       await tap(tester, find.text('Por descobrir'));
       await tap(tester, find.text('Ver resultados'));
       expect(find.textContaining('Nenhum trono à vista'), findsOneWidget);
       expect(find.text('Visitadas'), findsNothing);
-      await tap(tester, find.byTooltip('Remover Por descobrir'));
+      await tap(tester, find.byTooltip('Filtros'));
+      await tap(tester, find.text('Os meus tronos'));
+      await tap(tester, find.text('Por descobrir'));
+      await tap(tester, find.text('Ver resultados'));
       expect(find.text('Nome de Teste'), findsOneWidget);
       await tap(tester, find.text('Limpar pesquisa e filtros'));
       expect(find.byType(InputChip), findsNothing);

@@ -1,6 +1,6 @@
 # Bath Royale — Phase 1.6 UI/UX handoff
 
-Current product decisions and pending visual work are in [A3.1 and the A4 backlog](#a31-functional-simplification-and-a4-backlog). They supersede conflicting historical navigation, creation, identity and publication directions below. The earlier sessions remain the visual/interaction reference; A3.1 does not begin the comprehensive A4 redesign.
+The authorized [A4 decisions and resumable milestones](../backend/ui-alpha-refinement.md) supersede all conflicting historical controls, navigation, precision and identity decisions below. Current product decisions and prior feedback are in [A3.1 and the A4 backlog](#a31-functional-simplification-and-a4-backlog). They supersede conflicting historical navigation, creation, identity and publication directions below. The earlier sessions remain the visual/interaction reference; A3.1 does not begin the comprehensive A4 redesign.
 
 Status: design direction agreed in conversation, including the owner-approved Session 4C refinements below. Reference: `ui-reference.html` (standalone visual prototype; illustrative data, not production code). This specification takes precedence over prototype details. Preserve existing working behavior and persistent data. Do not implement backend, permissions, power-ups or XP. Session 4A explicitly extends the local schema for persistent bathroom identities.
 

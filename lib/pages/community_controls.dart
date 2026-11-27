@@ -55,7 +55,7 @@ Future<void> reportCommunityContent(
   final state = context.read<AppState>();
   final value = await communityText(
     context,
-    'Denunciar conteúdo',
+    kind == 'bathroom' ? 'Sugerir correção' : 'Denunciar conteúdo',
     'Explica o problema à equipa de teste. A denúncia é privada.',
   );
   if (value == null || !context.mounted) return;
@@ -82,10 +82,6 @@ class CommunityReviewCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Avaliação anónima',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
           Text('★ ${ratingNumber(review.rating)} / 5'),
           Text(
             'Higiene: ${review.hygiene}/4 · Conforto: ${review.comfort}/4\nEstética: ${review.aesthetics}/4 · Papel: ${review.paperAvailability}/2',

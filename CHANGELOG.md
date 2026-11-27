@@ -1,5 +1,10 @@
 # Changelog
 
+## A4 (in progress)
+
+- Discovery uses published community scores and characteristics, classification and tags for everyone; personal filters are separate. Remove duplicate review shortcut.
+- Simplify anonymous details, corrections, reviewed visits, Profile notices and Settings privacy/recovery navigation.
+
 ## Unreleased
 
 - A3.1: use one shared catalogue in normal workflows; automatically publish new reviews anonymously after disclosure, remove usernames/manual publication/association, and preserve private historical records in separate recovery. Keep visits, dates, favourites, email and account identifiers private.

@@ -1,0 +1,28 @@
+# A4 — UI refinement and private alpha feedback
+
+Authorized by the owner's physical A3.1 review on 2026-11-27. The four milestones below are independently resumable. No A5, managed deployment, distribution, analytics, paid services or reward mechanics are authorized.
+
+## Decisions and compatibility
+
+The owner supersedes the previous Explore review FAB, personal discovery ratings, slider-based global/category inputs, curated-only identity choices, random emoji, step-traversing app/system back and ordinary synchronization page. The historical sessions and HTML reference are retained as history, not the current interaction contract.
+
+- Explore is discovery: all anonymous community filters consume published projections only, including overall/category means, classification and tags. Unrated bathrooms never satisfy score/characteristic predicates. Optional personal filters contain only visited, undiscovered and favourites. One filter entry, no duplicate chip strip. Automatic refresh, cached offline browsing and pull-to-refresh remain.
+- Details have anonymous content without repeated anonymous-author headings; corrections use the existing protected bathroom report infrastructure via overflow. Review reporting remains. Reviewed visits show all four criteria; tapping opens the exact experience, overflow offers review/edit/removal only. Registration, dismissal and undo preserve their separate meanings.
+- Creation requires an explicitly selected single emoji grapheme, unrestricted suggestions and arbitrary RGB colour with live preview. Initial colour randomizes once per draft; a separate random-colour action never changes emoji. General location guidance replaces campus assumptions. New optional RGB fields preserve legacy palette indices without reinterpretation; migrations are additive.
+- Global ratings use five tappable stars, unanswered distinct from selection, new selections 1–5 integers. Historical fractional/zero scores and queued legacy commands remain exact, including unrelated edits. A versioned new-input contract distinguishes new scores from compatibility traffic; averages remain decimal. No numeric/descriptive global captions. Decorative reactive emoji and accessible labels remain.
+- Detailed categories keep exact original descriptions and integer semantics (0–4, paper 0–2), with emoji and caption together on each tappable choice. Responsive compact rows, full-size targets and accessible overflow scrolling. Required answers gate Continue. One short disclosure at submission links the privacy policy.
+- Bottom Back traverses steps; app-bar/system Back exits to the origin with dirty-draft confirmation. All steps preserve one draft and atomic visit/review associations.
+- Tags use Criar etiqueta, a broader PT-PT pool plus published community tags, bounded suggestions randomized once per draft/explicit refresh, normalized duplicate checks, ten-tag/thirty-character limits and the shared emoji input. The keyboard-aware dialog keeps Add reachable. Optional 500-character comment stays before bounded tag areas. No power-ups.
+- Rankings retain exact calculations, ties and scopes, with compact fixed-size podium names, ellipsis, tooltips and full semantics. Collection collapses its compact progress header on scroll and uses a decorative discovery-count emoji, without rewards. Profile retains real statistics, highlights, favourites and Settings in a compact scrollable layout.
+- Settings uses Política de privacidade, private email/account management, conditional sync problems and authenticated diagnostics/recovery, with retained legacy records only when present. No active guest concept. Password change stays visually stable. **Before alpha distribution, assess explicit reauthentication/current-password verification for password changes.**
+- Global feedback is independently configurable for development/private alpha, anonymous-capable and private to administrators. Text first: problem/suggestion/other, description, minimal app/platform version and predefined screen ID only. Preserve navigation and drafts, clear success/retry, idempotent retries, server validation, quotas and administrator reviewed/resolved status. Screenshots and shake are explicitly deferred to avoid expanding scope; there is no capture/upload or analytics.
+- Fixtures extend only isolated development, idempotently, without touching existing fixture accounts/activity or owner data. Include multiple/zero tags, comments, long names, varied scores including legacy fractions/zero and new integers, empty bathrooms and filter coverage. Never compile fixture secrets into distributable builds.
+
+## Resumption and evidence
+
+1. Explore/details/Settings: implemented and locally verified. Community-filter isolation regression covers private five stars versus public two stars and unrated exclusion. 28 focused and 222 full Flutter tests pass (five opt-in placeholders skipped); formatting, strict analysis, whitespace and Linux debug build pass. Two real Flutter light/dark capture tests pass; Explore/details captures inspected. Phone acceptance remains separate.
+2. Customization/wizard: pending.
+3. Rankings/collection/profile/fixtures: pending.
+4. Global feedback: pending.
+
+Record executed checks, builds, render inspection, device update, commits and current CI here as work completes. Physical owner acceptance is distinct from automated or visual inspection.

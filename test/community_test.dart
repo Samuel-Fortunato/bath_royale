@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:bath_royale/models/bathroom_filters.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -276,6 +277,47 @@ void main() {
     expect(() => anonymous.toggleFavorite('shared'), throwsStateError);
     expect(public.database.select('SELECT * FROM outbox'), isEmpty);
   });
+  test(
+    'community filters ignore personal scores and exclude unrated bathrooms',
+    () {
+      review(
+        'shared',
+      ); // Own private/local five stars must not replace the public two.
+      final entry = state.entries.single;
+      expect(entry.personalReview!.rating, 5);
+      expect(entry.communityRating, 2);
+      bool matches(BathroomFilterID id) =>
+          bathroomFilters.singleWhere((f) => f.id == id).test(entry);
+      expect(matches(BathroomFilterID.goodRating), false);
+      expect(matches(BathroomFilterID.badRating), true);
+      expect(matches(BathroomFilterID.clean), false);
+      expect(matches(BathroomFilterID.confy), true);
+      expect(matches(BathroomFilterID.paper), false);
+      expect(matches(BathroomFilterID.official), true);
+      SyncStore(public).applyPull('catalogue', [
+        RemoteChange('review', 'public-review', 2, deleted: true),
+      ], 'removed');
+      final empty = state.entries.single;
+      for (final f in bathroomFilters.where(
+        (f) => [
+          BathroomFilterID.goodRating,
+          BathroomFilterID.badRating,
+          BathroomFilterID.clean,
+          BathroomFilterID.confy,
+          BathroomFilterID.instagramable,
+          BathroomFilterID.paper,
+        ].contains(f.id),
+      )) {
+        expect(f.test(empty), false, reason: f.label);
+      }
+      expect(
+        bathroomFilters
+            .singleWhere((f) => f.id == BathroomFilterID.notReviewed)
+            .test(empty),
+        true,
+      );
+    },
+  );
   testWidgets(
     'signed-out navigation contains only Explore, Rankings and account entry',
     (tester) async {
@@ -298,13 +340,21 @@ void main() {
       expect(find.text('Conta'), findsOneWidget);
       expect(find.text('Por descobrir'), findsNothing);
       expect(find.byTooltip('Adicionar aos favoritos'), findsNothing);
+      expect(find.byTooltip('Filtros'), findsOneWidget);
+      await tester.tap(find.byTooltip('Filtros'));
+      await tester.pumpAndSettle();
+      expect(find.text('★ 4 ou mais'), findsOneWidget);
+      expect(find.text('Os meus tronos'), findsNothing);
+      await tester.tap(find.text('Ver resultados'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Trono comum'));
       await tester.pumpAndSettle();
       expect(find.text('Visitas'), findsNothing);
       expect(find.text('A tua experiência'), findsNothing);
       await tester.tap(find.text('Avaliações'));
       await tester.pumpAndSettle();
-      expect(find.text('Avaliação anónima'), findsOneWidget);
+      expect(find.text('Avaliação anónima'), findsNothing);
+      expect(find.text('Experiência anónima'), findsOneWidget);
       expect(find.textContaining('@'), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());

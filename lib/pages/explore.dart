@@ -1,4 +1,5 @@
 import '../models/bathroom_sort.dart';
+import '../models/tag_presentation.dart';
 import 'package:bath_royale/models/bathroom_entry.dart';
 import 'package:bath_royale/models/bathroom_filters.dart';
 import 'package:bath_royale/widgets/wc_card.dart';
@@ -17,6 +18,7 @@ class ExplorePage extends StatefulWidget {
 
 class _ExplorePageState extends State<ExplorePage> {
   Set<BathroomFilter> activeFilters = {};
+  String? _tag;
   final _search = TextEditingController();
   BathroomSort _sort = BathroomSort.name;
 
@@ -29,34 +31,45 @@ class _ExplorePageState extends State<ExplorePage> {
   void _clear() => setState(() {
     _search.clear();
     activeFilters.clear();
+    _tag = null;
   });
 
   List<BathroomEntry> applyFilters(List<BathroomEntry> list) {
     for (final filter in bathroomFilters) {
-      if (activeFilters.contains(filter)) {
+      if (activeFilters.contains(filter) &&
+          (!filter.personal || !context.read<AppState>().readOnly)) {
         list = list.where(filter.test).toList();
       }
     }
-    return list;
+    return _tag == null
+        ? list
+        : list
+              .where(
+                (b) =>
+                    b.communityTags.any((t) => TagPresentation.key(t) == _tag),
+              )
+              .toList();
   }
 
   void _toggleFilter(BathroomFilter filter, bool selected) {
     if (selected) {
       if (filter.id == BathroomFilterID.notReviewed) {
         activeFilters.removeWhere(
-          (other) =>
-              other.id != BathroomFilterID.favourite &&
-              other.exclusiveGroup != 'discoveryGroup' &&
-              other.id != BathroomFilterID.reviewed &&
-              other.id != BathroomFilterID.notReviewed,
+          (f) =>
+              !f.personal &&
+              ![
+                BathroomFilterID.official,
+                BathroomFilterID.community,
+              ].contains(f.id),
         );
-      }
-      if (filter.id != BathroomFilterID.favourite &&
-          filter.exclusiveGroup != 'discoveryGroup' &&
-          filter.exclusiveGroup != 'reviewedGroup') {
-        activeFilters.removeWhere(
-          (other) => other.id == BathroomFilterID.notReviewed,
-        );
+        _tag = null;
+      } else if (!filter.personal &&
+          ![
+            BathroomFilterID.official,
+            BathroomFilterID.community,
+            BathroomFilterID.reviewed,
+          ].contains(filter.id)) {
+        activeFilters.removeWhere((f) => f.id == BathroomFilterID.notReviewed);
       }
       if (filter.exclusiveGroup != null) {
         activeFilters.removeWhere(
@@ -93,50 +106,96 @@ class _ExplorePageState extends State<ExplorePage> {
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Os filtros de avaliação usam as tuas experiências.',
-                    ),
                     for (final group in const {
-                      'Descoberta': [
-                        BathroomFilterID.visited,
-                        BathroomFilterID.undiscovered,
-                      ],
-                      'Avaliação pessoal': [
-                        BathroomFilterID.notReviewed,
-                        BathroomFilterID.reviewed,
+                      'Avaliações da comunidade': [
                         BathroomFilterID.goodRating,
                         BathroomFilterID.badRating,
+                        BathroomFilterID.reviewed,
+                        BathroomFilterID.notReviewed,
                       ],
-                      'Características pessoais': [
+                      'Características': [
+                        BathroomFilterID.clean,
                         BathroomFilterID.confy,
                         BathroomFilterID.instagramable,
+                        BathroomFilterID.paper,
                       ],
-                      'Favoritos': [BathroomFilterID.favourite],
+                      'Tronos': [
+                        BathroomFilterID.official,
+                        BathroomFilterID.community,
+                      ],
                     }.entries) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Text(
                         group.key,
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
-                      const SizedBox(height: 4),
                       Wrap(
                         spacing: 8,
-                        runSpacing: 4,
                         children: [
-                          for (final filter in bathroomFilters.where(
+                          for (final f in bathroomFilters.where(
                             (f) => group.value.contains(f.id),
                           ))
                             FilterChip(
-                              label: Text(filter.label),
-                              selected: activeFilters.contains(filter),
-                              onSelected: (selected) {
-                                _toggleFilter(filter, selected);
+                              label: Text(f.label),
+                              selected: activeFilters.contains(f),
+                              onSelected: (v) {
+                                _toggleFilter(f, v);
                                 refresh(() {});
                               },
                             ),
                         ],
                       ),
                     ],
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: _tag,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Etiqueta da comunidade',
+                      ),
+                      items: [
+                        const DropdownMenuItem(value: '', child: Text('Todas')),
+                        for (final t in {
+                          for (final b in context.read<AppState>().entries)
+                            for (final t in b.communityTags)
+                              TagPresentation.key(t): t,
+                        }.entries)
+                          DropdownMenuItem(
+                            value: t.key,
+                            child: Text(
+                              TagPresentation.display(t.value),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                      onChanged: (v) {
+                        setState(() => _tag = v == '' ? null : v);
+                        refresh(() {});
+                      },
+                    ),
+                    if (!context.read<AppState>().readOnly)
+                      ExpansionTile(
+                        title: const Text('Os meus tronos'),
+                        tilePadding: EdgeInsets.zero,
+                        children: [
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              for (final f in bathroomFilters.where(
+                                (f) => f.personal,
+                              ))
+                                FilterChip(
+                                  label: Text(f.label),
+                                  selected: activeFilters.contains(f),
+                                  onSelected: (v) {
+                                    _toggleFilter(f, v);
+                                    refresh(() {});
+                                  },
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -149,7 +208,10 @@ class _ExplorePageState extends State<ExplorePage> {
                 children: [
                   TextButton(
                     onPressed: () {
-                      setState(() => activeFilters.clear());
+                      setState(() {
+                        activeFilters.clear();
+                        _tag = null;
+                      });
                       refresh(() {});
                     },
                     child: const Text('Limpar filtros'),
@@ -225,16 +287,18 @@ class _ExplorePageState extends State<ExplorePage> {
                               ),
                             ),
                           ),
-                          if (!appState.readOnly)
-                            IconButton(
-                              tooltip: 'Filtros',
-                              icon: Badge(
-                                isLabelVisible: activeFilters.isNotEmpty,
-                                label: Text('${activeFilters.length}'),
-                                child: const Icon(Icons.tune),
+                          IconButton(
+                            tooltip: 'Filtros',
+                            icon: Badge(
+                              isLabelVisible:
+                                  (activeFilters.isNotEmpty || _tag != null),
+                              label: Text(
+                                '${activeFilters.length + (_tag == null ? 0 : 1)}',
                               ),
-                              onPressed: _showFilters,
+                              child: const Icon(Icons.tune),
                             ),
+                            onPressed: _showFilters,
+                          ),
                         ],
                       ),
                     ),
@@ -293,31 +357,16 @@ class _ExplorePageState extends State<ExplorePage> {
                         ),
                       ),
                     ),
-                    if (activeFilters.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            for (final filter in activeFilters)
-                              InputChip(
-                                label: Text(filter.label),
-                                onDeleted: () => _toggleFilter(filter, false),
-                                deleteButtonTooltipMessage:
-                                    'Remover ${filter.label}',
-                              ),
-                          ],
-                        ),
-                      ),
                     const SizedBox(height: 8),
                     Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
                       spacing: 12,
                       children: [
-                        if (activeFilters.isNotEmpty || query.isNotEmpty)
+                        if ((activeFilters.isNotEmpty || _tag != null) ||
+                            query.isNotEmpty)
                           Text('${filteredWCs.length} resultados'),
-                        if (activeFilters.isNotEmpty || _search.text.isNotEmpty)
+                        if ((activeFilters.isNotEmpty || _tag != null) ||
+                            _search.text.isNotEmpty)
                           TextButton(
                             onPressed: _clear,
                             child: const Text('Limpar pesquisa e filtros'),
@@ -335,7 +384,7 @@ class _ExplorePageState extends State<ExplorePage> {
                       appState.entries.isEmpty
                           ? (appState.communityEnabled
                                 ? 'Ainda não há tronos disponíveis. Volta a tentar com ligação à internet. 🚽'
-                                : 'Ainda não há tronos. Usa + para criar o primeiro! 🚽')
+                                : 'Ainda não há tronos para descobrir. 🚽')
                           : 'Nenhum trono à vista. Experimenta limpar a pesquisa e os filtros. 🚽',
                     ),
                   ),

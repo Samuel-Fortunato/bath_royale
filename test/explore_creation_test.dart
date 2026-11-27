@@ -134,7 +134,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Ver resultados'));
       await tester.pumpAndSettle();
-      expect(find.text('🛋️ Confortável'), findsOneWidget);
+      expect(find.text('🛋️ Confortável'), findsNothing);
+      expect(find.byType(Badge), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'inexistente');
       await tester.pumpAndSettle();
       expect(find.textContaining('Nenhum trono à vista'), findsOneWidget);
