@@ -118,6 +118,9 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     setState(() {
       if (!ReviewTagData.validEmoji(_emojiInput.text.trim())) {
         _tagError = 'Escolhe um único emoji válido.';
+      } else if (tag.contains('\u0000')) {
+        _tagError =
+            'A etiqueta contém um carácter nulo. Remove-o antes de adicionar.';
       } else if (tag.isEmpty ||
           tag.characters.length > 30 ||
           tag.contains(RegExp(r'[\n\r,]'))) {
@@ -148,6 +151,13 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         _tagError = 'Adiciona ou apaga a etiqueta antes de guardar.';
       });
       _tagFocus.requestFocus();
+      return;
+    }
+    if (_comment.text.contains('\u0000')) {
+      setState(
+        () => _tagError =
+            'O comentário contém um carácter nulo. Remove-o antes de guardar.',
+      );
       return;
     }
     if (_comment.text.trim().characters.length > 500) return;

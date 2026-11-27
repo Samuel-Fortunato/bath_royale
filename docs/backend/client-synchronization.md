@@ -1,5 +1,8 @@
 # Client synchronization foundation (Phase 2.2B, extended by 2.2C)
 
+Current application integration: [A2 private account synchronization](private-account-synchronization.md). A1.1 UX is owner-accepted; A2 enables explicit-consent private synchronization and recovery without guest association/public identity. Test-only/disabled statements below describe the historical foundation milestone, not the current configured app.
+
+
 The foundation was implemented against `dd317f8` and completed at `e0d620a`. Phase 2.2C adds the [server protocol and real local transport verification](server-synchronization.md); the earlier fake-only descriptions below are historical where superseded. There is no production authentication UI or cloud project connection. The application still opens only the guest repository. `SyncWriteContext.forTesting` is an explicit opt-in at repository construction in tests, not a publication or guest-association policy. No managed project or preserved backend installation is used by these tests.
 
 ## Scope and boundaries

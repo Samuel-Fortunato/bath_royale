@@ -307,7 +307,13 @@ def adapt_data(text, columns):
                 )
                 out.extend(section)
         elif "setval" in line:
-            # Only the excluded refresh-token sequence was reset in the original procedure.
+            # Preserve the private feed position sequence; excluding it breaks resumed pulls.
+            if re.fullmatch(
+                r"SELECT pg_catalog.setval\('(?:\"app_private\"\.\"sync_changes_position_seq\"|app_private.sync_changes_position_seq)', \d+, (?:true|false)\);\n?",
+                line,
+            ):
+                out.append(line)
+                continue
             require(
                 re.fullmatch(
                     r"SELECT pg_catalog.setval\('(?:\"auth\"\.\"refresh_tokens_id_seq\"|auth.refresh_tokens_id_seq)', \d+, (?:true|false)\);\n?",

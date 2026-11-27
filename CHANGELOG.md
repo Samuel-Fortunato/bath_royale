@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- A2: integrate opt-in private synchronization of account bathrooms, visits, reviews and favourites using the existing transactional outbox, authenticated protocol and isolated account storage. Preserve offline actions, original records and persistent authentication; exclude archived guests and fictional examples.
+- Separate private ownership from public profiles, prohibit private bathroom publication and verify anonymous/other-account isolation. Add foreground retry/status, safe renewal/transitions, conflict preservation, text correction, local archives and non-destructive replay recovery.
+- Preserve v6 account data/protocol metadata in v7; align server/client grapheme validation and verify private synchronization metadata, receipts, cursors, clock and sequence across logical export/restoration.
+- Remove logout from password change while retaining account-management logout. Extend the USB-only HTTPS gateway to exactly two private-sync RPCs and keep configured APKs private.
+- Verify 212 Flutter regressions/TLS checks, 8 real sync tests, real SDK/device-scope synchronization, 1,093 Unicode cases, server privacy/protocol checks, 26 offline backend and 9 tooling tests, strict analysis/formatting and Android/Linux releases. Install private A2 release `0.1.0-alpha-a2.1023` in place on the connected phone with the original certificate and unchanged first-install timestamp; physical A2 acceptance remains separate.
+
 - A1.1: add welcome startup/logout and separate authentication routes with visible/system back; preserve form destinations on errors and registration drafts on local validation failure.
 - Add field-specific email/password errors, upfront password guidance, email/username autofill, grouped password-manager fields and Next/Done focus actions. Keep short existing-account sign-in and incorrect-credentials feedback.
 - Add a project-local private Android build/compatibility-check/update/USB-forward/launch command and focused navigation, validation, autofill and installer regressions.

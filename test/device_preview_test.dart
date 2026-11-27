@@ -68,6 +68,32 @@ void main() {
       await health(tls.createHttpClient(null), 'localhost', '/rest/v1/'),
       404,
     );
+    for (final path in [
+      '/rest/v1/bathrooms',
+      '/rest/v1/rpc/public_reviews',
+      '/rest/v1/rpc/sync_pull?feed=private',
+    ]) {
+      expect(await health(tls.createHttpClient(null), 'localhost', path), 404);
+    }
+    for (final name in ['sync_pull', 'sync_submit']) {
+      final client = tls.createHttpClient(null);
+      try {
+        final request = await client.postUrl(
+          Uri.parse('https://localhost:55474/rest/v1/rpc/$name'),
+        );
+        request.headers.contentType = ContentType.json;
+        final bytes = utf8.encode(
+          name == 'sync_pull' ? '{"feed":"private"}' : '{"command":{}}',
+        );
+        request.contentLength = bytes.length;
+        request.add(bytes);
+        final response = await request.close();
+        await response.drain<void>();
+        expect(response.statusCode, 401);
+      } finally {
+        client.close(force: true);
+      }
+    }
     await expectLater(
       health(tls.createHttpClient(null), '127.0.0.1'),
       throwsA(isA<HandshakeException>()),

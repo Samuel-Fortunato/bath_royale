@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:characters/characters.dart';
 import 'package:uuid/uuid.dart';
 import '../storage/local_store.dart';
 import 'namespace.dart';
@@ -39,10 +40,11 @@ class RemoteChange {
   }
 }
 
-/// No implicit authorization: only explicit test repositories use this context.
+/// Permits durable local queueing only; remote transfer requires separate consent.
 class SyncWriteContext {
   final DataNamespace namespace;
   const SyncWriteContext.forTesting(this.namespace);
+  const SyncWriteContext.account(this.namespace);
 }
 
 class SyncStore {
@@ -69,6 +71,17 @@ class SyncStore {
     if (!namespace.isAccount) throw StateError('Account scope required');
     final db = local.database;
     final operationId = const Uuid().v4();
+    // A cached remote advance is not consent to overwrite an unseen concurrent
+    // edit while this entity still has an unresolved local predecessor.
+    final previous = db.select(
+      '''SELECT base_revision FROM outbox WHERE entity_type=? AND entity_id=?
+      AND state<>'acknowledged' AND operation_id NOT IN (SELECT operation_id FROM sync_resolutions)
+      ORDER BY sequence DESC LIMIT 1''',
+      [type, id],
+    );
+    final base = previous.isEmpty
+        ? revision(type, id)
+        : previous.single['base_revision'];
     db.execute(
       '''INSERT INTO outbox(operation_id,scope,entity_type,entity_id,operation_type,payload,base_revision)
       VALUES(?,?,?,?,?,?,?)''',
@@ -79,13 +92,13 @@ class SyncStore {
         id,
         command,
         jsonEncode(payload),
-        revision(type, id),
+        base,
       ],
     );
     for (final (parentType, parentId) in [(type, id), ...references]) {
       final rows = db.select(
         '''SELECT operation_id FROM outbox WHERE entity_type=? AND entity_id=?
-        AND operation_id<>? AND state<>'acknowledged' ORDER BY sequence DESC LIMIT 1''',
+        AND operation_id<>? AND state<>'acknowledged' AND operation_id NOT IN (SELECT operation_id FROM sync_resolutions) ORDER BY sequence DESC LIMIT 1''',
         [parentType, parentId, operationId],
       );
       if (rows.isNotEmpty) {
@@ -103,6 +116,7 @@ class SyncStore {
     SELECT o.* FROM outbox o WHERE scope=? AND state='pending' AND next_attempt<=?
     AND NOT EXISTS(SELECT 1 FROM outbox_dependencies d JOIN outbox p ON p.operation_id=d.dependency_id
       WHERE d.operation_id=o.operation_id AND p.state<>'acknowledged')
+    AND o.operation_id NOT IN (SELECT operation_id FROM sync_resolutions)
     ORDER BY sequence LIMIT ?''',
         [namespace.key, now, limit],
       )
@@ -214,9 +228,11 @@ class SyncStore {
 
   void tombstone(String type, String id) {
     local.database.execute(
-      '''INSERT INTO remote_records VALUES(?,?,0,1,'{}')
-      ON CONFLICT(entity_type,entity_id) DO UPDATE SET deleted=1''',
-      [type, id],
+      '''INSERT INTO remote_records VALUES(?,?,?,1,'{}')
+      ON CONFLICT(entity_type,entity_id) DO UPDATE SET
+        revision=MAX(remote_records.revision,excluded.revision),deleted=1,payload='{}'
+      ''',
+      [type, id, revision(type, id) ?? 0],
     );
   }
 
@@ -300,5 +316,230 @@ class SyncStore {
       [feed, checkpoint],
     );
     local.database.execute('DELETE FROM pull_status WHERE feed=?', [feed]);
+  });
+  bool get hasConsent => local.database
+      .select(
+        'SELECT consent_version FROM sync_preferences WHERE id=1 AND consent_version=1',
+      )
+      .isNotEmpty;
+
+  /// This is the sole first-upload permission, scoped to this account/device.
+  /// Backfill only genuine account rows, never guest/demo/unknown provenance.
+  void consent() => local.transaction(() {
+    if (!namespace.isAccount) throw StateError('Account required');
+    for (final (type, table, actor, command) in [
+      ('bathroom', 'bathrooms', 'creator', 'createBathroom'),
+      ('visit', 'visits', 'user', 'createVisit'),
+      ('review', 'reviews', 'author', 'createReview'),
+    ]) {
+      for (final row in local.database.select(
+        "SELECT * FROM $table WHERE provenance='user_created' AND $actor=?",
+        [namespace.subject],
+      )) {
+        final id = row['id'] as String;
+        if (revision(type, id) != null ||
+            local.database.select(
+              'SELECT operation_id FROM outbox WHERE entity_type=? AND entity_id=?',
+              [type, id],
+            ).isNotEmpty) {
+          continue;
+        }
+        if (type != 'bathroom' &&
+            local.database.select(
+              "SELECT id FROM bathrooms WHERE id=? AND creator=? AND provenance IN ('user_created','remote')",
+              [row['bathroom'], namespace.subject],
+            ).isEmpty) {
+          continue;
+        }
+        final payload = Map<String, Object?>.from(row);
+        enqueue(
+          type,
+          id,
+          command,
+          type == 'review' ? {'review': payload} : payload,
+          references: [
+            if (type != 'bathroom') ('bathroom', row['bathroom'] as String),
+            if (type == 'review') ('visit', row['visit'] as String),
+          ],
+        );
+      }
+    }
+    for (final row in local.database.select(
+      "SELECT f.* FROM favourites f JOIN bathrooms b ON b.id=f.bathroom WHERE f.user=? AND f.provenance='user_created' AND b.creator=? AND b.provenance IN ('user_created','remote')",
+      [namespace.subject, namespace.subject],
+    )) {
+      final id = row['bathroom'] as String;
+      if (revision('favourite', id) == null &&
+          local.database.select(
+            "SELECT operation_id FROM outbox WHERE entity_type='favourite' AND entity_id=?",
+            [id],
+          ).isEmpty) {
+        enqueue(
+          'favourite',
+          id,
+          'setFavourite',
+          {'user': namespace.subject, 'bathroom': id, 'value': true},
+          references: [('bathroom', id)],
+        );
+      }
+    }
+    local.database.execute(
+      'INSERT OR REPLACE INTO sync_preferences VALUES(1,1)',
+    );
+  });
+
+  void pause() => local.transaction(
+    () => local.database.execute(
+      'INSERT OR REPLACE INTO sync_preferences VALUES(1,0)',
+    ),
+  );
+
+  int get pendingCount =>
+      local.database
+              .select(
+                "SELECT count(*) n FROM outbox WHERE state='pending' AND operation_id NOT IN (SELECT operation_id FROM sync_resolutions)",
+              )
+              .single['n']
+          as int;
+
+  List<Map<String, Object?>> get problems => [
+    for (final r in local.database.select(
+      '''SELECT o.*,c.remote_payload,c.remote_deleted,c.remote_revision FROM outbox o
+    LEFT JOIN sync_conflicts c USING(operation_id) WHERE o.state IN ('rejected','conflict')
+    AND o.operation_id NOT IN (SELECT operation_id FROM sync_resolutions) ORDER BY sequence''',
+    ))
+      Map.of(r),
+  ];
+
+  List<Map<String, Object?>> get archives => [
+    for (final r in local.database.select(
+      '''SELECT o.*,s.resolution FROM outbox o JOIN sync_resolutions s USING(operation_id) ORDER BY sequence''',
+    ))
+      Map.of(r),
+  ];
+
+  bool get pullBlocked => local.database
+      .select("SELECT feed FROM pull_status WHERE feed='private' AND blocked=1")
+      .isNotEmpty;
+
+  int? get nextAttempt {
+    final next =
+        local.database
+                .select(
+                  "SELECT min(next_attempt) n FROM outbox WHERE state='pending' AND operation_id NOT IN (SELECT operation_id FROM sync_resolutions) AND NOT EXISTS(SELECT 1 FROM outbox_dependencies d JOIN outbox p ON p.operation_id=d.dependency_id WHERE d.operation_id=outbox.operation_id AND p.state<>'acknowledged')",
+                )
+                .single['n']
+            as int?;
+    final pull = local.database.select(
+      "SELECT next_attempt FROM pull_status WHERE feed='private' AND blocked=0",
+    );
+    final p = pull.isEmpty ? null : pull.single['next_attempt'] as int;
+    return next == null
+        ? p
+        : p == null || next < p
+        ? next
+        : p;
+  }
+
+  void resetPrivateCheckpoint() => local.transaction(() {
+    if (!namespace.isAccount) throw StateError('Account required');
+    local.database.execute("DELETE FROM pull_checkpoints WHERE feed='private'");
+    local.database.execute("DELETE FROM pull_status WHERE feed='private'");
+  });
+
+  void retryNow() => local.transaction(() {
+    local.database.execute(
+      "UPDATE outbox SET next_attempt=0 WHERE state='pending'",
+    );
+    local.database.execute("DELETE FROM pull_status WHERE feed='private'");
+  });
+
+  /// Preserve immutable submitted input; a human retry always gets a new ID.
+  void retryProblem(
+    String operationId, {
+    String? correctedText,
+  }) => local.transaction(() {
+    final row = problems.singleWhere((r) => r['operation_id'] == operationId);
+    if (row['remote_deleted'] == 1) {
+      throw StateError('Deleted identities cannot be restored');
+    }
+    var payload = row['payload'] as String;
+    if (correctedText != null) {
+      final p = jsonDecode(payload) as Map<String, dynamic>;
+      if (p['name'] != null) {
+        final text = correctedText.trim().replaceAll(RegExp(r'\s+'), ' ');
+        if (text.isEmpty ||
+            text.characters.length > 100 ||
+            text.contains(RegExp(r'[\x00-\x1f\x7f]'))) {
+          throw ArgumentError('Invalid bathroom name');
+        }
+        p['name'] = text;
+        p['normalized_name'] = text.toLowerCase();
+        local.database.execute(
+          'UPDATE bathrooms SET name=?,normalized_name=? WHERE id=?',
+          [text, text.toLowerCase(), row['entity_id']],
+        );
+      } else if (p['review'] case final Map<String, dynamic> review) {
+        final text = correctedText.trim();
+        if (text.characters.length > 500 || text.contains('\u0000')) {
+          throw ArgumentError('Invalid comment');
+        }
+        review['comment'] = text.isEmpty ? null : text;
+        local.database.execute('UPDATE reviews SET comment=? WHERE id=?', [
+          review['comment'],
+          row['entity_id'],
+        ]);
+      } else {
+        throw ArgumentError('No editable text');
+      }
+      payload = jsonEncode(p);
+    }
+    final id = const Uuid().v4();
+    local.database.execute(
+      '''INSERT INTO outbox(operation_id,scope,entity_type,entity_id,operation_type,payload,base_revision)
+    VALUES(?,?,?,?,?,?,?)''',
+      [
+        id,
+        namespace.key,
+        row['entity_type'],
+        row['entity_id'],
+        row['operation_type'],
+        payload,
+        row['remote_revision'] ?? row['base_revision'],
+      ],
+    );
+    local.database.execute('INSERT INTO sync_resolutions VALUES(?,?)', [
+      operationId,
+      'retried',
+    ]);
+    // Preserve the original observed causal base; a newer unseen cache is not
+    // permission to overwrite another device's intervening edit.
+    local.database.execute(
+      'INSERT INTO outbox_dependencies SELECT ?,dependency_id FROM outbox_dependencies WHERE operation_id=?',
+      [id, operationId],
+    );
+    local.database.execute(
+      'UPDATE outbox_dependencies SET dependency_id=? WHERE dependency_id=?',
+      [id, operationId],
+    );
+  });
+
+  /// The whole dependent branch is archived, never deleted or uploaded later.
+  void useAccountVersion(String operationId) => local.transaction(() {
+    if (!problems.any((r) => r['operation_id'] == operationId)) {
+      throw StateError('Unknown problem');
+    }
+    final branch = local.database.select(
+      '''WITH RECURSIVE branch(id) AS (SELECT ? UNION
+      SELECT d.operation_id FROM outbox_dependencies d JOIN branch b ON d.dependency_id=b.id)
+      SELECT id FROM branch''',
+      [operationId],
+    );
+    for (final row in branch) {
+      local.database.execute(
+        'INSERT OR IGNORE INTO sync_resolutions VALUES(?,?)',
+        [row['id'], 'account_version'],
+      );
+    }
   });
 }

@@ -14,6 +14,8 @@ const materialImportBaseline = {
   'lib/pages/explore.dart',
   'lib/pages/home.dart',
   'lib/pages/profile.dart',
+  // Reviewed A2 view uses the existing bundled Material 3 widgets.
+  'lib/pages/private_synchronization.dart',
   'lib/pages/authentication.dart',
   'lib/pages/rankings.dart',
   'lib/pages/review_form.dart',

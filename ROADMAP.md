@@ -13,7 +13,7 @@ The owner has reprioritized delivery to a small group of friends. Phase A1 below
 - [x] Disable mandatory email confirmation exclusively in the isolated local alpha Auth instance. Keep the ordinary production configuration and confirmation/recovery flow available; clearly disclose unavailable local-alpha password recovery.
 - [x] Validate Portuguese forms, password visibility, busy states and visible incorrect-credential feedback, including small screens/large text/keyboard. Verify registration without confirmation, restoration, offline access and account isolation.
 - [x] Prepare and verify the private signed Android APK with the existing package/certificate and previously installed code 1023; verify Android and Linux releases.
-- [ ] Install A1 in place after rechecking the connected phone: currently no device is listed by ADB. Never uninstall or clear data.
+- [x] Install the private account preview in place on the connected phone, preserving package/signing identity and code 1023; subsequent A1.1/A2 update evidence is recorded below. No uninstall or data clear.
 - [ ] Owner physical acceptance: Android Keystore restart, actual offline/reconnection behavior, logout/relogin, A/B isolation, keyboard and retained data.
 
 Unauthenticated shared-catalogue browsing is an approved requirement **when that catalogue exists**. There is no shared catalogue in A1. No-config public builds display an unavailable-account explanation; they do not expose the former guest writer. Existing guest data remains archived on-device and is not shown or imported into new accounts. A1 does not create public profiles or upload domain data. See [the A1 decisions, verification and limitations](docs/backend/authentication-roadmap.md).
@@ -22,12 +22,33 @@ Unauthenticated shared-catalogue browsing is an approved requirement **when that
 
 - [x] Add welcome on signed-out startup/logout, separate sign-in/registration routes, visible/system back, field validation, upfront registration requirements and email/password autofill/focus actions.
 - [x] Retain authenticated restoration, incorrect-credentials feedback, local-validation drafts and secure request handling; add focused regressions and a documented update-only private installer.
-- [ ] Owner phone acceptance of keyboard/password-manager suggestions and welcome/back behavior.
+- [x] Owner acceptance of A1.1 Android authentication UX (confirmed before authorizing A2).
+
+### Phase A2 — Private account data synchronization
+
+- [x] Connect the existing transactional outbox, authenticated HTTP adapter, server receipt/CAS/pull protocol and account-scoped stores to the configured app. Preserve offline actions, secure persistent Auth, local records and account isolation.
+- [x] Explain private upload and obtain persistent explicit consent per account/device before transferring account-owned bathrooms, visits, reviews and favourites. Never import/upload archived guests or fictional/unclassified examples; keep fresh accounts empty.
+- [x] Separate private ownership from optional public profiles. Enforce private bathroom/history/favourite/unpublished-review isolation, including anonymous/other-account access and denial through the existing publication/moderator paths. No A3 functionality.
+- [x] Add bounded foreground synchronization, pending/error status, durable transport retries, duplicate/lost-ack handling, renewal after rejected sessions, safe account transitions, conflict preservation and explicit resend/correction/archive/full-replay recovery. Stop idle polling and paused-run continuations.
+- [x] Match server text validation to the locked client grapheme semantics without truncating content; verify 1,093 Unicode vectors. Preserve original rejected payloads. Verify complete sync metadata/sequence export and isolated restoration, receipt replay, scoped cursor continuation and restored-xid collision handling.
+- [x] Verify two independent stores using a profile-free account, offline reconnection/convergence, concurrent edits/deletions, A/B isolation, v6 → v7 preservation and restarts. Run regression/integration checks and Android/Linux release builds.
+- [x] Install private `0.1.0-alpha-a2.1023` / code 1023 in place on SM A166B with the original certificate. `adb install -r` succeeds; first-install timestamp remains `2026-11-26 22:40:55`, and USB forwarding/launch are restored. No uninstall or data clear.
+- [ ] Owner physical A2 acceptance: retained records, consent/decline, real offline/restart/reconnection, second-device convergence, conflict recovery, A/B isolation and Keystore behavior.
+
+See [A2 architecture and recovery semantics](docs/backend/private-account-synchronization.md) and [USB/loopback device acceptance](docs/android-auth-device-testing.md#a2-physical-acceptance). A1.1 follow-up removes logout from password change while retaining account-management logout. No managed-project deployment, configured-APK publication, guest association, public identity or A3 catalogue/publication work is included. Remote registration restrictions, retention/erasure, real-user migrations and hosting remain separate release decisions.
+
+Verified on 2026-11-27: **212 Flutter tests pass** with the actual local gateway TLS/route check enabled (two opt-in real-suite placeholders skipped); the separate real HTTPS SDK/device-scope suite passes with synchronization into a second store. The complete disposable backend runner passes **227 authorization/authentication assertions**, **1,093 Unicode parity cases**, **628 server protocol assertions**, profile-free privacy/publication-denial checks and **8 real Flutter synchronization tests**, then verifies logical export/restoration and stops its dedicated containers. **26 offline backend tests** and **9 preview/device-tool tests** pass. Dart formatting and strict analysis pass with the narrowly reviewed Material-import baseline for the A2 view; backend Ruff lint/format passes. Unconfigured Android and Linux release builds pass; the Android universal AOT package and original preview certificate are verified. Private Android release also passes universal AOT/certificate checks and is installed in place as above (59,411,322 bytes). Actionlint passes; the installer enforces the dependency lock. Physical A2 acceptance remains open.
+
+Earlier iteration failures (schema-fixture version assertions, Unicode empty/grant handling, a historical profile-join expectation, the Dart-only process fixture and chunked requests rejected by the narrow USB gateway) were corrected and their targeted/final checks rerun. No failed attempt is counted as a passing result. The v7 account migration and remote projection are non-destructive; no local database/schema reset was used.
+
+### Phase A3 — Public catalogue/publication (not started)
+
+- [ ] Obtain a separately approved scope for shared catalogue, public identity, publication and moderation. A2 private synchronization grants none of these permissions.
 
 ### Private alpha release gates and subsequent scope
 
 - [ ] Restrict registration **on the server** before distributing a remotely connected private alpha. Approve the invite/allowlist mechanism and test direct API bypass attempts. APK secrecy and client controls are not access control. The current local listener is USB/loopback only; no managed-project change is authorized.
-- [ ] Approve the next bounded A2 scope before implementing it. Shared catalogue, synchronization/consent, guest-data association and public identity remain deferred; historical Phase 2.3C is unstarted.
+- [x] Approve and implement bounded A2 private account synchronization below. Guest association, shared catalogue and public identity remain deferred; A2 supersedes only the private-sync portion of historical Phase 2.3C.
 - [ ] Resolve outstanding owner UI/UX feedback: Explore's **+** is unclear; make its purpose/discoverability explicit. Empty states confuse missing catalogue, fresh account, filters, collection and offline availability. Fictional examples need clearer presentation distinct from genuine shared content, without copying them into accounts. Record proposed changes for review; do not claim phone acceptance.
 - [ ] Before real users or production data, replace experimental reset permissions with non-destructive migrations and verify privacy, deletion, recovery, production email verification/delivery, hosting and backup requirements.
 
@@ -267,7 +288,9 @@ Executed on 2026-11-26. The private APK uses local build-only code 1 and was not
 
 See the [review findings and storage limitations](docs/backend/production-authentication.md#hardening-review-of-commit-871634d). Upgrading the pre-hardening session requires one fresh login; guest/account data remains intact. No private synchronization, guest association, public identity, managed-project access or deployment is included. Phase 2.3C remains unstarted.
 
-### Phase 2.3C — Consent, explicit association and private synchronization (not started)
+### Phase 2.3C — Historical consent/association/private-sync proposal
+
+A2 above implements and verifies the private synchronization, Unicode and metadata-portability portions. The combined guest-association proposal below is not approved or started; do not infer permission to associate/import guest records.
 
 - [ ] Approve separate private-history/favourites synchronization consent and explicit guest-data association; preview only eligible genuine data and verify duplicate association/isolation/atomic retry.
 - [ ] Resolve Unicode grapheme validation compatibility and recoverable validation/conflict UX without changing local draft semantics silently.

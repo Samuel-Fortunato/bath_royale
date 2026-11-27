@@ -6,6 +6,9 @@ import 'package:uuid/uuid.dart';
 import 'package:bath_royale/models/bathroom.dart';
 import 'package:bath_royale/models/provenance.dart';
 import 'package:bath_royale/models/review.dart';
+import 'package:bath_royale/models/tag_presentation.dart';
+import 'package:bath_royale/state/app_state.dart';
+import 'package:bath_royale/sync/private_sync_controller.dart';
 import 'package:bath_royale/models/visit.dart';
 import 'package:bath_royale/storage/bathroom_repository.dart';
 import 'package:bath_royale/storage/local_store.dart';
@@ -42,6 +45,29 @@ class ResponseGate implements RemoteDataSource {
     int l,
     SessionIdentity? s,
   ) => real.pull(n, f, c, l, s);
+}
+
+class SwitchableRemote implements RemoteDataSource {
+  final RemoteDataSource real;
+  bool online = true;
+  SwitchableRemote(this.real);
+  @override
+  Future<int> submit(SessionIdentity s, OutboxOperation op) {
+    if (!online) throw const RemoteFailure(RemoteFailureKind.transport);
+    return real.submit(s, op);
+  }
+
+  @override
+  Future<PullPage> pull(
+    DataNamespace n,
+    String f,
+    String? c,
+    int l,
+    SessionIdentity? s,
+  ) {
+    if (!online) throw const RemoteFailure(RemoteFailureKind.transport);
+    return real.pull(n, f, c, l, s);
+  }
 }
 
 void main() {
@@ -158,12 +184,20 @@ void main() {
       addTearDown(() => directory.deleteSync(recursive: true));
       final database = '${directory.path}/account.sqlite';
       for (final step in ['create', 'commitWithoutAck']) {
-        final result = await Process.run('dart', [
-          'run',
-          'tool/sync_process_fixture.dart',
-          step,
-          database,
-        ]);
+        final result = await Process.run(
+          'flutter',
+          [
+            'test',
+            '--no-pub',
+            'tool/sync_process_fixture.dart',
+            '--reporter',
+            'expanded',
+          ],
+          environment: {
+            'BATH_SYNC_PROCESS_STEP': step,
+            'BATH_SYNC_PROCESS_DB': database,
+          },
+        );
         expect(
           result.exitCode,
           0,
@@ -468,5 +502,230 @@ void main() {
       await coordinator.synchronize();
       expect(rows('outbox'), isEmpty);
     },
+  );
+  test(
+    'A2 real application controllers converge private account stores offline and after upgrade',
+    () async {
+      final account = config['privateA'] as Map;
+      final subject = account['user']['id'] as String;
+      final n = DataNamespace.account(scope.environment, subject);
+      final tmp = Directory.systemTemp.createTempSync('a2-devices-');
+      addTearDown(() => tmp.deleteSync(recursive: true));
+      final path = '${tmp.path}/device-a.sqlite';
+      var a = LocalStore(sqlite3.open(path), namespace: n);
+      // Genuine A1 records existed before queueing/consent was available.
+      var stateA = AppState.restoreAccountForTesting(BathroomRepository(a));
+      final bathroom = stateA.createBathroom(
+        'Trono privado entre dispositivos',
+      );
+      final v = Visit(
+        id: uuid(),
+        bathroomId: bathroom.id,
+        userId: subject,
+        visitedAt: DateTime.now().toUtc(),
+      );
+      final original = Review(
+        id: uuid(),
+        visitId: v.id,
+        bathroomId: bathroom.id,
+        authorId: subject,
+        createdAt: v.visitedAt,
+        rating: 4.2,
+        paperAvailability: 2,
+        hygiene: 3,
+        comfort: 4,
+        aesthetics: 0,
+        comment: 'e\u0301' * 500,
+        tags: [ReviewTagData(emoji: '👨‍' * 10 + '👨', label: 'e\u0301' * 30)],
+      );
+      stateA.saveReview(original, newVisit: v);
+      stateA.toggleFavorite(bathroom.id);
+      final previousRows = jsonEncode(
+        a.database
+            .select('SELECT * FROM reviews')
+            .map((r) => Map.of(r))
+            .toList(),
+      );
+      stateA.dispose();
+      a.database.execute(
+        'CREATE UNIQUE INDEX v6_name_uniqueness ON bathrooms(normalized_name); DROP TABLE sync_resolutions; DROP TABLE sync_preferences',
+      );
+      a.database.userVersion = 6;
+      a.close();
+      a = LocalStore(sqlite3.open(path), namespace: n);
+      expect(
+        jsonEncode(
+          a.database
+              .select('SELECT * FROM reviews')
+              .map((r) => Map.of(r))
+              .toList(),
+        ),
+        previousRows,
+      );
+      expect(a.database.userVersion, 7);
+      final b = LocalStore(sqlite3.openInMemory(), namespace: n);
+      final foreignN = DataNamespace.account(
+        scope.environment,
+        config['privateB']['user']['id'] as String,
+      );
+      final foreign = LocalStore(sqlite3.openInMemory(), namespace: foreignN);
+      final authA = FakeAuthSession()..change(SessionIdentity(n, now + 600000));
+      final authB = FakeAuthSession()..change(SessionIdentity(n, now + 600000));
+      final authForeign = FakeAuthSession()
+        ..change(SessionIdentity(foreignN, now + 600000));
+      final http = HttpRemoteDataSource.forTesting(
+        endpoint: Uri.parse(config['endpoint'] as String),
+        environment: n.environment,
+        accessToken: (s) => s.namespace == n
+            ? account['access_token'] as String
+            : config['privateB']['access_token'] as String,
+      );
+      final offline = SwitchableRemote(http);
+      PrivateSyncController controller(
+        LocalStore local,
+        FakeAuthSession auth,
+        RemoteDataSource remote,
+      ) {
+        final state = AppState.restoreAccountForTesting(
+          BathroomRepository(
+            local,
+            syncContext: SyncWriteContext.account(local.namespace),
+          ),
+        );
+        final c = PrivateSyncController(
+          state: state,
+          coordinator: SyncCoordinator(
+            store: SyncStore(local),
+            auth: auth,
+            remote: remote,
+            now: () => now,
+            batchSize: 2,
+            authorized: () => SyncStore(local).hasConsent,
+          ),
+          renew: () async {},
+        );
+        state.synchronization = c;
+        return c;
+      }
+
+      var ca = controller(a, authA, offline);
+      final cb = controller(b, authB, http);
+      final cc = controller(foreign, authForeign, http);
+      addTearDown(() {
+        ca.state.dispose();
+        cb.state.dispose();
+        cc.state.dispose();
+        a.close();
+        b.close();
+        foreign.close();
+        http.close();
+      });
+      Future<void> settle(PrivateSyncController c) async {
+        for (var i = 0; i < 30; i++) {
+          await c.synchronize();
+          if (!c.coordinator.moreWork) return;
+        }
+        fail('Bounded synchronization did not converge');
+      }
+
+      await ca.synchronize();
+      expect(ca.store.hasConsent, false);
+      expect(
+        ca.store.pendingCount,
+        0,
+      ); // A1 rows are backfilled only on consent.
+      await ca.enable();
+      await settle(ca);
+      expect(ca.error, isNull);
+      expect(ca.store.pendingCount, 0);
+      expect(ca.store.problems, isEmpty);
+      await cb.enable();
+      await settle(cb);
+      expect(cb.state.allBathrooms.single.id, bathroom.id);
+      expect(cb.state.visits.single.id, v.id);
+      expect(cb.state.reviews.single.comment, original.comment);
+      expect(cb.state.reviews.single.tags, original.tags);
+      expect(cb.state.activityFor(bathroom.id).isFavorite, true);
+      await cc.enable();
+      await settle(cc);
+      expect(cc.state.allBathrooms, isEmpty);
+      expect(cc.state.visits, isEmpty);
+      expect(cc.state.reviews, isEmpty);
+      Review changed(Review r, String comment) => Review(
+        id: r.id,
+        visitId: r.visitId,
+        bathroomId: r.bathroomId,
+        authorId: r.authorId,
+        createdAt: r.createdAt,
+        updatedAt: DateTime.now().toUtc(),
+        rating: r.rating,
+        paperAvailability: r.paperAvailability,
+        hygiene: r.hygiene,
+        comfort: r.comfort,
+        aesthetics: r.aesthetics,
+        tags: r.tags,
+        comment: comment,
+      );
+      offline.online = false;
+      ca.state.saveReview(
+        changed(ca.state.reviews.single, 'Alteração offline preservada'),
+      );
+      ca.state.toggleFavorite(bathroom.id);
+      await ca.synchronize();
+      expect(ca.error, contains('Sem ligação'));
+      expect(ca.store.pendingCount, 2);
+      cb.state.saveReview(
+        changed(cb.state.reviews.single, 'Edição do outro dispositivo'),
+      );
+      await settle(cb);
+      offline.online = true;
+      await ca.retry();
+      await settle(ca);
+      expect(ca.store.problems.single['state'], 'conflict');
+      expect(ca.state.reviews.single.comment, 'Alteração offline preservada');
+      expect(ca.state.activityFor(bathroom.id).isFavorite, false);
+      // Explicitly keep the local edit; it uses a new operation ID/CAS base.
+      final failed = ca.store.problems.single['operation_id'] as String;
+      ca.resend(failed);
+      await settle(ca);
+      await settle(cb);
+      expect(ca.store.problems, isEmpty);
+      expect(cb.state.reviews.single.comment, 'Alteração offline preservada');
+      expect(cb.state.activityFor(bathroom.id).isFavorite, false);
+      expect(ca.store.archives.single['operation_id'], failed);
+      // A stale deletion must not erase a newly edited review on the other device.
+      ca.state.deleteVisit(v.id, deleteReview: true);
+      cb.state.saveReview(
+        changed(cb.state.reviews.single, 'Edição antes da remoção'),
+      );
+      await settle(cb);
+      await settle(ca);
+      expect(ca.store.problems.single['state'], 'conflict');
+      ca.useAccountVersion(ca.store.problems.single['operation_id'] as String);
+      await settle(ca);
+      expect(ca.state.reviews.single.comment, 'Edição antes da remoção');
+      ca.state.deleteVisit(v.id, deleteReview: true);
+      await settle(ca);
+      await settle(cb);
+      expect(cb.state.visits, isEmpty);
+      expect(cb.state.reviews, isEmpty);
+      // Local queue, consent, tombstones and archived edits survive restart.
+      offline.online = false;
+      ca.state.recordVisit(bathroom.id, visitedAt: DateTime.now().toUtc());
+      ca.state.dispose();
+      a.close();
+      a = LocalStore(sqlite3.open(path), namespace: n);
+      ca = controller(a, authA, offline);
+      expect(ca.enabled, true);
+      expect(ca.store.pendingCount, 1);
+      expect(ca.store.archives, isNotEmpty);
+      offline.online = true;
+      await settle(ca);
+      await settle(cb);
+      expect(ca.store.pendingCount, 0);
+      expect(cb.state.visits.single.id, ca.state.visits.single.id);
+      expect(cb.state.reviews, isEmpty);
+    },
+    timeout: const Timeout(Duration(minutes: 2)),
   );
 }

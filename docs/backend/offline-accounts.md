@@ -1,5 +1,8 @@
 # Offline account integration foundation — Phase 2.3A
 
+Current application integration: [A2 private account synchronization](private-account-synchronization.md). A1.1 UX is owner-accepted; A2 enables explicit-consent private synchronization and recovery without guest association/public identity. Test-only/disabled statements below describe the historical foundation milestone, not the current configured app.
+
+
 Phase 2.3B adds optional production authentication and approved offline device lifecycle; see [production authentication](production-authentication.md). Earlier guest-only/test-only descriptions below are historical foundation details. Domain synchronization, association and public-profile creation remain disabled.
 
 Production bootstrap remains `StorageBootstrap` → `AppState.restore` → guest SQLite → Provider. It neither constructs an authentication adapter nor opens an account/cache file, creates an outbox context, schedules synchronization or needs a backend. Existing Portuguese UI, samples, review workflows, ratings and rankings remain unchanged. No login or production account selector is introduced. No authentication SDK or credential package is installed.

@@ -40,6 +40,13 @@ class CompatibilityTests(unittest.TestCase):
         self.assertEqual(len(decisions), 14)
         self.assertNotIn("session", actual)
 
+    def test_sync_sequence_and_all_protocol_metadata_are_preserved(self):
+        sequence = "SELECT pg_catalog.setval('app_private.sync_changes_position_seq', 123, true);\n"
+        actual, _ = transfer.adapt_data(fixture() + sequence, self.columns)
+        self.assertEqual(actual, fixture() + sequence)
+        for name in ["sync_clock", "sync_records", "sync_changes", "sync_receipts", "sync_cursors"]:
+            self.assertIn("app_private." + name, migration.TABLES)
+
     def test_populated_unsupported_sections_and_new_sequence_fail(self):
         for extra in (
             section("storage.objects", "object\n"),

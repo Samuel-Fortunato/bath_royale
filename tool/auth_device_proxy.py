@@ -1,4 +1,4 @@
-"""Private loopback TLS gateway for the isolated Auth instance, never REST.
+"""Private loopback TLS gateway for the isolated Auth and private synchronization RPCs.
 
 Run prepare/serve in a mode-0700 directory outside the checkout. No request,
 response, password, verification token or private key is printed.
@@ -44,7 +44,9 @@ class Gateway(BaseHTTPRequestHandler):
         pass
 
     def proxy(self):
-        if not self.path.startswith('/auth/v1/'):
+        auth_route = self.path.startswith('/auth/v1/')
+        sync_route = self.path in ('/rest/v1/rpc/sync_submit', '/rest/v1/rpc/sync_pull')
+        if not (auth_route or sync_route):
             self.send_error(404)
             return
         try:
@@ -54,9 +56,9 @@ class Gateway(BaseHTTPRequestHandler):
             body = self.rfile.read(length)
             headers = {k: v for k, v in self.headers.items()
                        if k.lower() in ('content-type', 'authorization', 'apikey')}
-            connection = http.client.HTTPConnection('127.0.0.1', 55471, timeout=15)
+            connection = http.client.HTTPConnection('127.0.0.1', 55471 if auth_route else 55472, timeout=15)
             try:
-                connection.request(self.command, self.path[len('/auth/v1'):], body, headers)
+                connection.request(self.command, self.path[len('/auth/v1') if auth_route else len('/rest/v1'):], body, headers)
                 response = connection.getresponse()
                 payload = response.read()
                 self.send_response(response.status)

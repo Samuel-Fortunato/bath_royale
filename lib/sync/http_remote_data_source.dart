@@ -6,18 +6,28 @@ import 'namespace.dart';
 import 'sync_coordinator.dart';
 import 'sync_store.dart';
 
-/// Explicitly injected test transport. Never constructed by application bootstrap.
+/// Authenticated synchronization RPC transport; never receives refresh tokens.
 class HttpRemoteDataSource implements RemoteDataSource {
   final Uri endpoint;
   final String environment;
   final String? Function(SessionIdentity) accessToken;
   final HttpClient _client;
+  final String? clientKey;
+  HttpRemoteDataSource({
+    required this.endpoint,
+    required this.environment,
+    required this.accessToken,
+    this.clientKey,
+    HttpClient? client,
+  }) : _client = client ?? HttpClient();
+
   HttpRemoteDataSource.forTesting({
     required this.endpoint,
     required this.environment,
     required this.accessToken,
     HttpClient? client,
-  }) : _client = client ?? HttpClient();
+  }) : clientKey = null,
+       _client = client ?? HttpClient();
 
   void close() => _client.close(force: true);
 
@@ -41,10 +51,13 @@ class HttpRemoteDataSource implements RemoteDataSource {
           .postUrl(endpoint.resolve('rpc/$name'))
           .timeout(const Duration(seconds: 15));
       request.headers.contentType = ContentType.json;
+      if (clientKey != null) request.headers.set('apikey', clientKey!);
       if (token != null) {
         request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
       }
-      request.write(jsonEncode(body));
+      final bytes = utf8.encode(jsonEncode(body));
+      request.contentLength = bytes.length;
+      request.add(bytes);
       final response = await request.close().timeout(
         const Duration(seconds: 15),
       );

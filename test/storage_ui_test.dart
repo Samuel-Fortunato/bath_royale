@@ -1,3 +1,7 @@
+import 'package:bath_royale/pages/private_synchronization.dart';
+import 'package:bath_royale/storage/bathroom_repository.dart';
+import 'package:bath_royale/sync/sync_store.dart';
+import 'package:bath_royale/sync/private_sync_controller.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
@@ -221,7 +225,8 @@ void main() {
       expect(state.visits.single.id, visit.id);
       expect(state.reviews.single.rating, 4.5);
       expect(state.activityFor(bathroom.id).isFavorite, isTrue);
-      expect(state.repository!.syncContext, isNull);
+      expect(state.repository!.syncContext, isNotNull);
+      expect(state.synchronization!.enabled, isFalse);
       expect(legacyFile.readAsBytesSync(), original);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -452,6 +457,8 @@ void main() {
       expect(find.byType(TextField), findsNWidgets(2));
       expect(find.text('Validar recuperação'), findsNWidgets(2));
       await tester.ensureVisible(find.text('Voltar a entrar'));
+      await tester.ensureVisible(find.text('Voltar a entrar'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Voltar a entrar'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(
@@ -476,6 +483,7 @@ void main() {
       expect(find.text('fiction@example.invalid'), findsOneWidget);
       expect(find.textContaining(fixtureSession().user.id), findsNothing);
       expect(find.text('Nova palavra-passe'), findsOneWidget);
+      expect(find.text('Terminar sessão'), findsNothing);
       expect(
         find.widgetWithText(FilledButton, 'Guardar palavra-passe'),
         findsOneWidget,
@@ -649,6 +657,8 @@ void main() {
       await tester.tap(find.byTooltip('Mostrar palavra-passe'));
       await tester.pumpAndSettle();
       expect(find.byTooltip('Ocultar palavra-passe'), findsOneWidget);
+      await tester.ensureVisible(find.text('Voltar a entrar'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Voltar a entrar'));
       await tester.pumpAndSettle();
       await tester.pumpWidget(const SizedBox.shrink());
@@ -834,6 +844,74 @@ void main() {
     auth.change(SessionIdentity(a, 60000));
     auth.dispose();
   });
+  testWidgets(
+    'private synchronization explains consent, permits declining and fits narrow large-text screens',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 850);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final namespace = DataNamespace.account('test', 'private');
+      final local = LocalStore(sqlite3.openInMemory(), namespace: namespace);
+      final state = AppState.restoreAccountForTesting(
+        BathroomRepository(
+          local,
+          syncContext: SyncWriteContext.account(namespace),
+        ),
+      );
+      final auth = FakeAuthSession()
+        ..change(SessionIdentity(namespace, 100000));
+      final remote = FakeRemoteDataSource();
+      final sync = PrivateSyncController(
+        state: state,
+        coordinator: SyncCoordinator(
+          store: SyncStore(local),
+          auth: auth,
+          remote: remote,
+          now: () => 1000,
+          authorized: () => SyncStore(local).hasConsent,
+        ),
+        renew: () async {},
+      );
+      state.synchronization = sync;
+      addTearDown(() {
+        state.dispose();
+        local.close();
+      });
+      state.createBathroom('Sem consentimento, sem envio');
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(1.5)),
+            child: child!,
+          ),
+          home: PrivateSynchronizationPage(sync: sync),
+        ),
+      );
+      await tester.tap(find.text('Ativar sincronização privada'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('não são importados nem enviados'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('não são publicados'), findsOneWidget);
+      await tester.tap(find.text('Agora não'));
+      await tester.pumpAndSettle();
+      expect(remote.requests, isEmpty);
+      expect(sync.enabled, false);
+      await tester.tap(find.text('Ativar sincronização privada'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ativar e enviar dados privados'));
+      await tester.pumpAndSettle();
+      expect(sync.enabled, true);
+      expect(remote.requests.length, 1);
+      expect(find.text('Sincronização privada em dia'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 }
 
 class _ObservedAuth extends FakeAuthSession {

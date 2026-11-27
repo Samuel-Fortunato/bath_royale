@@ -12,7 +12,7 @@ void main() {
     addTearDown(store.close);
     final state = AppState.restore(store);
     addTearDown(state.dispose);
-    expect(store.database.userVersion, 6);
+    expect(store.database.userVersion, 7);
     expect(
       state.reviews.where((r) => r.comment != null).length,
       greaterThan(2),
@@ -140,7 +140,7 @@ void main() {
     db.userVersion = 1;
     final store = LocalStore(db);
     addTearDown(store.close);
-    expect(db.userVersion, 6);
+    expect(db.userVersion, 7);
     expect(store.load()!.bathrooms.single.id, 'b');
     expect(store.load()!.darkMode, isTrue);
   });

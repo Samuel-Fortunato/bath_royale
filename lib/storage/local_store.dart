@@ -35,8 +35,12 @@ class LocalStore {
         throw StateError('Database integrity check failed');
       }
       final version = database.userVersion;
-      if (version > 6) {
+      if (version > 7) {
         throw StateError('Database was created by a newer application');
+      }
+      // SQLite's documented table-rebuild procedure keeps child references intact.
+      if (version < 7 && this.namespace.isAccount) {
+        database.execute('PRAGMA foreign_keys = OFF');
       }
       transaction(() {
         if (version == 0) {
@@ -124,6 +128,24 @@ class LocalStore {
           }
           database.userVersion = 6;
         }
+        if (version < 7) {
+          if (this.namespace.isAccount) {
+            database.execute('''CREATE TABLE bathrooms_v7 (
+              id TEXT PRIMARY KEY NOT NULL CHECK(length(id)>0), name TEXT NOT NULL,
+              normalized_name TEXT NOT NULL, creator TEXT NOT NULL CHECK(length(creator)>0),
+              emoji TEXT NOT NULL CHECK(length(emoji)>0), accent INTEGER NOT NULL CHECK(accent BETWEEN 0 AND 5),
+              provenance TEXT NOT NULL CHECK(provenance IN ('demo','unclassified_legacy','user_created','remote')));
+              INSERT INTO bathrooms_v7 SELECT * FROM bathrooms;
+              DROP TABLE bathrooms;
+              ALTER TABLE bathrooms_v7 RENAME TO bathrooms;
+            ''');
+          }
+          database.execute('''CREATE TABLE sync_preferences (
+            id INTEGER PRIMARY KEY CHECK(id=1), consent_version INTEGER NOT NULL);
+            CREATE TABLE sync_resolutions (operation_id TEXT PRIMARY KEY REFERENCES outbox(operation_id), resolution TEXT NOT NULL);
+          ''');
+          database.userVersion = 7;
+        }
         if (database.select('SELECT scope FROM namespace').single['scope'] !=
             this.namespace.key) {
           throw StateError('Database namespace mismatch');
@@ -132,6 +154,7 @@ class LocalStore {
           throw StateError('Broken database references');
         }
       });
+      database.execute('PRAGMA foreign_keys = ON');
     } catch (_) {
       database.close();
       rethrow;

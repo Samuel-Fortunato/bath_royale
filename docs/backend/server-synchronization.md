@@ -1,5 +1,8 @@
 # Server synchronization protocol — Phase 2.2C
 
+Current application integration: [A2 private account synchronization](private-account-synchronization.md). A1.1 UX is owner-accepted; A2 enables explicit-consent private synchronization and recovery without guest association/public identity. Test-only/disabled statements below describe the historical foundation milestone, not the current configured app.
+
+
 Phase 2.3B adds optional production authentication and approved offline device lifecycle; see [production authentication](production-authentication.md). Earlier guest-only/test-only descriptions below are historical foundation details. Domain synchronization, association and public-profile creation remain disabled.
 
 This protocol is implemented by ordered migration `202611260002_synchronization.sql`, on top of the unchanged Phase 2.1A schema. `HttpRemoteDataSource.forTesting` exercises it through the isolated local Auth/PostgREST APIs. The ordinary Flutter bootstrap remains guest-only. Nothing opens an account database, associates guest history, uploads the existing SQLite file, stores production credentials or enables account UI. Phase 2.3 has not started.

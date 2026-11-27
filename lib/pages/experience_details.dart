@@ -12,31 +12,36 @@ Future<bool> removeExperience(
   AppState state,
   Visit visit,
 ) async {
-  final hasReview = state.reviewForVisit(visit.id) != null;
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Remover visita?'),
-      content: Text(
-        hasReview
-            ? 'A avaliação associada também será removida.'
-            : 'Esta visita será removida do teu histórico.',
+  final release = state.retainDraft();
+  try {
+    final hasReview = state.reviewForVisit(visit.id) != null;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remover visita?'),
+        content: Text(
+          hasReview
+              ? 'A avaliação associada também será removida.'
+              : 'Esta visita será removida do teu histórico.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Remover'),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('Remover'),
-        ),
-      ],
-    ),
-  );
-  if (confirmed != true || !context.mounted) return false;
-  state.deleteVisit(visit.id, deleteReview: hasReview);
-  return true;
+    );
+    if (confirmed != true || !context.mounted) return false;
+    state.deleteVisit(visit.id, deleteReview: hasReview);
+    return true;
+  } finally {
+    release();
+  }
 }
 
 /// Represents exactly one visit, including an optional review, for future diary reuse.

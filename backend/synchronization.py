@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import json
 import os
+import secrets
 import subprocess
 import sys
 import tempfile
@@ -177,7 +178,10 @@ def server_tests(a, b):
             provenance="user_created",
         ),
     )
-    submit(unavailable, token, 403)
+    check(
+        submit(unavailable, token)["status"] == "acknowledged",
+        "own private bathroom accepts visits",
+    )
     # A failed second half must roll back the visit AND its change/revision/receipt.
     compound_visit, compound_review = str(uuid.uuid4()), str(uuid.uuid4())
     bad = command(
@@ -239,9 +243,8 @@ def server_tests(a, b):
         == "0",
         "compound receipt rollback",
     )
-    # Preserve the exact existing Unicode constraints, with an explicit future
-    # integration gate rather than silently changing local grapheme validation.
-    for content in ("e\u0301" * 251,):
+    # Grapheme bounds now match the locked client; over-limit input rolls back.
+    for content in ("e\u0301" * 501,):
         bad["operationId"] = str(uuid.uuid4())
         bad["payload"]["review"]["rating"] = 4
         bad["payload"]["review"]["comment"] = content
@@ -440,12 +443,145 @@ def expired_token(actor):
     ).decode()
 
 
+def private_authorization():
+    accounts = []
+    for _ in range(2):
+        status, result = poc.request(
+            poc.AUTH_PORT,
+            "/signup",
+            "POST",
+            dict(
+                email="a2-privacy-" + uuid.uuid4().hex + "@example.invalid",
+                password=secrets.token_urlsafe(32),
+            ),
+        )
+        check(status == 200 and result.get("access_token"), "private Auth signup")
+        accounts.append(result)
+    a, b = accounts
+    token, other = a["access_token"], b["access_token"]
+    actor = a["user"]["id"]
+    check(
+        poc.sql("select count(*) from public.profiles where id='" + actor + "'") == "0",
+        "no public profile required",
+    )
+    bath = bathroom(actor)
+    submit(bath, token)
+    visit, review = str(uuid.uuid4()), str(uuid.uuid4())
+    value = command(
+        "review",
+        review,
+        "createVisitReview",
+        dict(
+            visit=dict(id=visit, bathroom=bath["entityId"], user=actor, at=1800000000000000),
+            review=dict(
+                id=review,
+                visit=visit,
+                bathroom=bath["entityId"],
+                author=actor,
+                created=1800000000000000,
+                updated=1800000000000000,
+                rating=4.2,
+                paper=2,
+                hygiene=3,
+                comfort=4,
+                aesthetics=0,
+                tags="[]",
+                comment="e\u0301" * 500,
+            ),
+        ),
+    )
+    submit(value, token)
+    submit(
+        command(
+            "favourite",
+            bath["entityId"],
+            "setFavourite",
+            dict(user=actor, bathroom=bath["entityId"], value=True),
+        ),
+        token,
+    )
+    for endpoint, identity in [
+        ("bathrooms", bath["entityId"]),
+        ("visits", visit),
+        ("reviews", review),
+    ]:
+        check(
+            poc.request(poc.REST_PORT, "/" + endpoint + "?id=eq." + identity, token=other)
+            == (200, []),
+            "other account exact private row hidden",
+        )
+        status, result = poc.request(poc.REST_PORT, "/" + endpoint + "?id=eq." + identity)
+        check(
+            (status == 200 and result == []) or status in (401, 403), "anonymous private row hidden"
+        )
+    check(
+        poc.request(poc.REST_PORT, "/favourites?bathroom_id=eq." + bath["entityId"], token=other)
+        == (200, []),
+        "private favourite hidden",
+    )
+    ids = {bath["entityId"], visit, review}
+    for session, feed in [(other, "private"), (None, "catalogue")]:
+        changes, _ = pages(session, feed)
+        check(
+            not any(c["entityId"] in ids for c in changes),
+            "private data absent from foreign/public feeds",
+        )
+    check(
+        poc.request(poc.REST_PORT, "/rpc/public_reviews", "POST", {}, other)[1] == []
+        or all(
+            r["id"] != review
+            for r in poc.request(poc.REST_PORT, "/rpc/public_reviews", "POST", {}, other)[1]
+        ),
+        "unpublished review hidden",
+    )
+    forbidden = command(
+        "favourite",
+        bath["entityId"],
+        "setFavourite",
+        dict(user=b["user"]["id"], bathroom=bath["entityId"], value=True),
+    )
+    submit(forbidden, other, 403)
+    # Even the existing moderator path cannot discover/publish private bathrooms.
+    poc.sql("insert into app_private.moderators values('" + b["user"]["id"] + "')")
+    check(
+        poc.request(poc.REST_PORT, "/bathrooms?id=eq." + bath["entityId"], token=other)
+        == (200, []),
+        "moderator cannot discover private account bathroom",
+    )
+    check(
+        poc.request(
+            poc.REST_PORT, "/rpc/approve_bathroom", "POST", {"proposal_id": bath["entityId"]}, other
+        )[0]
+        in (400, 403, 409),
+        "private account bathroom cannot be approved",
+    )
+    check(
+        poc.request(poc.REST_PORT, "/reviews?id=eq." + review, "PATCH", {"published": True}, token)[
+            0
+        ]
+        in (400, 403, 409),
+        "private review cannot be published",
+    )
+    print(
+        "PASS: profile-free private account ownership, exact-row/API/feed isolation and publication denial"
+    )
+
+
 def verification():
     if "--skip-authorization" not in sys.argv:
         auth.verify()
     accounts = json.loads((poc.STATE / "accounts.json").read_text())
     a, b = [auth.login(account) for account in accounts]
+    cases = poc.run(["dart", "run", "tool/generate_grapheme_sql.dart", "--cases"])
+    mismatches = poc.sql(
+        "select count(*) from jsonb_to_recordset('"
+        + cases.replace("'", "''")
+        + "'::jsonb) as c(value text,expected integer) where app_private.grapheme_length(value)<>expected"
+    )
+    check(mismatches == "0", "all locked Unicode grapheme vectors match Dart")
+    print("PASS: " + str(len(json.loads(cases))) + " Unicode segmentation parity cases")
     server_tests(a, b)
+    private_authorization()
     # Fresh Auth tokens before the real Flutter transport suite. Never print them.
     a, b = [auth.login(account) for account in accounts]
     catalogue = str(uuid.uuid4())
@@ -458,7 +594,22 @@ def verification():
         + b["user"]["id"]
         + "',now())"
     )
+    private = []
+    for _ in range(2):
+        status, result = poc.request(
+            poc.AUTH_PORT,
+            "/signup",
+            "POST",
+            {
+                "email": "a2-" + uuid.uuid4().hex + "@example.invalid",
+                "password": secrets.token_urlsafe(32),
+            },
+        )
+        check(status == 200 and result.get("access_token"), "profile-free private account")
+        private.append(result)
     config = dict(
+        privateA=private[0],
+        privateB=private[1],
         catalogue=catalogue,
         endpoint=f"http://127.0.0.1:{poc.REST_PORT}/",
         environment="isolated-local-sync-v1",
@@ -483,7 +634,7 @@ def verification():
             output.seek(0)
             # Test output must contain no HTTP response/token dumps.
             report = output.read()
-            for session in (a, b):
+            for session in (a, b, *private):
                 for key in ("access_token", "refresh_token"):
                     report = report.replace(session[key], "[redacted]")
             report = report.replace(config["expired"], "[redacted]")
@@ -497,6 +648,9 @@ def main():
     poc.start()
     try:
         verification()
+        from sync_portability import verify
+
+        verify()
     finally:
         poc.compose("stop")
         print("Stopped dedicated sync installation; credentials, volumes and network retained")

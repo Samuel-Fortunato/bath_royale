@@ -1,6 +1,7 @@
 // Disposable integration fixture. No application bootstrap or credential storage.
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart';
 import 'package:uuid/uuid.dart';
 import 'package:bath_royale/models/bathroom.dart';
@@ -11,7 +12,17 @@ import 'package:bath_royale/sync/sync_store.dart';
 import 'package:bath_royale/sync/sync_coordinator.dart';
 import 'package:bath_royale/sync/http_remote_data_source.dart';
 
-Future<void> main(List<String> args) async {
+void main() {
+  test(
+    'independent persistent synchronization process',
+    () => runFixture([
+      Platform.environment['BATH_SYNC_PROCESS_STEP']!,
+      Platform.environment['BATH_SYNC_PROCESS_DB']!,
+    ]),
+  );
+}
+
+Future<void> runFixture(List<String> args) async {
   final config =
       jsonDecode(
             File(

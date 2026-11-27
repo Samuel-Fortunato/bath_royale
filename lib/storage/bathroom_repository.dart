@@ -5,7 +5,7 @@ import '../models/visit.dart';
 import '../sync/sync_store.dart';
 import 'local_store.dart';
 
-/// Local action boundary. Sync authorization is absent in application bootstrap.
+/// Local transactional action boundary. Queueing is separate from transfer consent.
 class BathroomRepository {
   final LocalStore store;
   final SyncWriteContext? syncContext;
@@ -25,7 +25,9 @@ class BathroomRepository {
     store.database.select('SELECT * FROM $table WHERE id=?', [id]).single,
   );
   bool _eligible(Map<String, Object?> row) =>
-      row['provenance'] == Provenance.userCreated.value;
+      row['provenance'] == Provenance.userCreated.value ||
+      (store.namespace.isAccount &&
+          row['provenance'] == Provenance.remote.value);
   void _queue(
     String type,
     String id,
@@ -87,10 +89,6 @@ class BathroomRepository {
       eligible: _eligible(row),
       references: [if (reviewId != null) ('review', reviewId)],
     );
-    if (syncContext != null && _eligible(row)) {
-      _sync.tombstone('visit', id);
-      if (reviewId != null) _sync.tombstone('review', reviewId);
-    }
   });
   void saveReview(Review r, {Visit? newVisit, required bool isNew}) =>
       store.transaction(() {
@@ -131,7 +129,10 @@ class BathroomRepository {
         final eligible =
             store.bathroomProvenance(bathroom).child.allowsFutureUpload &&
             (existing.isEmpty ||
-                existing.single['provenance'] == Provenance.userCreated.value);
+                [
+                  Provenance.userCreated.value,
+                  Provenance.remote.value,
+                ].contains(existing.single['provenance']));
         store.setFavourite(user, bathroom, value);
         _queue(
           'favourite',

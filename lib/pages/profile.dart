@@ -1,3 +1,4 @@
+import 'private_synchronization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
@@ -89,6 +90,8 @@ class ProfilePage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            if (state.synchronization != null)
+              PrivateSynchronizationCard(sync: state.synchronization!),
             Card(
               child: ListTile(
                 leading: const Icon(Icons.manage_accounts_outlined),
@@ -198,7 +201,7 @@ class ProfilePage extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Text(
-                'Dados apenas neste dispositivo, sem cópia de segurança. Os dados antigos e os exemplos fictícios estão preservados em separado.',
+                'A sincronização privada é opcional e pode ser gerida no Perfil. Os dados antigos e os exemplos fictícios estão preservados em separado.',
               ),
             ),
           ],
@@ -272,7 +275,7 @@ class SettingsPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Dados apenas neste dispositivo, sem cópia de segurança. Os dados antigos e os exemplos fictícios estão preservados em separado.',
+                  'A sincronização privada é opcional e pode ser gerida no Perfil. Os dados antigos e os exemplos fictícios estão preservados em separado.',
                 ),
               ],
             ),

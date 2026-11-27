@@ -33,6 +33,11 @@ TABLES = [
     "public.reviews",
     "public.favourites",
     "app_private.moderators",
+    "app_private.sync_clock",
+    "app_private.sync_records",
+    "app_private.sync_changes",
+    "app_private.sync_receipts",
+    "app_private.sync_cursors",
     "bath_royale_migrations.applied",
 ]
 

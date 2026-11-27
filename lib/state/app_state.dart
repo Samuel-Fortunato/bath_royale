@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:characters/characters.dart';
+import '../sync/private_sync_controller.dart';
 import 'package:flutter/foundation.dart';
 import 'package:bath_royale/models/bathroom.dart';
 import 'package:bath_royale/models/bathroom_activity.dart';
@@ -13,6 +15,7 @@ import '../storage/bathroom_repository.dart';
 class AppState extends ChangeNotifier {
   final String currentUserId;
   final BathroomRepository? repository;
+  PrivateSyncController? synchronization;
   void Function()? _pendingWrite;
   void Function()? _pendingApply;
   Object? storageError;
@@ -32,6 +35,7 @@ class AppState extends ChangeNotifier {
       if (released) return;
       released = true;
       _openDrafts--;
+      synchronization?.request();
     };
   }
 
@@ -41,6 +45,7 @@ class AppState extends ChangeNotifier {
 
   @override
   void dispose() {
+    synchronization?.dispose();
     _disposed = true;
     super.dispose();
   }
@@ -109,8 +114,7 @@ class AppState extends ChangeNotifier {
     return state;
   }
 
-  /// Offline account restoration is available only to explicit test contexts.
-  /// Authentication does not construct a SyncWriteContext or seed examples.
+  /// Restore isolated account records without guest samples or implicit transfer.
   static AppState restoreAccountForTesting(BathroomRepository repository) {
     if (!repository.store.namespace.isAccount) {
       throw ArgumentError('Account store required');
@@ -250,13 +254,35 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// A remote projection is applied only outside editors and failed commits.
+  bool reloadAccountData() {
+    if (_disposed || hasUncommittedWork) return false;
+    final data = repository!.load()!;
+    _bathrooms
+      ..clear()
+      ..addAll(data.bathrooms);
+    _visits
+      ..clear()
+      ..addAll(data.visits);
+    _reviews
+      ..clear()
+      ..addAll(data.reviews);
+    _activities.clear();
+    for (final f in data.favourites) {
+      _activities[(f.userId, f.bathroomId)] = f;
+    }
+    _lastRegistered = null;
+    notifyListeners();
+    return true;
+  }
+
   static String normalizeName(String name) =>
       name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
 
   String? validateBathroomName(String name) {
     final cleaned = name.trim().replaceAll(RegExp(r'\s+'), ' ');
     if (cleaned.isEmpty) return 'Dá um nome a este trono.';
-    if (cleaned.length > 100) return 'Usa até 100 caracteres.';
+    if (cleaned.characters.length > 100) return 'Usa até 100 caracteres.';
     if (cleaned.contains(RegExp(r'[\x00-\x1F\x7F]'))) {
       return 'Usa apenas texto numa linha.';
     }

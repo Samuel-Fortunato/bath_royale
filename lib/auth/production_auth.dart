@@ -89,7 +89,7 @@ class AuthConfiguration {
   String get storageKey => 'bath-auth:${Uri.encodeComponent(environment)}';
 }
 
-/// Official Auth SDK only; no database, realtime, profile or sync client exists.
+/// Official Auth SDK with secure persistence; remote data uses a separate adapter.
 /// Operations are serialized, including refresh rotation and credential writes.
 class ProductionAuth extends ChangeNotifier implements AuthSession {
   final AuthConfiguration configuration;
@@ -333,21 +333,23 @@ class ProductionAuth extends ChangeNotifier implements AuthSession {
   });
 
   Future<void>? _renewing;
-  Future<void> renew() {
-    return _renewing ??= _renew().whenComplete(() => _renewing = null);
+  Future<void> renew({bool force = false}) {
+    return _renewing ??= _renew(
+      force: force,
+    ).whenComplete(() => _renewing = null);
   }
 
-  Future<void> _renew() {
+  Future<void> _renew({bool force = false}) {
     if (_disposed ||
         storageBlocked ||
         busy ||
         _identity == null ||
-        _identity!.expiresAt > now() + 30000) {
+        !force && _identity!.expiresAt > now() + 30000) {
       return Future.value();
     }
     return _run(() async {
       if (_identity == null) return;
-      if (_identity!.expiresAt > now() + 30000) return;
+      if (!force && _identity!.expiresAt > now() + 30000) return;
       // Commit denial before a network call can rotate/revoke the secure token.
       try {
         await _setRestoration(false);

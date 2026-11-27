@@ -129,6 +129,8 @@ void main() {
             .toList();
       }
       for (final table in [
+        'sync_resolutions',
+        'sync_preferences',
         'sync_conflicts',
         'outbox_dependencies',
         'outbox',
@@ -161,7 +163,7 @@ void main() {
           before[table],
         );
       }
-      expect(upgraded.database.userVersion, 6);
+      expect(upgraded.database.userVersion, 7);
       expect(upgraded.database.select('SELECT * FROM outbox'), isEmpty);
     },
   );
@@ -482,7 +484,11 @@ void main() {
         RemoteChange('review', 'r', 99),
         RemoteChange('visit', 'v', 99),
       ], 'c');
-      expect(rows('remote_records').every((r) => r['deleted'] == 1), true);
+      // Optimistic local removals do not create server tombstones. A rejected
+      // delete must remain recoverable from the canonical account version.
+      expect(rows('remote_records').every((r) => r['deleted'] == 0), true);
+      expect(rows('visits'), isEmpty);
+      expect(rows('reviews'), isEmpty);
       sync.applyPull('private', [
         RemoteChange('review', 'other', 5, deleted: true),
       ], 'd');

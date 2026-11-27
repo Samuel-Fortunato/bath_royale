@@ -33,7 +33,8 @@ class AuthenticatedBootstrap extends StatefulWidget {
   State<AuthenticatedBootstrap> createState() => _AuthenticatedBootstrapState();
 }
 
-class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap> {
+class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap>
+    with WidgetsBindingObserver {
   ProductionAuth? auth;
   AccountStateScope? scope;
   String? error;
@@ -43,6 +44,7 @@ class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     load();
   }
 
@@ -135,7 +137,15 @@ class _AuthenticatedBootstrapState extends State<AuthenticatedBootstrap> {
   );
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    scope?.state?.synchronization?.foreground(
+      state == AppLifecycleState.resumed,
+    );
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     auth?.removeListener(select);
     // Process teardown cannot persist memory-only drafts.
     if (scope?.state?.hasUncommittedWork != true) scope?.dispose();

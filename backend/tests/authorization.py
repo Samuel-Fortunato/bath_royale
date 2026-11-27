@@ -191,7 +191,6 @@ def verify(existing_only=False, check_expiry=True):
         ("aesthetics", 5),
         ("paper", 1.5),
         ("comment", "x" * 501),
-        ("comment", "e\u0301" * 251),
         ("comment", ""),
         ("comment", " "),
         ("tags", {}),
@@ -209,7 +208,6 @@ def verify(existing_only=False, check_expiry=True):
         [dict(tag, emoji="🌿🌿")],
         [dict(tag, emoji="🇵")],
         [dict(tag, emoji="🏻")],
-        [dict(tag, label="e\u0301" * 16, key="e\u0301" * 16)],
         [
             dict(tag, label="grafiti", key="graffiti"),
             dict(tag, label="graffiti", key="graffiti"),
@@ -226,6 +224,15 @@ def verify(existing_only=False, check_expiry=True):
     for emoji in ["👨‍👩‍👧‍👦", "👍🏽", "🇵🇹", "1️⃣", "❤️"]:
         api("reviews?id=eq." + ar["id"], "PATCH", {"tags": [dict(tag, emoji=emoji)]}, a)
     api("reviews?id=eq." + ar["id"], "PATCH", {"tags": [tag], "comment": "🚽" * 500}, a)
+    api(
+        "reviews?id=eq." + ar["id"],
+        "PATCH",
+        {
+            "comment": "e\u0301" * 500,
+            "tags": [dict(tag, label="e\u0301" * 30, key="e\u0301" * 30, emoji="👨‍" * 10 + "👨")],
+        },
+        a,
+    )
     reject("reviews", "POST", review(av), a)
     for field, value in [
         ("author_id", bid),
@@ -393,10 +400,9 @@ def verify(existing_only=False, check_expiry=True):
         all(v["owner_id"] == bid for row in embedded for v in row["favourites"]),
         "embedded favourite RLS",
     )
-    check(
-        api("visits?select=*,profiles(*)", user=b)[0]["profiles"]["id"] == bid,
-        "profile join no private auth fields",
-    )
+    # Private ownership references Auth directly, never a public identity join.
+    reject("visits?select=*,profiles(*)", "GET", user=b)
+    reject("visits?select=*,users(*)", "GET", user=b)
     reject("profiles?select=*,users(*)", "GET", user=a)
     api("reviews?id=eq." + ar["id"], "PATCH", {"published": False}, a)
     check(len(api("rpc/public_reviews")) == 1, "unpublish removes projection immediately")

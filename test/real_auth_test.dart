@@ -9,6 +9,7 @@ import 'production_auth_test.dart' show MemoryVault;
 import 'package:bath_royale/state/account_state_scope.dart';
 import 'package:bath_royale/storage/local_store.dart';
 import 'package:bath_royale/models/review.dart';
+import 'package:bath_royale/state/app_state.dart';
 import 'package:sqlite3/sqlite3.dart' show sqlite3;
 import '../tool/auth_device_preview.dart';
 
@@ -65,7 +66,7 @@ void main() {
         restorationGuard: PlatformRestorationGuard(
           directory: () async => directory,
         ),
-        now: () => DateTime.now().millisecondsSinceEpoch + 45000,
+        now: () => DateTime.now().millisecondsSinceEpoch,
         client: GoTrueClient(
           url: sdkEndpoint,
           flowType: AuthFlowType.implicit,
@@ -140,7 +141,7 @@ void main() {
       );
       scope.state!.saveReview(
         Review(
-          id: 'real-a-review',
+          id: AppState.newEntityId(),
           visitId: visit.id,
           bathroomId: bathroom.id,
           authorId: identity.subject,
@@ -153,6 +154,27 @@ void main() {
         ),
       );
       scope.state!.toggleFavorite(bathroom.id);
+      if (gateway && !confirmationRequired) {
+        final sync = scope.state!.synchronization!;
+        expect(sync.enabled, false);
+        await sync.enable();
+        expect(sync.error, isNull);
+        expect(sync.store.pendingCount, 0);
+        expect(sync.store.problems, isEmpty);
+        final device = AccountStateScope.device(
+          auth: auth,
+          openStore: (n) async =>
+              LocalStore(sqlite3.openInMemory(), namespace: n),
+        );
+        await device.select(identity);
+        await device.state!.synchronization!.enable();
+        expect(device.state!.synchronization!.error, isNull);
+        expect(device.state!.allBathrooms.single.id, bathroom.id);
+        expect(device.state!.visits.single.id, visit.id);
+        expect(device.state!.reviews.single.rating, 4.2);
+        expect(device.state!.activityFor(bathroom.id).isFavorite, true);
+        device.dispose();
+      }
       scope.dispose();
       await auth.logout();
       await auth.login(email, 'Incorrect-fictional-password');
@@ -187,10 +209,10 @@ void main() {
       expect(scope.state!.visits.single.id, visit.id);
       expect(scope.state!.reviews.single.rating, 4.2);
       expect(scope.state!.activityFor(bathroom.id).isFavorite, isTrue);
-      expect(scope.state!.repository!.syncContext, isNull);
+      expect(scope.state!.repository!.syncContext, isNotNull);
       scope.dispose();
       final beforeRotation = vault.values[config.storageKey];
-      await auth.renew();
+      await auth.renew(force: true);
       expect(vault.values[config.storageKey], isNot(beforeRotation));
       // Revoke through a separate SDK client so this adapter still holds the
       // original session and learns revocation through its real renewal path.
@@ -199,7 +221,7 @@ void main() {
       await revoker.signOut(scope: SignOutScope.local);
       revoker.dispose();
       vault.deleteFails = true;
-      await auth.renew();
+      await auth.renew(force: true);
       expect(auth.status, SessionStatus.invalidated, reason: auth.message);
       expect(vault.values, isNotEmpty);
       auth.dispose();

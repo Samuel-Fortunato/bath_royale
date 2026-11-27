@@ -1,23 +1,28 @@
 import 'package:flutter/foundation.dart';
 import '../storage/bathroom_repository.dart';
 import '../storage/local_store.dart';
-import '../sync/auth_session.dart';
 import '../sync/namespace.dart';
 import '../sync/sync_store.dart';
 import 'app_state.dart';
+import '../auth/production_auth.dart';
+import '../sync/private_sync_controller.dart';
+import '../sync/http_remote_data_source.dart';
+import '../sync/sync_coordinator.dart';
 
 /// Owns the authenticated device state or an explicitly injected test context.
-/// Owns one selected state/connection; identity events alone never open stores,
-/// associate guest data, authorize an outbox or execute synchronization.
+/// Owns one selected state/connection; guest association is never implicit.
+/// Device selection enables local queueing, with transfer consent checked separately.
 class AccountStateScope extends ChangeNotifier {
   final bool offlineAccess;
   final bool accountOnly;
+  final bool privateSync;
   final AuthSession auth;
   final Future<LocalStore> Function(DataNamespace) openStore;
   final int Function() now;
   AccountStateScope.forTesting({
     this.offlineAccess = false,
     this.accountOnly = false,
+    this.privateSync = false,
     required this.auth,
     required this.openStore,
     required this.now,
@@ -33,6 +38,7 @@ class AccountStateScope extends ChangeNotifier {
          openStore: openStore,
          offlineAccess: true,
          accountOnly: true,
+         privateSync: true,
          now: () => DateTime.now().millisecondsSinceEpoch,
        );
 
@@ -109,13 +115,49 @@ class AccountStateScope extends ChangeNotifier {
       _guardReplacement(); // An editor may have opened during the await.
       next = namespace.isAccount
           ? AppState.restoreAccountForTesting(
-              BathroomRepository(store, syncContext: synchronizationForTesting),
+              BathroomRepository(
+                store,
+                syncContext: privateSync
+                    ? SyncWriteContext.account(namespace)
+                    : synchronizationForTesting,
+              ),
             )
           : AppState.restore(store);
     } catch (_) {
       next?.dispose();
       store.close();
       rethrow;
+    }
+    if (privateSync && auth is ProductionAuth) {
+      final production = auth as ProductionAuth;
+      final remote = HttpRemoteDataSource(
+        endpoint: Uri.parse('${production.configuration.environment}/rest/v1/'),
+        environment: namespace.environment,
+        clientKey: production.configuration.clientKey,
+        accessToken: (session) =>
+            production.current?.namespace == session.namespace
+            ? production.client.currentSession?.accessToken
+            : null,
+      );
+      next.synchronization = PrivateSyncController(
+        state: next,
+        coordinator: SyncCoordinator(
+          store: SyncStore(store),
+          auth: auth,
+          remote: remote,
+          now: now,
+          authorized: () => SyncStore(store).hasConsent,
+        ),
+        renew: production.renew,
+        refreshSession: () async {
+          final previous = production.client.currentSession?.accessToken;
+          await production.renew(force: true);
+          return production.current?.namespace == namespace &&
+              production.client.currentSession?.accessToken != previous;
+        },
+        closeRemote: remote.close,
+      );
+      next.synchronization!.request();
     }
     final previousState = _state;
     final previousStore = _store;

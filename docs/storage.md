@@ -1,8 +1,6 @@
 # Local storage
 
-Phase 2.3B adds optional production authentication and approved offline device lifecycle; see [production authentication](backend/production-authentication.md). Earlier guest-only/test-only descriptions below are historical foundation details. Domain synchronization, association and public-profile creation remain disabled.
-
-Current schema is v6. The Phase 2.2A description below retains the guest action/failure semantics; [client synchronization design](backend/client-synchronization.md) describes the optional account/outbox/cache foundation and [Phase 2.2C](backend/server-synchronization.md) specifies the verified server protocol. Application bootstrap remains guest-only.
+Current schema is **v7**. A1 requires an authenticated account and archives the original guest file. [A2 private synchronization](backend/private-account-synchronization.md) integrates the existing account/outbox/cache foundations with explicit per-device consent, safe projection and durable recovery. v6 → v7 preserves local records and protocol metadata, adds consent/archive tables and removes account-only name uniqueness to support concurrent independent creation. No reset or guest association occurs. Earlier descriptions below document the foundation milestones.
 
 ## Architecture and durability (Phase 2.2A)
 

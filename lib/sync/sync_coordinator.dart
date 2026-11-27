@@ -37,23 +37,35 @@ abstract interface class RemoteDataSource {
   );
 }
 
-/// Foreground, explicit execution only. No timers, network or bootstrap wiring.
+/// Bounded execution; foreground lifecycle and consent belong to the controller.
 class SyncCoordinator {
   final SyncStore store;
   final AuthSession auth;
   final RemoteDataSource remote;
   final int Function() now;
+  final bool Function()? authorized;
+  // The application prevents unseen pulls/acks from changing an open editor base.
+  bool Function()? canApplyResults;
+  int _epoch = 0, _activeEpoch = 0;
+  void cancel() {
+    _epoch++;
+  }
+
   final double Function() jitter;
   final int batchSize, maxBackoffMs;
   static final _executionLocks = Expando<bool>();
   bool _running = false;
   int? _pausedGeneration;
   bool get isRunning => _running;
+  RemoteFailureKind? lastFailure;
+  bool moreWork = false;
+  bool get authenticationRequired => _pausedGeneration == auth.generation;
   SyncCoordinator({
     required this.store,
     required this.auth,
     required this.remote,
     required this.now,
+    this.authorized,
     double Function()? jitter,
     this.batchSize = 20,
     this.maxBackoffMs = 300000,
@@ -64,6 +76,9 @@ class SyncCoordinator {
   }
   bool _valid(int generation) =>
       !store.local.isClosed &&
+      _activeEpoch == _epoch &&
+      (authorized?.call() ?? true) &&
+      (canApplyResults?.call() ?? true) &&
       auth.generation == generation &&
       auth.current?.namespace == store.namespace &&
       auth.current!.expiresAt > now();
@@ -76,8 +91,11 @@ class SyncCoordinator {
       return;
     }
     final generation = auth.generation;
+    _activeEpoch = _epoch;
     if (!_valid(generation) || _pausedGeneration == generation) return;
     _running = true;
+    lastFailure = null;
+    moreWork = false;
     _executionLocks[auth] = true;
     try {
       for (var count = 0; count < batchSize; count++) {
@@ -91,6 +109,7 @@ class SyncCoordinator {
           store.acknowledge(op, revision);
         } on RemoteFailure catch (error) {
           if (!_valid(generation)) return;
+          lastFailure = error.kind;
           switch (error.kind) {
             case RemoteFailureKind.unavailableAuthentication:
               _pausedGeneration = generation;
@@ -110,6 +129,7 @@ class SyncCoordinator {
         }
       }
       if (!_valid(generation)) return;
+      moreWork = store.ready(now(), 1).isNotEmpty;
       await _pull('private', generation, auth.current);
     } finally {
       _running = false;
@@ -160,10 +180,12 @@ class SyncCoordinator {
         throw StateError('Remote exceeded pull limit');
       }
       store.applyPull(feed, page.changes, page.checkpoint);
+      moreWork = moreWork || page.changes.length == batchSize;
     } on RemoteFailure catch (error) {
       if (store.local.isClosed || (generation != null && !_valid(generation))) {
         return;
       }
+      lastFailure = error.kind;
       switch (error.kind) {
         case RemoteFailureKind.unavailableAuthentication:
           _pausedGeneration = generation;

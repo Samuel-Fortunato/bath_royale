@@ -263,7 +263,7 @@ class _AuthenticationPanelState extends State<AuthenticationPanel> {
                 const SizedBox(height: 8),
                 if (signedIn)
                   const Text(
-                    'As visitas, avaliações e favoritos continuam apenas neste dispositivo, sem cópia de segurança.',
+                    'Gere a tua sessão. A sincronização privada é opcional e está disponível no Perfil.',
                   ),
                 if (signedIn) ...[
                   const SizedBox(height: 12),
@@ -281,12 +281,13 @@ class _AuthenticationPanelState extends State<AuthenticationPanel> {
                     ),
                   if (activeFlow != AuthFlow.password)
                     link('Alterar palavra-passe', AuthFlow.password),
-                  TextButton(
-                    onPressed: auth.busy
-                        ? null
-                        : () => submit((a, _, _, _) => a.logout()),
-                    child: const Text('Terminar sessão'),
-                  ),
+                  if (activeFlow != AuthFlow.password)
+                    TextButton(
+                      onPressed: auth.busy
+                          ? null
+                          : () => submit((a, _, _, _) => a.logout()),
+                      child: const Text('Terminar sessão'),
+                    ),
                 ] else
                   const Text(
                     'Entra para criar casas de banho, registar visitas, avaliar e guardar favoritos.',

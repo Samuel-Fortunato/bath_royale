@@ -1,4 +1,4 @@
-# Private Android authentication preview — A1
+# Private Android account preview — A2
 
 The ordinary GitHub APK is intentionally **without Auth configuration** and A1 shows an account-service-unavailable screen: its `lib/main.dart` build has no `SUPABASE_URL` or `SUPABASE_PUBLISHABLE_KEY`. Do not add a development endpoint, CA, signing material or Auth credentials to that workflow or publish the APK described here. Backend deployment and public email delivery remain separate approval gates. This procedure uses only the independent `bath-royale-poc-auth` installation, fictional accounts, local mail capture and USB. It never needs the existing managed project, a paid service, a domain or a public listener.
 
@@ -8,7 +8,7 @@ The ordinary GitHub APK is intentionally **without Auth configuration** and A1 s
 
 The target uses a fresh Dart `SecurityContext` containing only the supplied short-lived localhost certificate. Certificate trust, hostname and expiry validation stay enabled; there is no `badCertificateCallback`, HTTP exception or OS-wide CA installation. See Dart's [custom trusted certificate support](https://api.dart.dev/dart-io/HttpClient-class.html) and [SecurityContext](https://api.dart.dev/dart-io/SecurityContext-class.html). The public certificate alone enters the APK. Its private key stays on the development computer outside the checkout. The ordinary app entry point never imports this target or changes its platform TLS trust.
 
-`tool/auth_device_proxy.py` terminates TLS exclusively on computer loopback port 55474 and proxies `/auth/v1/` to the independent Auth listener on 127.0.0.1:55471. It exposes no REST/database endpoint and prints no requests or tokens. `adb reverse` carries the phone's localhost connection over USB. Unplugging USB or removing that forwarding disconnects Auth. This is a local transport test, not evidence of production HTTPS or email delivery.
+`tool/auth_device_proxy.py` terminates TLS exclusively on computer loopback port 55474 and proxies `/auth/v1/` to the independent Auth listener on 127.0.0.1:55471. It additionally forwards only `/rest/v1/rpc/sync_submit` and `/rest/v1/rpc/sync_pull` to 127.0.0.1:55472 for A2. Other REST paths and public RPCs return 404. It prints no requests or tokens. `adb reverse` carries the phone's localhost connection over USB. Unplugging USB or removing that forwarding disconnects Auth. This is a local transport test, not evidence of production HTTPS or email delivery.
 
 ## Prepare the computer and phone
 
@@ -58,9 +58,9 @@ BATH_DEVICE_TLS_DIRECTORY="$device_dir" flutter test --no-pub test/device_previe
 BATH_REAL_AUTH=1 BATH_DEVICE_TLS_DIRECTORY="$device_dir" flutter test --no-pub test/real_auth_test.dart
 flutter build apk --release --no-pub --target tool/auth_device_preview.dart \
   --dart-define-from-file="$device_dir/defines.json" \
-  --build-number "$device_code" --build-name "0.1.0-alpha-a1.$device_code"
+  --build-number "$device_code" --build-name "0.1.0-alpha-a2.$device_code"
 python3 tool/verify_preview.py apk build/app/outputs/flutter-apk/app-release.apk \
-  "$device_code" "0.1.0-alpha-a1.$device_code"
+  "$device_code" "0.1.0-alpha-a2.$device_code"
 cp build/app/outputs/flutter-apk/app-release.apk "$device_dir/bath-royale-alpha-a1.apk"
 adb install -r "$device_dir/bath-royale-alpha-a1.apk"
 ```
@@ -162,7 +162,7 @@ Preparation verifies installation compatibility and local tooling, **not physica
 
 A1 passes 196 ordinary Flutter tests (three opt-in placeholders skipped), strict analysis accepting only the documented Material import debt, and the separate real HTTPS signup/A-B persistence/revocation suite plus two TLS-target tests. A confirmation-required real run separately passes confirmation/recovery/password change. Local alpha autoconfirm is restored afterwards. All 25 offline backend regressions, Ruff lint/format, seven preview-tooling regressions and actionlint pass. Private Android/Linux release builds and the ordinary unconfigured Android release pass. All three public AOT payloads exclude the private endpoint/client/certificate; all three private payloads contain the intended local configuration. Dependency resolution remains locked.
 
-The signed private release is `0.1.0-alpha-a1.1023` / code **1023**, reusing the last verified installed version code and existing certificate. APK verification confirms the original package/certificate, exact version, universal AOT release and non-debuggable status. Private artifact: `/tmp/bath-alpha-a1.4ccqocs2/bath-royale-alpha-a1.apk`; SHA-256:
+The signed private release is `0.1.0-alpha-a2.1023` / code **1023**, reusing the last verified installed version code and existing certificate. APK verification confirms the original package/certificate, exact version, universal AOT release and non-debuggable status. Private artifact: `/tmp/bath-alpha-a1.4ccqocs2/bath-royale-alpha-a1.apk`; SHA-256:
 
 ```text
 4b15d985f0540c09512adc5e4b6af07de10b9080fe42eac3d904526625ed08bb
@@ -185,3 +185,19 @@ A1.1 physical checks: signed-out startup/logout show welcome; Entrar and Criar c
 A1.1 verification: 197 ordinary Flutter regressions pass (three opt-in placeholders skipped), strict analysis passes with only the existing exact Material-import baseline, Dart formatting passes, and all nine tooling tests pass. The new tests cover short registration-password retention, separate routes with app-bar/system back, email autofill/Next, grouped autofill, short sign-in reaching the server and visible incorrect credentials; existing lifecycle tests cover restored accounts and welcome on logout/startup. The update-only installer also rejects mismatched certificates before building/installing.
 
 The connected SM A166B accepted `0.1.0-alpha-a11.1023` / code 1023 with the existing verified certificate and package via `adb install -r` (Success). The command restored `tcp:55474` forwarding and Android accepted the launch intent. No uninstall/storage-clear operation was used. Actual Android password-manager suggestions and owner UX acceptance remain separate from automated verification.
+
+
+## A2 physical acceptance
+
+The owner accepted A1.1 authentication UX before A2. The account-management screen retains logout; **Alterar palavra-passe** no longer includes it. The update-only installer now names the private build `0.1.0-alpha-a2.<installed code>`, keeps the existing signing identity and uses `adb install -r`. Never clear storage, uninstall or publish this configured artifact.
+
+1. Reopen the updated app and verify the existing account, bathrooms, visits, reviews and favourites. Profile → **Sincronização privada** initially says **Só neste dispositivo**. Open it, read the explanation and choose **Agora não**; nothing uploads. Activate explicitly when ready. Only records owned by this account are included, never archived guest data or examples.
+2. On another independently stored installation using the same isolated backend, sign into the same account and activate private synchronization there. **Sincronizar agora** must restore the same private data without a public profile. Each device has its own consent.
+3. Remove only USB forwarding (`adb reverse --remove tcp:55474`), create/edit a visit/review or favourite, then force-stop/reopen. Records and pending changes must remain available. Restore with `adb reverse tcp:55474 tcp:55474`; use **Sincronizar agora** or wait for the pending retry. The other device receives the changes on resume/manual synchronization.
+4. Edit the same review independently on both devices before synchronizing. Confirm that a conflict retains your local text and shows the account version. Explicit resend, correction or **Usar dados da conta e arquivar alteração** must preserve original input in the local archive. Repeat with a stale visit deletion while the other device changes its review.
+5. Pause synchronization, make another change and verify it stays local/pending. Reactivate and verify convergence. Logout and sign into another account: it must never display the first account's records. Return to the original account and check both data and pending changes. Restart again to exercise Android Keystore restoration.
+
+The integration suite automates these scenarios with two independent SQLite stores and profile-free Auth users. Physical touchscreen, Keystore and actual phone offline behavior still require owner acceptance. The ordinary unconfigured GitHub APK remains unconfigured; no managed Supabase project is used.
+
+
+A2 update executed on 2026-11-27: SM A166B reports `0.1.0-alpha-a2.1023` / code 1023. The existing certificate was checked before building and against the installed APK, the universal AOT/non-debuggable release was verified (59,411,322 bytes), and `adb install -r` returned Success. First installation remains `2026-11-26 22:40:55`; only the update timestamp changed. USB `tcp:55474` forwarding is present and Android accepted the launch. This demonstrates update compatibility, not byte-level inspection of private SQLite/Keystore storage or physical acceptance. No domain-upload consent was enabled on the owner's behalf.

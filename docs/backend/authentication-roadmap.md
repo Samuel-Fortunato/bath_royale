@@ -1,5 +1,8 @@
 # Authentication roadmap — Private alpha
 
+Current application integration: [A2 private account synchronization](private-account-synchronization.md). A1.1 UX is owner-accepted; A2 enables explicit-consent private synchronization and recovery without guest association/public identity. Test-only/disabled statements below describe the historical foundation milestone, not the current configured app.
+
+
 ## A1 decisions
 
 The priority is a usable private alpha for a small group of friends. Email/password, the official Auth SDK, secure credential vault/restoration guard, account/environment-scoped SQLite, Provider and Material 3 remain unchanged. Authentication remains separate from upload/publication authorization.
