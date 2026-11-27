@@ -69,10 +69,17 @@ Owner-authorized after physical A3.1 review. [Consolidated decisions, superseded
 - [x] M3: Compact rankings, collapsing collection, profile and idempotent varied isolated fixtures.
 - [x] M4: Configurable global text feedback, private administration, anonymous abuse limits and safe retry.
 - [x] Verify rendered Flutter screens, migration/protocol/privacy/fixture/client regressions and Android/Linux releases; update the development APK in place with existing signing identity/data. Owner correction replaces the feedback dock with a floating overlay, without a blank strip; responsive forms reserve horizontal space for it.
-- [ ] Owner physical acceptance of final A4, real offline/reconnection/Keystore and second-device behavior. Screenshots/shake deferred. No A5 or managed deployment.
+- [x] Owner accepted A4 physical UI/UX tests, including feedback submission and its administrative viewer.
+- [ ] Remaining technical release gates: real offline/reconnection/Keystore and second-device acceptance, server registration restrictions and production/privacy/security readiness. Screenshots/shake remain deferred. No A5 or managed deployment.
 - [ ] Before alpha distribution, assess and decide explicit reauthentication/current-password verification for password changes; current visual flow is unchanged.
 
 Verified A4 locally on 2026-11-27: **235 Flutter tests pass** (five opt-in placeholders skipped), plus real-font phone/layout captures, strict analysis, formatting and whitespace. Thirty backend unit and thirteen tooling tests pass; backend Ruff and actionlint pass. Disposable A4 API/input/privacy/quota checks, 60 authorization assertions, 1,093 Unicode cases, 465 protocol assertions, eight real Flutter sync tests, 62 community API assertions, real two-account emoji/RGB/review sync and complete private export/restoration pass. The five-account HTTPS development suite verifies retained activity and anonymous feedback/admin access. Unconfigured Android/Linux and configured development releases build; fixture payload isolation is checked on actual APKs. The final development APK is installed with the original certificate/package/code and unchanged first-install timestamp. See the A4 evidence for exact scope, earlier corrected failures, owner feedback correction and acceptance steps. Hosted CI is reported separately after push; no remote success is inferred from local builds.
+
+### A4.1 — Final synchronization UX cleanup
+
+- [x] Remove permanent diagnostics/recovery and routine pending/offline notices from Settings. Automatic sync, retries and durable operations remain unchanged.
+- [x] Offer contextual Resolver access only for unresolved rejected/conflicting operations or a blocked private pull. Retain access to exact archived records only when such records exist. Update historical recovery wording for the shared catalogue and anonymous public reviews.
+- [x] Verify focused recovery/offline/privacy regressions and the full client suite; build/install the development update in place with the existing identity/data. See [A4.1 evidence](docs/backend/ui-alpha-refinement.md#a41--synchronization-ux-cleanup).
 
 ### Private alpha release gates and subsequent scope
 

@@ -1004,7 +1004,7 @@ void main() {
       );
       expect(find.textContaining('Pausar'), findsNothing);
       expect(find.textContaining('Ativar'), findsNothing);
-      expect(find.text('Sincronização privada em dia'), findsOneWidget);
+      expect(find.text('Sincronização privada em dia'), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },

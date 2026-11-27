@@ -3,26 +3,41 @@ import 'package:flutter/material.dart';
 import '../sync/private_sync_controller.dart';
 import 'privacy.dart';
 
+/// Only terminal protocol issues need a decision; queued/offline work stays quiet.
 class PrivateSynchronizationCard extends StatelessWidget {
   final PrivateSyncController sync;
-  const PrivateSynchronizationCard({super.key, required this.sync});
+  final VoidCallback onResolve;
+  const PrivateSynchronizationCard({
+    super.key,
+    required this.sync,
+    required this.onResolve,
+  });
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: sync,
-    builder: (context, _) => Card(
-      child: ListTile(
-        leading: const Icon(Icons.cloud_sync_outlined),
-        title: const Text('Diagnóstico e recuperação'),
-        subtitle: Text(sync.status),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            settings: const RouteSettings(name: 'diagnostics'),
-            builder: (_) => PrivateSynchronizationPage(sync: sync),
+    builder: (context, _) =>
+        sync.store.problems.isEmpty && !sync.store.pullBlocked
+        ? const SizedBox.shrink()
+        : Material(
+            color: Theme.of(context).colorScheme.secondaryContainer,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text('Há alterações que precisam da tua decisão.'),
+                    ),
+                    TextButton(
+                      onPressed: onResolve,
+                      child: const Text('Resolver'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
-    ),
   );
 }
 
@@ -38,14 +53,16 @@ class PrivateSynchronizationPage extends StatelessWidget {
       return 'Avaliação: ${review['rating']} ★\nPapel: ${review['paper']} · Higiene: ${review['hygiene']} · Conforto: ${review['comfort']} · Estética: ${review['aesthetics']}\n'
           '${tags.map((t) => '${t['emoji']} ${t['label']}').join(' · ')}\n${review['comment'] ?? ''}';
     }
-    if (p['username'] != null) return 'Nome público: ${p['username']}';
+    if (p['username'] != null) {
+      return 'Nome público anterior preservado: ${p['username']}';
+    }
     if (p['shared_id'] != null) {
-      return 'Associação privada a um trono do catálogo';
+      return 'Referência anterior preservada ao catálogo partilhado';
     }
     if (p['review_id'] != null) {
       return p['published'] == true
-          ? 'Publicar avaliação na comunidade'
-          : 'Retirar avaliação da comunidade';
+          ? 'Pedido anterior de publicação preservado'
+          : 'Pedido anterior de retirada preservado';
     }
     if (p['reason'] != null) return 'Denúncia: ${p['reason']}';
     if (p['name'] != null) return '${p['emoji']} ${p['name']}';
@@ -186,7 +203,7 @@ class PrivateSynchronizationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Diagnóstico e recuperação')),
+    appBar: AppBar(title: const Text('Alterações preservadas')),
     body: SafeArea(
       child: Center(
         child: ConstrainedBox(
@@ -196,26 +213,16 @@ class PrivateSynchronizationPage extends StatelessWidget {
             builder: (context, _) => ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    sync.status,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                const SizedBox(height: 12),
                 const Text(
-                  'As visitas e os favoritos ficam privados. As novas avaliações são públicas e anónimas. O histórico privado anterior fica preservado.',
+                  'As novas avaliações são públicas e anónimas. Visitas e favoritos são privados. Os registos anteriores mantêm a sua privacidade.',
                 ),
-                const SizedBox(height: 12),
-                if (sync.enabled) ...[
-                  FilledButton(
-                    onPressed: sync.running ? null : sync.retry,
-                    child: const Text('Tentar novamente'),
+                if (sync.store.pullBlocked) ...[
+                  const Text(
+                    'Não foi possível receber os dados da conta. As alterações locais estão guardadas.',
                   ),
-                  TextButton(
+                  FilledButton(
                     onPressed: sync.running ? null : sync.replay,
-                    child: const Text('Recarregar dados da conta'),
+                    child: const Text('Voltar a receber os dados'),
                   ),
                 ],
                 for (final issue in sync.store.problems)
@@ -314,14 +321,16 @@ class PrivateSynchronizationPage extends StatelessWidget {
     if (p['comment'] != null || p['rating'] != null) {
       return '${p['rating']} ★\nPapel: ${p['paper']} · Higiene: ${p['hygiene']} · Conforto: ${p['comfort']} · Estética: ${p['aesthetics']}\n${(p['tags'] as List? ?? []).map((t) => '${t['emoji']} ${t['label']}').join(' · ')}\n${p['comment'] ?? ''}';
     }
-    if (p['username'] != null) return 'Nome público: ${p['username']}';
+    if (p['username'] != null) {
+      return 'Nome público anterior preservado: ${p['username']}';
+    }
     if (p['shared_id'] != null) {
-      return 'Associação privada a um trono do catálogo';
+      return 'Referência anterior preservada ao catálogo partilhado';
     }
     if (p['review_id'] != null) {
       return p['published'] == true
-          ? 'Publicar avaliação na comunidade'
-          : 'Retirar avaliação da comunidade';
+          ? 'Pedido anterior de publicação preservado'
+          : 'Pedido anterior de retirada preservado';
     }
     if (p['reason'] != null) return 'Denúncia: ${p['reason']}';
     if (p['name'] != null) return '${p['emoji']} ${p['name']}';

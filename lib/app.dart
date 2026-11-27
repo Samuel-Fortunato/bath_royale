@@ -42,7 +42,22 @@ class _MainAppState extends State<MainApp> {
           ? AlphaFeedbackHost(
               navigatorKey: navigatorKey,
               observer: feedbackObserver,
-              child: child!,
+              child: Column(
+                children: [
+                  if (appState.synchronization case final sync?)
+                    PrivateSynchronizationCard(
+                      sync: sync,
+                      onResolve: () => navigatorKey.currentState!.push(
+                        MaterialPageRoute<void>(
+                          settings: const RouteSettings(name: 'diagnostics'),
+                          builder: (_) =>
+                              PrivateSynchronizationPage(sync: sync),
+                        ),
+                      ),
+                    ),
+                  Expanded(child: child!),
+                ],
+              ),
             )
           : Scaffold(
               body: Center(

@@ -18,7 +18,7 @@ The [A4 implementation, exact compatibility rules, feedback privacy and verifica
 | Ordinary synchronization page and repeated notices | Conditional status plus authenticated diagnostics/recovery; explicit privacy policy |
 | Initial A4 feedback dock under navigation | Floating action above navigation and beside form actions; no extra bottom strip, per owner correction |
 
-Screenshots/shake are deferred; text feedback and protected administration are implemented. Physical acceptance of the corrected final UI is separate from automated verification. A5 and reward mechanics remain out of scope.
+A4 physical UI/UX, including feedback, is owner-accepted. A4.1 removes the permanent Settings recovery destination: only actionable synchronization issues show contextual resolution access, and actual archived records retain conditional content access. Screenshots/shake are deferred; text feedback and protected administration are implemented. Physical acceptance of the corrected final UI is separate from automated verification. A5 and reward mechanics remain out of scope.
 
 ## Shared design language
 

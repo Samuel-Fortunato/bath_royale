@@ -55,3 +55,16 @@ Earlier failures were fixed and rerun: obsolete slider/chip/count assertions, sy
 5. Submit fictional feedback, retry after a deliberate offline failure/restart, and verify the same report once in administrator Settings → Feedback da alfa. Check reviewed/resolved status; ordinary accounts must have no viewer. Screenshot/shake controls are intentionally absent.
 
 Owner physical acceptance remains open for the final corrected UI, actual offline/reconnection/Keystore behavior and second-device checks. Password changes are visually unchanged; explicit reauthentication/current-password verification remains a release-gate assessment before alpha distribution. No A5, achievements or power-up system was started.
+
+
+## A4.1 — Synchronization UX cleanup
+
+The owner accepted A4 physical UI/UX tests, including feedback submission and administrator review. Feedback and the other accepted A4 controls are unchanged. A4.1 supersedes the permanent Settings diagnostics entry described earlier.
+
+Normal Settings has no diagnostics/recovery entry, pending counter or temporary-connection warning. Automatic synchronization, durable retries, offline operations, conflict handling and storage are unchanged. Only unresolved rejected/conflicting operations or a protocol-blocked private pull show a concise application notification with direct Resolver access. Temporary transport errors and ordinary pending work never trigger it. Existing authentication/session recovery and local-storage failure handling remain intact.
+
+The resolution view keeps exact original payloads, remote comparisons, confirmation, correction/resend, archive and blocked-pull replay. Routine status/pause/manual-sync controls are absent. Settings exposes Alterações preservadas only when actual archived records exist; this is retained content access, not a permanent diagnostics destination. Resolving an issue clears its notification without deleting the archived branch. Historical identity/association/publication text is explicitly marked as previous records, while current wording describes the shared catalogue, anonymous public reviews and private visits/favourites.
+
+Verification: 73 focused synchronization/recovery/Settings/privacy tests pass. All 236 client tests pass (five opt-in placeholders skipped), as do strict analysis, formatting and the 13 installer/tool tests. The Android development release builds and installs successfully with the original certificate and unchanged first-install timestamp `2026-11-26 22:40:55`. A regression exercises quiet pending/offline Settings, the global rejected-operation Resolver route, exact archived content and continued access after resolution. Existing controller tests cover conflicts, durable retries, dependencies, recovery/replay and offline convergence. Initial test API naming and two brace-lint issues were corrected before final verification. No schema, backend, feedback or reward change is included.
+
+The updated installer uses `0.1.0-dev-a41.1023`, preserving the certificate/package/code, fixture configuration and application data through `adb install -r`. A4 acceptance does not close the remaining technical/security release gates, including password reauthentication assessment before alpha distribution.

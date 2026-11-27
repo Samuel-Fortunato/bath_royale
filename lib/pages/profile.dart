@@ -287,40 +287,21 @@ class SettingsPage extends StatelessWidget {
                 if (state.synchronization case final sync?)
                   ListenableBuilder(
                     listenable: sync,
-                    builder: (context, _) =>
-                        sync.error != null ||
-                            sync.store.problems.isNotEmpty ||
-                            sync.store.pullBlocked
-                        ? ListTile(
-                            leading: const Icon(Icons.cloud_off_outlined),
-                            title: const Text('Há dados por atualizar'),
-                            trailing: TextButton(
-                              onPressed: () => sync.retry(),
-                              child: const Text('Tentar novamente'),
+                    builder: (context, _) => sync.store.archives.isEmpty
+                        ? const SizedBox.shrink()
+                        : ListTile(
+                            title: const Text('Alterações preservadas'),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute<void>(
+                                settings: const RouteSettings(
+                                  name: 'diagnostics',
+                                ),
+                                builder: (_) =>
+                                    PrivateSynchronizationPage(sync: sync),
+                              ),
                             ),
-                          )
-                        : sync.store.pendingCount > 0 && !sync.running
-                        ? ListTile(
-                            leading: const Icon(Icons.cloud_upload_outlined),
-                            title: Text(
-                              '${sync.store.pendingCount} alterações por enviar',
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                if (state.synchronization != null)
-                  ListTile(
-                    leading: const Icon(Icons.build_outlined),
-                    title: const Text('Diagnóstico e recuperação'),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        settings: const RouteSettings(name: 'diagnostics'),
-                        builder: (_) => PrivateSynchronizationPage(
-                          sync: state.synchronization!,
-                        ),
-                      ),
-                    ),
+                          ),
                   ),
                 if (state.isModerator)
                   ListTile(

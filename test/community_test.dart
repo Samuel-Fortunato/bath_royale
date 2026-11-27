@@ -1,3 +1,5 @@
+import 'package:bath_royale/app.dart';
+import 'package:bath_royale/pages/private_synchronization.dart';
 import 'dart:convert';
 import 'package:bath_royale/models/bathroom_filters.dart';
 import 'dart:io';
@@ -344,6 +346,67 @@ void main() {
     expect(find.text('Avaliação pública e anónima.'), findsNothing);
     expect(find.text('Guardar avaliação'), findsOneWidget);
   });
+  testWidgets(
+    'automatic sync stays quiet; unresolved data has direct contextual recovery',
+    (tester) async {
+      final sync = PrivateSyncController(
+        state: state,
+        coordinator: SyncCoordinator(
+          store: SyncStore(local),
+          auth: FakeAuthSession(),
+          remote: FakeRemoteDataSource(),
+          now: () => 1000,
+        ),
+        renew: () async {},
+      );
+      state.synchronization = sync;
+      review('shared');
+      sync.error = 'Sem ligação temporária';
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: state,
+          child: const MaterialApp(home: SettingsPage()),
+        ),
+      );
+      expect(find.text('Diagnóstico e recuperação'), findsNothing);
+      expect(find.text('Tentar novamente'), findsNothing);
+      expect(find.text('Alterações preservadas'), findsNothing);
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(value: state, child: const MainApp()),
+      );
+      expect(find.text('Resolver'), findsNothing);
+      local.database.execute(
+        "UPDATE outbox SET state='rejected',error='validation' WHERE entity_type='review'",
+      );
+      sync.notifyListeners();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Resolver'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PrivateSynchronizationPage), findsOneWidget);
+      expect(find.text('Alteração recusada'), findsOneWidget);
+      expect(find.textContaining('Nova avaliação'), findsWidgets);
+      final issue = SyncStore(local).problems.single;
+      sync.useAccountVersion(issue['operation_id'] as String);
+      sync.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(find.text('Resolver'), findsNothing);
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: state,
+          child: const MaterialApp(home: SettingsPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Alterações preservadas'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Alterações preservadas neste dispositivo'),
+        findsOneWidget,
+      );
+      expect(SyncStore(local).archives.single['payload'], issue['payload']);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
   testWidgets(
     'signed-out navigation contains only Explore, Rankings and account entry',
     (tester) async {

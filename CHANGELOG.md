@@ -1,5 +1,11 @@
 # Changelog
 
+## A4.1 — Synchronization UX cleanup
+
+- Remove permanent Settings diagnostics and routine offline/pending warnings; show contextual resolution only for actionable synchronization issues.
+- Preserve automatic retries, exact conflicts/archives and conditional access to retained recovery records; update historical recovery wording.
+- Record owner acceptance of A4 UI/UX while retaining technical release gates; update the development APK in place.
+
 ## A4 — UI refinement and private alpha feedback
 
 - Use published community filters for anonymous discovery, separate personal filters and compact cards; simplify details, visits, corrections and Settings/privacy.

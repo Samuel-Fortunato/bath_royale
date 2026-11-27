@@ -52,7 +52,7 @@ class PrivateSyncController extends ChangeNotifier {
     if (store.pendingCount > 0) {
       return '${store.pendingCount} alterações pendentes';
     }
-    return 'Sincronização privada em dia';
+    return 'Dados atualizados';
   }
 
   void acceptStorage() {
