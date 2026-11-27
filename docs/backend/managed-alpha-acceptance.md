@@ -1,6 +1,6 @@
 # A5.3 — Managed alpha deployment and release acceptance
 
-Status on 2026-11-27: managed deployment and automated acceptance verified; owner physical acceptance and configured publication remain separate gates. `ALPHA_RELEASE_APPROVED=false`. No configured APK has been published. The restoration-blocker resumption used isolated infrastructure only, with no live Supabase request or mutation.
+Status on 2026-11-27: **A5 initial alpha is complete**. Managed deployment, automated acceptance and owner-reported physical acceptance are complete; the authorized [alpha 1039](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1039) is published and independently verified. Second physical device testing remains pending. `ALPHA_RELEASE_APPROVED=false` again after this release. The restoration-blocker resumption used isolated infrastructure only, with no live Supabase request or mutation. See the final publication evidence below.
 
 ## Managed deployment evidence
 
@@ -54,7 +54,7 @@ The private managed-configured universal APK is `0.1.0-alpha.1038`, code **1038*
 
 The original certificate fingerprint is `4f5c38685c8304dca2708d9627e0287a82f3058c4c2293c42bb980d05bea37fc`; package remains `com.example.bath_royale`. Signature, exact version, non-debuggable universal ARM32/ARM64/x86_64 AOT payload and checksum were verified. `adb install -r` succeeded on SM A166B, retaining app ID 10419 and first-install time `2026-11-26 22:40:55`. No uninstall/data clear or development-namespace migration occurred. The private artifact is not a GitHub release.
 
-Repository variables contain public configuration only. The existing signing secret remains present and `ALPHA_RELEASE_APPROVED` stays explicitly **false**. CI retains validation and monotonically increasing `1000 + GITHUB_RUN_NUMBER` codes; unconfigured validation does not upload APK artifacts or publish development releases. Configured publication remains draft-first and uses the prepared [Portuguese release notes](../releases/alpha-notes.md) plus update/checksum instructions. No workflow was dispatched to publish this APK. A future approved workflow must use a fresh compatible code and reviewed commit; local builds do not prove hosted compilation success.
+At the deployment handover, repository variables contained public configuration only, the existing signing secret remained present and `ALPHA_RELEASE_APPROVED` was **false**. CI retains validation and monotonically increasing `1000 + GITHUB_RUN_NUMBER` codes; unconfigured validation does not upload APK artifacts or publish development releases. Configured publication is draft-first and uses the reviewed [Portuguese release notes](../releases/alpha-notes.md) plus update/checksum instructions. The private code-1038 APK itself was never uploaded. The subsequently authorized workflow uses a fresh compatible code and the reviewed commit; local builds do not prove hosted compilation success.
 
 ## Executed local release checks
 
@@ -78,14 +78,39 @@ flutter build apk --release --no-pub
 
 The managed API and private runtime scripts/receipts are retained only in encrypted operator evidence. Do not rerun tests that create or erase acceptance accounts on live data as a routine regression; use a fresh isolated restoration. `cloud_transfer.py restore` followed by `verify` is the reproducible source-preservation gate described in [transfer operations](cloud-transfer-tooling.md).
 
-## Physical acceptance and publication gate
+## Owner-reported physical acceptance
 
-Automated installation proves package/signature/update compatibility, not the full device lifecycle. The owner will perform the remaining physical acceptance separately. Keep these items open:
+On 2026-11-27, the owner explicitly confirmed completion of the remaining physical acceptance tests and authorized initial-alpha publication. This is the owner's report for the installed managed build on the existing SM A166B, separate from operator-observed installation and automated API checks. The accepted checklist covers:
 
-- Confirm the official catalogue and independent account behavior without fictional selectors/content.
-- Confirm login/current-password changes, complete app restart with restored session, and a **new saved recovery code**. The provisioning proof was consumed and cannot recover the account.
-- Record a legitimate visit/favourite while offline, reconnect and verify it reached the account; distinguish opening a form from saving/submitting a record.
-- Send an actual feedback message through the floating feedback control and confirm administrator access. This is app feedback, separate from a bathroom review.
-- Verify in-place local data/environment retention. A second physical Android device was unavailable; do not claim it was tested. Automated independent accounts and isolated restart tests are separate evidence.
+- Official catalogue and account behavior without fictional selectors/content.
+- Login/current-password changes, complete app restart with restored session, and a new saved recovery code. The provisioning proof was consumed and cannot recover the account.
+- A saved legitimate offline visit/favourite followed by reconnection and synchronization.
+- Actual app feedback submission and administrator access, separate from a bathroom review.
+- In-place local data/environment retention.
 
-Then obtain explicit final owner publication approval before changing the gate or publishing the configured universal APK. Before public launch, replace the personal support contact everywhere and implement appropriate verified-email authentication/recovery. Deployment approval does not waive either gate.
+No new physical test was performed by the operator during publication. **Second physical device testing remains pending**, with the owner's authorization to proceed; independent-account API and isolated restart checks are not physical multi-device evidence. The fresh Actions APK has the same source, package and certificate and an increasing version code; it is independently inspected, not claimed newly installed or physically tested.
+
+Before public launch, replace the personal support contact everywhere and implement appropriate verified-email authentication/recovery. Initial-alpha publication approval does not waive either mandatory gate.
+
+## Final publication verification — 2026-11-27
+
+The preceding [CI run 45963682052](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/45963682052) completed successfully for `6bb49a117d909c11084001f5ca6dfee70a30b018`. Publication uses this unchanged, verified source.
+
+Fresh verified-TLS SQL inventory used read-only transactions. It confirmed 34 exact official registry/domain entries, four hidden historical bathrooms, two banned historical fictional accounts and one active owner account with both administration and creation entitlement. Anonymous HTTPS `public_catalogue` returned precisely the approved UUID/name/emoji/RGB/classification set; `public_reviews` returned no reviews. Anonymous direct-table access returned no rows under the existing RPC-only catalogue policy. Public Auth settings still permit registration without mandatory email confirmation. No live data, privileges, Auth configuration or schema was changed during publication verification; no fixtures, cleanup or reset ran.
+
+Both original encrypted backup hashes and the encrypted restoration-evidence hash were rechecked. All three archives authenticated and decrypted in memory; no temporary plaintext files were created. Every sealed export file, including its original manifest, matched the encrypted archive byte-for-byte; the separately archived pre-maintenance/current Auth configuration snapshots were also validated. The previously successful fresh isolated full restoration and 86 runtime/protocol assertions remain the restoration evidence; no new restoration is falsely claimed. Backups are from this same UTC day and remain within the seven-day retention period. Original archives and sealed exports remain unchanged. The operator must continue the daily/manual duties, separate identity custody and expiry/erasure tracking in [alpha operations](alpha-operations.md); no scheduler or automated inbox maintenance has been introduced.
+
+The Portuguese release notes and actual in-app privacy notice were reviewed together: open registration, unverified email, recovery codes, public anonymous reviews, private visits/favourites/feedback, manual daily encrypted backups/seven-day retention, reviewed feedback 90 days, resolved support 30 days, proven deletion and offline/backup delay. The personal support contact is explicitly limited to this initial alpha.
+
+The owner-approved gate was enabled and [workflow dispatch 45965320805](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/45965320805) completed **successfully**, including both `verify-and-build` and `prerelease`, against the exact source above. The workflow repeated formatting, tooling tests, strict analysis and the Flutter suite before the configured release build, fixture scan, signature/version verification, artifact upload and byte-checked draft publication. No workflow or application source was changed for this release.
+
+Published at `2026-11-27T08:29:12Z`: [Bath Royale — Alfa 1039](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1039), a non-draft pre-release, not the latest stable release. The lightweight `alpha-1039` tag points exactly to `6bb49a117d909c11084001f5ca6dfee70a30b018`. Both public assets were then downloaded anonymously without GitHub credentials:
+
+- [bath-royale.apk](https://github.com/Samuel-Fortunato/bath_royale/releases/download/alpha-1039/bath-royale.apk), **61,974,654 bytes**, `0.1.0-alpha.1039` / code **1039**, greater than installed code 1038.
+- [SHA256SUMS](https://github.com/Samuel-Fortunato/bath_royale/releases/download/alpha-1039/SHA256SUMS), independently matching APK SHA-256 **`8f08897043cbb03849165f0899e2e14fe18750793ec32502b70f7272c9a09a5f`**.
+
+The downloaded APK passed `tool/verify_preview.py`: original certificate `4f5c38685c8304dca2708d9627e0287a82f3058c4c2293c42bb980d05bea37fc`, package `com.example.bath_royale`, exact version, non-debuggable universal ARM32/ARM64/x86_64 AOT and no debug Dart kernel. Each architecture's actual AOT payload contains the expected managed HTTPS origin and public publishable client key. Payload scans exclude known fixture identities, the private fixture credential payload/selector, local TLS endpoints/certificate material and the actual database credential. The public release body contains the exact reviewed Portuguese alpha notes. No privileged credential or encryption identity was included in release assets, reports or Git.
+
+After the configured build passed, the gate was reset and read back as **`ALPHA_RELEASE_APPROVED=false`**. This does not withdraw the published APK; it prevents the subsequent documentation push from publishing another build. Future configured releases require separate operator approval and a fresh increasing workflow version. The owner installs this APK as an update, never by uninstalling or clearing data; no new installation or second-device test is claimed during publication. See [phone installation instructions](../android-previews.md#download-and-install-from-a-phone).
+
+The documentation-only completion was additionally checked with 14 tooling tests, actionlint, local link validation and Git whitespace checks. Source and backup evidence remain as described above; no new managed test account or fabricated activity was created.

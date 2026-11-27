@@ -1,6 +1,6 @@
 # A5.1 — Alpha release preparation
 
-Historical A5.1 preparation and isolated rehearsal. The owner separately authorized A5.3 managed deployment on 2026-11-27; see [actual managed deployment and acceptance](managed-alpha-acceptance.md). Configured publication remains unapproved, with `ALPHA_RELEASE_APPROVED=false`. Historical statements below describe the earlier gates, not a revocation of A5.3 authorization.
+Historical A5.1 preparation and isolated rehearsal. The owner separately authorized A5.3 managed deployment and, after confirming physical acceptance, initial-alpha publication on 2026-11-27; see [actual managed deployment, acceptance and release evidence](managed-alpha-acceptance.md). Second physical device testing remains pending. Historical statements below describe the earlier gates, not a revocation of those authorizations. The dedicated-contact and verified-email public-launch gates remain mandatory.
 
 ## Approved alpha policy
 

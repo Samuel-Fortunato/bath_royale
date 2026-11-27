@@ -1,11 +1,17 @@
 # Changelog
 
+## A5 — Initial alpha publication
+
+- Publish signed universal `0.1.0-alpha.1039` through the existing draft-first GitHub Actions workflow after successful CI and owner-confirmed physical acceptance; independently verify anonymous download, checksum, signing identity, version, managed public HTTPS configuration and development-fixture exclusion.
+- Recheck the exact 34 official bathrooms, hidden historical fictional records, banned fictional accounts and owner administrator/creator without modifying live data; revalidate encrypted backup integrity/decryption and retained restoration evidence.
+- Record manual operating/privacy responsibilities, installation instructions and release evidence. Second physical device testing remains pending. Close the publication gate after the authorized release; preserve dedicated-support-contact and verified-email authentication/recovery requirements before public launch.
+
 ## A5.3 — Managed deployment and automated release acceptance
 
 - Deploy the prepared non-destructive schema through 017 to the verified existing Supabase Free project after encrypted backup/restoration; protect and retain the identified historical fictional sample while publishing only the exact 34 genuine official entries.
 - Verify managed open email/password registration, current-password enforcement, non-email recovery, hooks/limits, RLS/privacy and feedback with 104 direct API assertions; provision owner administration/creation by consumed UUID-bound recovery proof.
 - Fix final-backup restoration by rebuilding two exact BETWEEN-based feedback CHECK definitions instead of weakening comparison; add a real PostgreSQL regression and verify fresh full restoration plus 86 isolated Auth/catalogue/private-data/synchronization assertions.
-- Prepare/install the signed managed APK in place, document manual privacy/retention/backup duties and Portuguese release notes, and stop unconfigured APK distribution. Keep configured publication disabled and owner physical acceptance explicitly pending.
+- Prepare/install the signed managed APK in place, document manual privacy/retention/backup duties and Portuguese release notes, and stop unconfigured APK distribution. Publication stayed disabled pending the separate owner physical acceptance and approval recorded in A5 above.
 
 ## A5.2 — Final alpha content and branding integration
 
