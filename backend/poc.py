@@ -22,6 +22,7 @@ if INSTANCE not in (
     "community",
     "protocol",
     "fixtures",
+    "catalogue",
 ):
     raise RuntimeError(
         "POC_INSTANCE must be source, destination, cloud-destination, sync, auth, community, protocol or fixtures"
@@ -36,6 +37,7 @@ AUTH_PORT, REST_PORT = {
     "community": (55481, 55482),
     "protocol": (55491, 55492),
     "fixtures": (55501, 55502),
+    "catalogue": (55511, 55512),
 }[INSTANCE]
 STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / PROJECT
 SERVICES = ["db", "auth", "rest"]

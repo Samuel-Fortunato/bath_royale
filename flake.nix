@@ -31,6 +31,8 @@
     androidHome = "${androidSdk}/libexec/android-sdk";
   in {
     devShells.${system} = {
+      branding = pkgs.mkShell { packages = [pkgs.python3 pkgs.imagemagick]; };
+
       # Optional backend evaluation tools; this does not enable a container service.
       backend = pkgs.mkShell {
         packages = with pkgs; [

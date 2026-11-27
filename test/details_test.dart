@@ -121,10 +121,10 @@ void main() {
     await tap(tester, find.text('Continuar'));
     await tester.enterText(
       find.widgetWithText(TextField, 'Procurar etiquetas'),
-      'Espelho',
+      'Puzzle',
     );
     await tester.pumpAndSettle();
-    await tap(tester, find.text('Espelho gigante'));
+    await tap(tester, find.text('Puzzle de fechaduras'));
     await tap(tester, find.text('+ Criar etiqueta'));
     await tester.ensureVisible(
       find.widgetWithText(TextFormField, 'Nome da etiqueta'),
@@ -141,7 +141,7 @@ void main() {
     expect(state.entries.first.personalReview!.visitId, isNot(visit.id));
     expect(state.reviewForVisit(visit.id), isNull);
     expect(state.entries.first.personalReview!.tags.map((t) => t.label), [
-      'Espelho gigante',
+      'Puzzle de fechaduras',
       'vista',
     ]);
     expect(state.entries.first.reviewCount, 2);

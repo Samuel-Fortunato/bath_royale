@@ -103,6 +103,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
 
   Future<void> _createTag() async {
     final form = GlobalKey<FormState>();
+    var emojiSuggestions = randomEmojiSuggestions();
     _tagInput.clear();
     _emojiInput.clear();
     final added = await showDialog<bool>(
@@ -117,6 +118,31 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   EmojiInput(controller: _emojiInput),
+                  Wrap(
+                    spacing: 4,
+                    children: [
+                      for (final emoji in emojiSuggestions)
+                        IconButton(
+                          tooltip: 'Escolher $emoji',
+                          onPressed: () =>
+                              refresh(() => _emojiInput.text = emoji),
+                          icon: Text(
+                            emoji,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontFamilyFallback: ['Noto Color Emoji'],
+                            ),
+                          ),
+                        ),
+                      IconButton(
+                        tooltip: 'Outros emojis',
+                        onPressed: () => refresh(
+                          () => emojiSuggestions = randomEmojiSuggestions(),
+                        ),
+                        icon: const Icon(Icons.refresh),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _tagInput,

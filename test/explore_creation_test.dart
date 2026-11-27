@@ -127,8 +127,7 @@ void main() {
         find.widgetWithText(TextFormField, 'Nome da casa de banho'),
         'Novo trono',
       );
-      await tester.ensureVisible(find.byTooltip('Escolher 👑'));
-      await tester.tap(find.byTooltip('Escolher 👑'));
+      await tester.enterText(find.widgetWithText(TextFormField, 'Emoji'), '👑');
       await tester.ensureVisible(find.text('Criar casa de banho'));
       await tester.tap(find.text('Criar casa de banho'));
       await tester.pumpAndSettle();

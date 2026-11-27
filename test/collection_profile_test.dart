@@ -77,6 +77,34 @@ Future<void> capture(WidgetTester tester, String name) async {
 }
 
 void main() {
+  test('every decorative discovery boundary uses absolute distinct counts', () {
+    const steps = [
+      (0, '🥚'),
+      (1, '🐣'),
+      (3, '🧭'),
+      (6, '🛡️'),
+      (10, '⚔️'),
+      (15, '🏰'),
+      (20, '💎'),
+      (30, '👑'),
+      (50, '🐉'),
+      (75, '🏆'),
+    ];
+    for (var i = 0; i < steps.length; i++) {
+      final (count, emoji) = steps[i];
+      expect(discoveryEmoji(count), emoji);
+      if (i > 0) expect(discoveryEmoji(count - 1), steps[i - 1].$2);
+    }
+    expect(discoveryEmoji(10000), '🏆');
+    final state = catalogue(count: 100);
+    addTearDown(state.dispose);
+    final discoveries = state.entries
+        .where((e) => e.activity.visitCount > 0)
+        .length;
+    expect(discoveries, 1);
+    expect(discoveryEmoji(discoveries), '🐣');
+  });
+
   setUpAll(() async {
     const fontPath = String.fromEnvironment('SESSION3_FONT');
     if (fontPath.isNotEmpty) {

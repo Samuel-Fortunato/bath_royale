@@ -1,3 +1,4 @@
+import 'package:bath_royale/models/content_suggestions.dart';
 import 'dart:io';
 import 'package:bath_royale/pages/review_form.dart';
 import 'package:bath_royale/models/review.dart';
@@ -62,6 +63,70 @@ Future<void> answerDetails(WidgetTester tester) async {
 }
 
 void main() {
+  test(
+    'approved content has 40 valid tags/emojis and 18 independent RGB swatches',
+    () {
+      expect(reviewTagSuggestions.length, 40);
+      expect(reviewTagSuggestions.map(TagPresentation.key).toSet().length, 40);
+      expect(reviewTagSuggestions.first.label, 'Trono real');
+      expect(reviewTagSuggestions.last.label, 'Puzzle de fechaduras');
+      expect(bathroomEmojiSuggestions.length, 40);
+      expect(bathroomEmojiSuggestions.toSet().length, 40);
+      expect(bathroomEmojiSuggestions.every(ReviewTagData.validEmoji), isTrue);
+      expect(bathroomColorSuggestions.length, 18);
+    },
+  );
+  testWidgets(
+    'six draft tags remain stable through rebuild/search and custom emoji refresh',
+    (tester) async {
+      final state = AppState();
+      addTearDown(state.dispose);
+      final old = state.reviews.first;
+      await mountWizard(
+        tester,
+        state,
+        page: ReviewFormPage(bathroomId: old.bathroomId, review: old),
+      );
+      await wizardTap(tester, find.text('Continuar'));
+      await wizardTap(tester, find.text('Continuar'));
+      List<String> suggestions() => tester
+          .widgetList<ActionChip>(find.byType(ActionChip))
+          .map((c) => (c.label as Text).data!)
+          .toList();
+      final initial = suggestions();
+      expect(initial.length, 6);
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Comentário (opcional)'),
+        'Rebuild',
+      );
+      await tester.pumpAndSettle();
+      expect(suggestions(), initial);
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Procurar etiquetas'),
+        'Puzzle',
+      );
+      await tester.pumpAndSettle();
+      expect(suggestions(), ['Puzzle de fechaduras']);
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Procurar etiquetas'),
+        '',
+      );
+      await tester.pumpAndSettle();
+      expect(suggestions(), initial);
+      await wizardTap(tester, find.text('+ Criar etiqueta'));
+      final emojiField = find.widgetWithText(TextFormField, 'Emoji');
+      await tester.enterText(emojiField, '🇵🇹');
+      final emojiButtons = tester
+          .widgetList<IconButton>(find.byType(IconButton))
+          .where((b) => (b.tooltip ?? '').startsWith('Escolher '));
+      expect(emojiButtons.length, 8);
+      await wizardTap(tester, find.byTooltip('Outros emojis'));
+      expect(tester.widget<TextFormField>(emojiField).controller!.text, '🇵🇹');
+      await wizardTap(tester, find.text('Cancelar'));
+      expect(suggestions(), initial);
+    },
+  );
+
   setUpAll(() async {
     const fontPath = String.fromEnvironment('SESSION3_FONT');
     if (fontPath.isNotEmpty) {

@@ -1,3 +1,5 @@
+import 'collection_profile_test.dart' show capture;
+import 'package:bath_royale/models/content_suggestions.dart';
 import 'package:bath_royale/models/tag_presentation.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -18,6 +20,60 @@ import 'package:provider/provider.dart';
 import 'review_wizard_test.dart' show wizardTap, answerDetails;
 
 void main() {
+  testWidgets(
+    'emoji draft suggestions survive rebuild/refresh and preserve selection',
+    (tester) async {
+      final state = AppState();
+      addTearDown(state.dispose);
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: state,
+          child: MaterialApp(home: const BathroomFormPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      List<String> choices() => tester
+          .widgetList<IconButton>(find.byType(IconButton))
+          .map((b) => b.tooltip ?? '')
+          .where((t) => t.startsWith('Escolher '))
+          .toList();
+      final initial = choices();
+      expect(initial.length, 8);
+      expect(initial.toSet().length, 8);
+      expect(
+        initial.every((v) => bathroomEmojiSuggestions.contains(v.substring(9))),
+        isTrue,
+      );
+      final emojiController = tester
+          .widget<TextFormField>(find.widgetWithText(TextFormField, 'Emoji'))
+          .controller!;
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Emoji'),
+        '🧑🏽‍🚀',
+      );
+      await tester.pumpAndSettle();
+      expect(choices(), initial);
+      await tester.ensureVisible(find.byTooltip('Outros emojis'));
+      await wizardTap(tester, find.byTooltip('Outros emojis'));
+      expect(choices().length, 8);
+      expect(emojiController.text, '🧑🏽‍🚀');
+      await tester.ensureVisible(find.byTooltip('Azul #2563EB'));
+      await wizardTap(tester, find.byTooltip('Azul #2563EB'));
+      await tester.scrollUntilVisible(
+        find.byType(BathroomIdentity),
+        -150,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(
+        tester
+            .widget<BathroomIdentity>(find.byType(BathroomIdentity))
+            .bathroom
+            .accentRgb,
+        0x2563EB,
+      );
+    },
+  );
+
   setUpAll(() async {
     if (!const bool.fromEnvironment('CAPTURE_S4')) return;
     for (final item in [
@@ -196,7 +252,14 @@ void main() {
           find.widgetWithText(TextFormField, 'Cor RGB'),
           '12ABEF',
         );
+        await capture(tester, 'a52-picker-$width-$dark');
+        FocusManager.instance.primaryFocus?.unfocus();
         await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.byType(BathroomIdentity),
+          -150,
+          scrollable: find.byType(Scrollable).first,
+        );
         final preview = tester.widget<BathroomIdentity>(
           find.byType(BathroomIdentity),
         );

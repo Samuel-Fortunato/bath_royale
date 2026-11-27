@@ -1,5 +1,12 @@
 # Changelog
 
+## A5.2 — Final alpha content and branding integration
+
+- Add the 34 approved official catalogue entries, permanent identities and private operator SQL import with dry-run validation, idempotency, conflict detection and backup-preserved correction baselines; create no synthetic activity.
+- Integrate approved humorous tags, stable randomized unrestricted emoji suggestions, responsive RGB palette and absolute distinct-discovery decoration; preserve historical tags, colours and fallback identities.
+- Preserve the original throne artwork and generate reproducible adaptive/legacy Android icons and native splash resources; use Bath Royale as launcher name.
+- Verify disposable catalogue import/restoration, community privacy regressions, client/layout tests and release builds; document content maintenance and the final managed deployment/privacy/retention/publication gates.
+
 ## A5.1 — Alpha release preparation
 
 - Preserve open registration/anonymous browsing; enforce current-password changes server-side and rehearse bounded registration, blocked unverified-email recovery and one-time private recovery codes.

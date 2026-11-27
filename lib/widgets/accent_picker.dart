@@ -1,3 +1,4 @@
+import '../models/content_suggestions.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -66,6 +67,44 @@ class _AccentPickerState extends State<AccentPicker> {
           ),
         ],
       ),
+      Wrap(
+        spacing: 2,
+        runSpacing: 2,
+        children: [
+          for (final (name, rgb) in bathroomColorSuggestions)
+            IconButton(
+              tooltip:
+                  '$name #${rgb.toRadixString(16).padLeft(6, '0').toUpperCase()}',
+              isSelected: widget.value == rgb,
+              onPressed: () => widget.onChanged(rgb),
+              icon: Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: Color(0xff000000 | rgb),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+                child: widget.value == rgb
+                    ? Icon(
+                        Icons.check,
+                        size: 18,
+                        color:
+                            ThemeData.estimateBrightnessForColor(
+                                  Color(0xff000000 | rgb),
+                                ) ==
+                                Brightness.dark
+                            ? Colors.white
+                            : Colors.black,
+                      )
+                    : null,
+              ),
+            ),
+        ],
+      ),
+      const SizedBox(height: 8),
       LayoutBuilder(
         builder: (context, box) {
           void select(Offset p) => change(

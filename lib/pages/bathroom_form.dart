@@ -18,6 +18,7 @@ class BathroomFormPage extends StatefulWidget {
 
 class _BathroomFormPageState extends State<BathroomFormPage> {
   final _emoji = TextEditingController();
+  List<String> _emojiSuggestions = randomEmojiSuggestions();
   int _accentRgb = randomAccent();
   bool _saving = false;
   final _form = GlobalKey<FormState>();
@@ -109,10 +110,20 @@ class _BathroomFormPageState extends State<BathroomFormPage> {
                       controller: _emoji,
                       onChanged: (_) => setState(() {}),
                     ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: IconButton(
+                        tooltip: 'Outros emojis',
+                        icon: const Icon(Icons.refresh),
+                        onPressed: () => setState(
+                          () => _emojiSuggestions = randomEmojiSuggestions(),
+                        ),
+                      ),
+                    ),
                     Wrap(
                       spacing: 8,
                       children: [
-                        for (final emoji in bathroomEmojiSuggestions)
+                        for (final emoji in _emojiSuggestions)
                           IconButton(
                             tooltip: 'Escolher $emoji',
                             onPressed: () =>

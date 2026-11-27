@@ -36,6 +36,7 @@ TABLES = [
     "app_private.bathroom_links",
     "app_private.reports",
     "app_private.bathroom_creators",
+    "app_private.official_catalogue",
     "app_private.alpha_feedback",
     "app_private.alpha_recovery",
     "app_private.alpha_signup_buckets",

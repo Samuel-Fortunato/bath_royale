@@ -99,6 +99,19 @@ Verified locally on 2026-11-27: **238 Flutter tests pass** (five opt-in placehol
 
 The trusted-HTTPS configured universal alpha `0.1.0-alpha.1036` is built privately, signature/package/AOT verified and scanned for fixture/local-TLS/credential exclusion; it is neither published nor installed against managed Supabase. The separate isolated development `0.1.0-dev-a51.1023` is installed with `adb install -r`, original certificate/package/code and first-install timestamp `2026-11-26 22:40:55`; no uninstall, reseed or data clear. The rendered phone shows anonymous Explore with retained fictional entries and the owner-created `aaa` bathroom. Managed configuration, existing fictional-state handling, approved retention periods, genuine owner content, physical security/offline/second-device acceptance and first configured publication remain release gates. Repository configured-publication gate remains unset. A5.1 makes no managed request and starts no further milestone.
 
+### A5.2 — Final alpha content and branding integration
+
+Owner-approved catalogue, content standards and royal toilet-throne artwork. Managed deployment/publication remain unapproved.
+
+- [x] Version the 34 exact genuine official entries with permanent key-derived identities; prepare an operator-only, dry-run/idempotent/conflict-detecting importer and private backup-preserved registry, with no fictional activity or client import API.
+- [x] Integrate 40 humorous tags, 40 emoji suggestions, 18 arbitrary-RGB-compatible swatches and ten absolute distinct-discovery decorative thresholds. Preserve draft stability, custom/search/history/legacy identities and rating descriptions.
+- [x] Preserve original PNG and generate reproducible Android adaptive/legacy launcher and native splash resources; set Bath Royale launcher name without changing package/signing/version rules or ordinary screens.
+- [x] Verify 242 Flutter, 33 backend and 14 tooling tests, strict analysis/format/lint, disposable catalogue import/corrections/conflicts/restoration, existing community API/real-client privacy regressions, responsive light/dark captures and Android/Linux releases. Keep the retained development backend intact.
+- [ ] Install the updated isolated development APK in place and inspect actual Android launcher/splash; USB reconnection pending. Do not mark complete from build-only evidence.
+- [x] Prepare final non-destructive managed deployment, genuine-catalogue import and gated single-APK handover; enumerate privacy/retention/support/publication decisions and preserve the dedicated-contact public-launch gate.
+
+See [A5.2 evidence and device status](docs/backend/final-alpha-content.md), [content maintenance](docs/content-maintenance.md) and [the final deployment approval gate](docs/backend/alpha-release-preparation.md#a52-final-deployment-handover--awaiting-owner-approval). No managed access, configured publication, fixture reseed or cost was incurred.
+
 ### Private alpha release gates and subsequent scope
 
 - [ ] Verify open registration with server-side abuse limits before initial alpha exposure. No invitations, allowlists or manual account approval. Managed changes remain behind the deployment approval gate.

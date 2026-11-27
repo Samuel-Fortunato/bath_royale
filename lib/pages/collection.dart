@@ -1,3 +1,4 @@
+import '../models/content_suggestions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
@@ -181,15 +182,12 @@ class CollectionPage extends StatelessWidget {
 }
 
 /// Decoration only: no reward, entitlement or persisted progression state.
-String discoveryEmoji(int count) => count == 0
-    ? '🥚'
-    : count < 5
-    ? '🐣'
-    : count < 10
-    ? '🧭'
-    : count < 25
-    ? '👑'
-    : '🏰';
+String discoveryEmoji(int count) => discoveryProgression
+    .lastWhere(
+      (step) => count >= step.$1,
+      orElse: () => discoveryProgression.first,
+    )
+    .$2;
 
 class _CollectionTabs extends SliverPersistentHeaderDelegate {
   final Color surface;
