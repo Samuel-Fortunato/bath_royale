@@ -1,16 +1,38 @@
+<p align="center"><img src="assets/branding/app-icon.png" width="144" alt="Ícone Bath Royale: o trono" /></p>
+
 # Bath Royale
 
-**[📲 Descarregar APK Android de desenvolvimento](https://github.com/Samuel-Fortunato/bath_royale/releases)** — abre o pré-lançamento pretendido e transfere `bath-royale.apk` nos Assets. [Instruções de instalação](docs/android-previews.md).
+**Encontra o teu próximo trono.** 🚽👑 Uma aplicação Android para descobrir e avaliar casas de banho, a começar pela Universidade de Aveiro.
 
-Bath Royale is a light-hearted bathroom discovery and rating app, starting with the University of Aveiro. Its goal is to help people find useful facilities, share reviews and build a personal collection, with rankings and community features to follow. See [VISION.md](VISION.md) and [ROADMAP.md](ROADMAP.md) for the intended direction.
+**[📲 Descarregar a alfa v0.1.0](https://github.com/Samuel-Fortunato/bath_royale/releases/download/alpha-1039/bath-royale.apk)** · [Notas da release](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1039) · [Checksum SHA-256](https://github.com/Samuel-Fortunato/bath_royale/releases/download/alpha-1039/SHA256SUMS)
 
-## Current state
+## O que podes fazer
 
-This Flutter private alpha has one shared bathroom catalogue, with official and community entries, including anonymous browsing and cached offline data. New reviews are automatically public and anonymous after clear submission disclosure. Bathroom creation requires an administrator-granted entitlement; ordinary accounts primarily review existing bathrooms. Community scores and rankings use published reviews only. The existing humorous descriptions, collection, themes and Material 3 interface remain.
+- Explorar um catálogo inicial de **34 WC oficiais**, com as identidades visuais aprovadas.
+- Consultar e partilhar avaliações públicas e anónimas, com critérios e descrições bem-humoradas.
+- Registar visitas privadas, guardar favoritos e completar a tua coleção.
+- Consultar rankings, escolher o tema e sincronizar os dados da tua conta, com cache para consulta offline.
 
-Account data synchronizes automatically after concise onboarding acceptance, including existing accounts before their first upload. Offline operations are durable, with discreet status and recoverable conflicts in Settings. Historical private records and their original references remain intact in separate recovery; they are never automatically published or merged. Archived guest records and fictional/unclassified examples are never imported or uploaded. Personal visits, exact dates, favourites, email and account identifiers stay private. Public reviews have no username or reusable author identifier. Owners can edit/delete reviews; reporting and protected moderation require no per-review approval.
+## Instalar no Android
 
-See [A3.1 architecture, fixtures and verification](docs/backend/community-simplification.md), [storage](docs/storage.md) and [data-model semantics](docs/data-model.md). Earlier documents retain foundation history; A3.1 supersedes private/shared association, public usernames and manual publication. A separate local development target provides fictional test accounts and a one-tap selector, excluded from distributable builds. The backend remains isolated local infrastructure; no managed deployment or remote alpha readiness is claimed. Unconfigured public APKs explain that the private configured build is required. Linux persistent authentication requires an unlocked Secret Service provider.
+1. Descarrega o APK no botão acima e abre o ficheiro no telemóvel.
+2. Se necessário, permite a instalação a partir do navegador ou da aplicação Ficheiros.
+3. Se já tens Bath Royale, escolhe **Atualizar**. Mantém a aplicação instalada para preservar os dados locais.
+4. Explora sem conta ou regista-te com email e palavra-passe para contribuir. Guarda o código de recuperação nas definições.
+
+Não precisas de convite nem de conta GitHub. Podes voltar a desativar a permissão de instalação depois. [Instruções completas e verificação do checksum](docs/android-previews.md#download-and-install-from-a-phone).
+
+## Primeira alfa: o que esperar
+
+Esta é uma **versão de teste**, distribuída como pré-lançamento e com assinatura de desenvolvimento. Pode conter erros; o teste num segundo dispositivo físico continua pendente. A criação de WC está reservada a contas autorizadas pela administração; as restantes contas podem avaliar os existentes.
+
+O email ainda não é verificado e não permite recuperar a conta: guarda o código de recuperação. As novas avaliações são públicas e anónimas; visitas e favoritos são privados. A sincronização precisa de ligação ao serviço; a cache permite consultar dados já carregados offline.
+
+O suporte inicial é **samff2006@gmail.com**; nunca envies a palavra-passe. Consulta a privacidade nas definições e as [limitações e condições da alfa](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1039). O lançamento público exige contacto próprio do projeto e autenticação/recuperação com verificação de email adequada.
+
+## Project and development
+
+Bath Royale uses Flutter, Dart, Provider, Material 3 and local SQLite with managed account synchronization. See [VISION.md](VISION.md), [ROADMAP.md](ROADMAP.md), [data model](docs/data-model.md), [storage](docs/storage.md) and [verified alpha acceptance](docs/backend/managed-alpha-acceptance.md). The approved [design specification](docs/bath-royale-design/ui-design.md) and existing rating descriptions guide its visual and written identity.
 
 ## Development setup
 
@@ -41,11 +63,9 @@ flutter build linux --release
 
 Linux builds require a working Linux desktop toolchain. Android production and web release preparation remain planned. Generated outputs under `build/` are not source files.
 
-## Android preview downloads
+## Android releases and CI
 
-Pushes to `main` and manual runs execute formatting, strict analysis, tests and an optimized universal Android release APK build in the locked Nix environment. Every successful main build automatically publishes a [development pre-release](https://github.com/Samuel-Fortunato/bath_royale/releases) with `bath-royale.apk` and `SHA256SUMS`. Actions artifacts remain available for 14 days.
-
-On your phone, download the APK from the highest-numbered pre-release, open it and choose **Atualizar**. Keep the existing app installed. The package and existing preview certificate remain unchanged; physical update/data preservation still requires owner verification. See [installation, signing, versioning and CI details](docs/android-previews.md). Production store signing remains separate. Public previews remain without Auth configuration and show the account-service-unavailable screen; use the [private Auth device-testing procedure](docs/android-auth-device-testing.md) for a local configured release. The historical guest-association proposal remains deferred; A3 does not import guest data.
+The current managed alpha is [v0.1.0 — Primeira Alfa](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1039). Historical `preview-*` releases are development builds. CI validates every main push; distribution requires the separately approved configured-alpha gate, currently disabled. See [installation and CI](docs/android-previews.md) and [release presentation/versioning](docs/releases/README.md). Never select a historical preview just because its internal build number is prominent.
 
 See [AGENTS.md](AGENTS.md) for development and Git practices.
 

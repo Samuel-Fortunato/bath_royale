@@ -31,6 +31,23 @@ def verify_assets(release, directory, repo):
     return set(assets)
 
 
+def release_presentation(number, alpha):
+    # Public version comes from the source version, never the Android build code.
+    import re
+    root = Path(__file__).resolve().parents[1]
+    version = re.search(r'^version: (\d+\.\d+\.\d+)',
+                        (root / 'pubspec.yaml').read_text(), re.MULTILINE).group(1)
+    title = f"Bath Royale v{version} — {'Alfa' if alpha else 'Desenvolvimento'}"
+    notes = (root / 'docs/releases/alpha-notes.md').read_text().strip() if alpha else (
+        'Pré-lançamento Android de desenvolvimento, sem configuração do serviço de contas. '
+        'Para experimentar a alfa atual, consulta o README do projeto.')
+    return title, notes + (
+        f'\n\n## Detalhes técnicos\n\nVersão apresentada: **v{version}**. '
+        f'Compilação interna Android: **{number}**. '
+        'O número de compilação identifica o APK e a ordem de atualização; '
+        'não é a versão pública da aplicação.')
+
+
 def publish(directory):
     repo = os.environ['GH_REPO']
     sha = os.environ['GITHUB_SHA']
@@ -52,24 +69,12 @@ def publish(directory):
     releases = api(f'repos/{repo}/releases?per_page=100', '--paginate', '--slurp')
     matches = [r for page in releases for r in page if r['tag_name'] == tag]
     if not matches:
-        title = 'Alfa' if alpha else 'Desenvolvimento'
-        introduction = 'Alfa Android: regista a tua conta na aplicação.' if alpha else 'Pré-lançamento Android de desenvolvimento.'
-        notes = (f'{introduction} Compilação {number}.\n\n'
-                 f'Commit de origem: {sha}\n\n'
-                 'Transfere bath-royale.apk nos Assets e abre-o no Android. Se necessário, '
-                 'permite a instalação a partir do navegador. Escolhe Atualizar e mantém '
-                 'a aplicação instalada para preservar os dados locais. Não desinstales.\n\n'
-                 'SHA256SUMS permite verificar a transferência. Usa uma compilação mais '
-                 'recente se o Android recusar uma versão anterior.\n\n'
-                 'Versão de teste com assinatura de desenvolvimento; não é uma versão '
-                 'estável de produção.')
-        if alpha:
-            notes += '\n\n' + (Path(__file__).resolve().parents[1] /
-                                 'docs/releases/alpha-notes.md').read_text().strip()
+        title, notes = release_presentation(number, alpha)
+        notes += f'\n\nCommit de origem: `{sha}`'
         release = api(f'repos/{repo}/releases', '-f', f'tag_name={tag}',
                       '-f', f'target_commitish={sha}', '-F', 'draft=true',
                       '-F', 'prerelease=true', '-f', 'make_latest=false',
-                      '-f', f'name=Bath Royale — {title} {number}',
+                      '-f', f'name={title}',
                       '-f', f'body={notes}')
     else:
         release = matches[0]

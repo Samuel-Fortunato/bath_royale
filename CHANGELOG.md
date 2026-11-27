@@ -1,5 +1,11 @@
 # Changelog
 
+## GitHub alpha presentation
+
+- Present the initial alpha as v0.1.0 with Portuguese introduction, features, installation and limitations; highlight the approved icon and direct APK/checksum links in the README.
+- Separate semantic release titles from internal Android build codes in publication tooling; document the convention and historical cleanup recommendations without deletion.
+- Preserve the alpha tag/assets/URLs and pre-release status; verify the existing anonymous download and checksum with publication disabled.
+
 ## A5 — Initial alpha publication
 
 - Publish signed universal `0.1.0-alpha.1039` through the existing draft-first GitHub Actions workflow after successful CI and owner-confirmed physical acceptance; independently verify anonymous download, checksum, signing identity, version, managed public HTTPS configuration and development-fixture exclusion.

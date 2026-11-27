@@ -10,6 +10,19 @@ import publish_preview as publisher
 
 
 class PublicationTest(unittest.TestCase):
+    def test_public_version_is_separate_from_build(self):
+        for alpha in (True, False):
+            title, notes = publisher.release_presentation('1039', alpha)
+            self.assertIn('Bath Royale v0.1.0 — ', title)
+            self.assertNotIn('1039', title)
+            self.assertIn('Compilação interna Android: **1039**', notes)
+            if alpha:
+                for section in ('Funcionalidades principais', 'Instalar ou atualizar',
+                                'Limitações e privacidade da alfa'):
+                    self.assertIn(section, notes)
+            else:
+                self.assertIn('sem configuração', notes)
+
     def test_checkout_precedes_artifact_download(self):
         workflow = (Path(__file__).resolve().parents[1] /
                     '.github/workflows/android-preview.yml').read_text()

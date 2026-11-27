@@ -2,6 +2,8 @@
 
 A5.3 delivers the managed initial alpha, with owner-confirmed physical acceptance and separately authorized publication. See [actual managed acceptance and publication](backend/managed-alpha-acceptance.md). Second physical device testing remains pending. CI validates unconfigured builds without uploading or publishing development APKs. Configured publication requires the explicitly approved gate; close it after an authorized release to keep subsequent routine pushes validation-only.
 
+Public semantic versions and internal Android build codes are documented in [release presentation and historical review](releases/README.md).
+
 ## Download and install from a phone
 
 1. Open [the initial alpha release](https://github.com/Samuel-Fortunato/bath_royale/releases/tag/alpha-1039) and download **bath-royale.apk** under **Assets**. Use configured `alpha-` releases for the managed service; historical `preview-` releases are development builds. No GitHub login or ZIP extraction is needed for this public repository. `/releases/latest` excludes pre-releases and must not be used.
