@@ -259,3 +259,10 @@ Owner touchscreen/keyboard/offline/Keystore acceptance is pending. Future power-
 The final development release is `0.1.0-dev-a4.1023` / code 1023, using the same package, original preview certificate, fixture namespace and first-install date. `tool/install_private_alpha.py --development` now enables private-alpha feedback explicitly and includes the actual app version in the technical context. Continue using the existing private configuration directory and gateway; do not regenerate TLS material, uninstall or clear data. The gateway now allows only the existing routes plus the three named feedback RPCs.
 
 [Current A4 behavior, complete verification and short phone acceptance steps](backend/ui-alpha-refinement.md#physical-acceptance) supersede earlier review-FAB/slider/palette-only directions. Feedback floats above bottom navigation without a new empty strip; forms reserve horizontal space beside their primary action. Screenshots and shake are not implemented. Administrator feedback is under Settings → Feedback da alfa. Keep configured APKs private and assess password reauthentication before distributing the alpha.
+
+
+## A5.2 content and branding update
+
+`0.1.0-dev-a52.1023` / code 1023 was installed in place on the connected SM A166B with the existing certificate/package. `adb install -r` returned Success; app ID 10419 and first-install timestamp `2026-11-26 22:40:55` are unchanged. No uninstall, data clear or backend reseed occurred. USB 55504 forwarding is restored.
+
+The actual One UI app drawer displays **Bath Royale** and the new royal toilet-throne icon without clipped crown/white corners/double rounded background. A cold start shows the branded native splash in the existing dark mode, then restores the signed-in development account and Explore with retained `aaa`, discovery state, personal ratings and favourites. Exported circular/rounded-square/small launcher previews are checked separately. Full Keystore/offline/reconnection/second-device acceptance remains a release gate; visible retained state is not byte-level storage verification. See [A5.2 evidence and deployment handover](backend/final-alpha-content.md).

@@ -6,6 +6,7 @@
 - Integrate approved humorous tags, stable randomized unrestricted emoji suggestions, responsive RGB palette and absolute distinct-discovery decoration; preserve historical tags, colours and fallback identities.
 - Preserve the original throne artwork and generate reproducible adaptive/legacy Android icons and native splash resources; use Bath Royale as launcher name.
 - Verify disposable catalogue import/restoration, community privacy regressions, client/layout tests and release builds; document content maintenance and the final managed deployment/privacy/retention/publication gates.
+- Install the isolated development update in place with original signing/package identity and retained data; inspect actual Android launcher and native splash.
 
 ## A5.1 — Alpha release preparation
 
