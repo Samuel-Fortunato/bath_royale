@@ -562,7 +562,7 @@ void main() {
         ),
         previousRows,
       );
-      expect(a.database.userVersion, 9);
+      expect(a.database.userVersion, 10);
       final b = LocalStore(sqlite3.openInMemory(), namespace: n);
       final foreignN = DataNamespace.account(
         scope.environment,

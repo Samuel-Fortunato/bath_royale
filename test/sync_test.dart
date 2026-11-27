@@ -145,6 +145,7 @@ void main() {
       ]) {
         old.database.execute('DROP TABLE $table');
       }
+      old.database.execute('ALTER TABLE bathrooms DROP COLUMN accent_rgb');
       old.database.userVersion = 5;
       app.dispose();
       old.close();
@@ -166,7 +167,7 @@ void main() {
           before[table],
         );
       }
-      expect(upgraded.database.userVersion, 9);
+      expect(upgraded.database.userVersion, 10);
       expect(upgraded.database.select('SELECT * FROM outbox'), isEmpty);
     },
   );
@@ -283,13 +284,10 @@ void main() {
 
   test('fictional, legacy and remote cache mutations do not enqueue', () {
     for (final provenance in ['demo', 'unclassified_legacy', 'remote']) {
-      local.database.execute("INSERT INTO bathrooms VALUES(?,?,?,?,'🚽',0,?)", [
-        provenance,
-        provenance,
-        provenance,
-        scope.subject,
-        provenance,
-      ]);
+      local.database.execute(
+        "INSERT INTO bathrooms(id,name,normalized_name,creator,emoji,accent,provenance) VALUES(?,?,?,?,'🚽',0,?)",
+        [provenance, provenance, provenance, scope.subject, provenance],
+      );
       if (provenance == 'remote') continue;
       final v = Visit(
         id: provenance,

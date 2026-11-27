@@ -95,6 +95,7 @@ class BathroomRepository {
     Visit? newVisit,
     required bool isNew,
     bool communitySubmission = false,
+    bool modernRating = false,
   }) => store.transaction(() {
     _owner(r.authorId);
     if (newVisit != null) {
@@ -112,15 +113,16 @@ class BathroomRepository {
     _queue(
       'review',
       r.id,
-      newVisit != null
-          ? (communitySubmission
-                ? 'createCommunityVisitReview'
-                : 'createVisitReview')
-          : (isNew
-                ? (communitySubmission
-                      ? 'createCommunityReview'
-                      : 'createReview')
-                : 'updateReview'),
+      (newVisit != null
+              ? (communitySubmission
+                    ? 'createCommunityVisitReview'
+                    : 'createVisitReview')
+              : (isNew
+                    ? (communitySubmission
+                          ? 'createCommunityReview'
+                          : 'createReview')
+                    : 'updateReview')) +
+          (modernRating ? 'V2' : ''),
       {
         'review': row,
         if (newVisit != null) 'visit': _row('visits', newVisit.id),

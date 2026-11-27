@@ -62,21 +62,19 @@ void main() {
       expect(tester.widget<Text>(find.text(comment)).maxLines, 4);
       expect(find.text('Ver experiência'), findsOneWidget);
       await tap(tester, find.text('Editar avaliação'));
-      tester
-          .widget<StarRatingInput>(find.byType(StarRatingInput))
-          .onChanged(2.5);
+      tester.widget<StarRatingInput>(find.byType(StarRatingInput)).onChanged(2);
       await tester.pumpAndSettle();
       await tap(tester, find.text('Continuar'));
       await tap(tester, find.text('Continuar'));
       await tap(tester, find.text('Guardar avaliação'));
       expect(state.reviews.length, 5);
-      expect(state.entries.first.personalReview!.rating, 2.5);
+      expect(state.entries.first.personalReview!.rating, 2);
       await tap(tester, find.text('Resumo'));
       await tester.pumpAndSettle();
-      expect(find.text('2,5 / 5'), findsOneWidget);
+      expect(find.text('2,0 / 5'), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
-      expect(find.text('A tua avaliação: 2,5 / 5'), findsOneWidget);
+      expect(find.text('A tua avaliação: 2,0 / 5'), findsOneWidget);
     },
   );
   testWidgets('new review validates fields and saves repeat experience', (
@@ -103,15 +101,12 @@ void main() {
       isNull,
     );
     expect(state.reviews.length, 5);
-    expect(find.text('— / 5'), findsOneWidget);
-    await tester.tapAt(
-      tester.getTopLeft(find.byKey(const ValueKey('global-rating-slider'))) +
-          const Offset(24, 24),
+    expect(
+      tester.widget<StarRatingInput>(find.byType(StarRatingInput)).value,
+      isNull,
     );
-    await tester.pumpAndSettle();
-    expect(find.text('0,0 / 5'), findsOneWidget);
-    expect(find.text('💀'), findsOneWidget);
-    tester.widget<StarRatingInput>(find.byType(StarRatingInput)).onChanged(4.5);
+    await tap(tester, find.byKey(const ValueKey('global-star-1')));
+    tester.widget<StarRatingInput>(find.byType(StarRatingInput)).onChanged(4);
     await tester.pumpAndSettle();
     await tap(tester, find.text('Continuar'));
     expect(
@@ -130,14 +125,15 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tap(tester, find.text('Espelho gigante'));
-    await tap(tester, find.text('Inventar uma etiqueta'));
+    await tap(tester, find.text('+ Criar etiqueta'));
     await tester.ensureVisible(
-      find.widgetWithText(TextField, 'A tua etiqueta'),
+      find.widgetWithText(TextFormField, 'Nome da etiqueta'),
     );
     await tester.enterText(
-      find.widgetWithText(TextField, 'A tua etiqueta'),
+      find.widgetWithText(TextFormField, 'Nome da etiqueta'),
       'vista',
     );
+    await tester.enterText(find.widgetWithText(TextFormField, 'Emoji'), '🌅');
     await tap(tester, find.text('Adicionar etiqueta'));
     await tap(tester, find.text('Guardar avaliação'));
     expect(state.reviews.length, 6);
@@ -189,17 +185,21 @@ void main() {
         state,
         ReviewFormPage(bathroomId: original.bathroomId, review: original),
       );
-      expect(find.text('4,7 / 5'), findsOneWidget);
+      expect(
+        tester.widget<StarRatingInput>(find.byType(StarRatingInput)).value,
+        4.7,
+      );
       await tap(tester, find.text('Continuar'));
       await tap(tester, find.text('Continuar'));
-      await tap(tester, find.text('Inventar uma etiqueta'));
+      await tap(tester, find.text('+ Criar etiqueta'));
       await tester.ensureVisible(
-        find.widgetWithText(TextField, 'A tua etiqueta'),
+        find.widgetWithText(TextFormField, 'Nome da etiqueta'),
       );
       await tester.enterText(
-        find.widgetWithText(TextField, 'A tua etiqueta'),
+        find.widgetWithText(TextFormField, 'Nome da etiqueta'),
         'sossegado',
       );
+      await tester.enterText(find.widgetWithText(TextFormField, 'Emoji'), '🌅');
       await tap(tester, find.text('Adicionar etiqueta'));
       expect(find.text('sossegado'), findsOneWidget);
       final chip = tester.widget<InputChip>(
@@ -284,41 +284,6 @@ void main() {
     },
   );
 
-  testWidgets(
-    'unfinished hidden tag is revealed with a visible error and can be resolved',
-    (tester) async {
-      final state = AppState();
-      addTearDown(state.dispose);
-      final original = state.reviews.first;
-      await mount(
-        tester,
-        state,
-        ReviewFormPage(bathroomId: original.bathroomId, review: original),
-      );
-      await tap(tester, find.text('Continuar'));
-      await tap(tester, find.text('Continuar'));
-      await tap(tester, find.text('Inventar uma etiqueta'));
-      await tester.enterText(
-        find.widgetWithText(TextField, 'A tua etiqueta'),
-        'rascunho',
-      );
-      await tap(tester, find.text('Inventar uma etiqueta'));
-      expect(find.widgetWithText(TextField, 'A tua etiqueta'), findsNothing);
-      await tap(tester, find.text('Guardar avaliação'));
-      expect(
-        find.text('Adiciona ou apaga a etiqueta antes de guardar.'),
-        findsOneWidget,
-      );
-      expect(find.widgetWithText(TextField, 'A tua etiqueta'), findsOneWidget);
-      expect(state.reviews.first, same(original));
-      await tester.enterText(
-        find.widgetWithText(TextField, 'A tua etiqueta'),
-        '',
-      );
-      await tap(tester, find.text('Guardar avaliação'));
-      expect(state.reviews.first.tags, original.tags);
-    },
-  );
   testWidgets('another author cannot edit a review', (tester) async {
     final state = AppState(currentUserId: 'visitor');
     addTearDown(state.dispose);

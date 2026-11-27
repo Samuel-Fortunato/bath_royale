@@ -237,10 +237,11 @@ void main() {
       );
       old.dispose();
       disk.database.execute('DROP TABLE catalogue_classifications');
+      disk.database.execute('ALTER TABLE bathrooms DROP COLUMN accent_rgb');
       disk.database.userVersion = 8;
       disk.close();
       disk = LocalStore(sqlite3.open(path), namespace: n);
-      expect(disk.database.userVersion, 9);
+      expect(disk.database.userVersion, 10);
       expect(disk.load()!.visits.length, 1);
       expect(SyncStore(disk).hasConsent, true);
       expect(

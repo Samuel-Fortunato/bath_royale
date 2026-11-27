@@ -1,3 +1,4 @@
+import '../models/tag_presentation.dart';
 import 'dart:async';
 import 'dart:convert';
 import '../sync/community_catalogue.dart';
@@ -466,13 +467,21 @@ class AppState extends ChangeNotifier {
     return null;
   }
 
-  Bathroom createBathroom(String name, {String? emoji, int? accent}) {
-    if (emoji != null && !Bathroom.emojis.contains(emoji)) {
+  Bathroom createBathroom(
+    String name, {
+    String? emoji,
+    int? accent,
+    int? accentRgb,
+  }) {
+    if (emoji != null && !ReviewTagData.validEmoji(emoji)) {
       throw ArgumentError('Invalid emoji');
     }
     if (accent != null &&
         (accent < 0 || accent >= Bathroom.accentNames.length)) {
       throw ArgumentError('Invalid accent');
+    }
+    if (accentRgb != null && (accentRgb < 0 || accentRgb > 0xffffff)) {
+      throw ArgumentError('Invalid RGB');
     }
     _writable();
     if (communityEnabled && !canCreateBathroom) {
@@ -486,6 +495,7 @@ class AppState extends ChangeNotifier {
       createdBy: canContribute ? 'catalogue' : currentUserId,
       emoji: emoji,
       accent: accent,
+      accentRgb: accentRgb,
     );
     _mutate(() {
       if (canContribute) {
@@ -501,6 +511,7 @@ class AppState extends ChangeNotifier {
             'name': bathroom.name,
             'emoji': bathroom.emoji,
             'accent': bathroom.accent,
+            'accent_rgb': bathroom.accentRgb,
           });
         });
       } else {
@@ -520,9 +531,11 @@ class AppState extends ChangeNotifier {
         error != null) {
       throw ArgumentError(error);
     }
-    if (!Bathroom.emojis.contains(bathroom.emoji) ||
+    if (!ReviewTagData.validEmoji(bathroom.emoji) ||
         bathroom.accent < 0 ||
-        bathroom.accent >= Bathroom.accentNames.length) {
+        bathroom.accent >= Bathroom.accentNames.length ||
+        (bathroom.accentRgb != null &&
+            (bathroom.accentRgb! < 0 || bathroom.accentRgb! > 0xffffff))) {
       throw ArgumentError('Invalid identity');
     }
     _mutate(
@@ -720,7 +733,7 @@ class AppState extends ChangeNotifier {
   }
 
   /// Local ownership guard, not authentication or a future security boundary.
-  void saveReview(Review review, {Visit? newVisit}) {
+  void saveReview(Review review, {Visit? newVisit, bool modernRating = false}) {
     _writable();
     materializeCatalogue();
     _requireBathroom(review.bathroomId);
@@ -728,6 +741,13 @@ class AppState extends ChangeNotifier {
       throw StateError('Only the current author can save a review');
     }
     final index = _reviews.indexWhere((r) => r.id == review.id);
+    if (modernRating &&
+        (index < 0 || _reviews[index].rating != review.rating) &&
+        (review.rating < 1 ||
+            review.rating > 5 ||
+            review.rating != review.rating.roundToDouble())) {
+      throw ArgumentError('Choose an integer rating from 1 to 5');
+    }
     if (communityEnabled &&
         index < 0 &&
         (!isShared(review.bathroomId) || !isAvailable(review.bathroomId))) {
@@ -766,6 +786,7 @@ class AppState extends ChangeNotifier {
         newVisit: newVisit,
         isNew: index < 0,
         communitySubmission: communityEnabled && index < 0,
+        modernRating: modernRating,
       ),
       () {
         if (index < 0) {

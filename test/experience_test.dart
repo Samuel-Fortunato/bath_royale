@@ -117,21 +117,21 @@ void main() {
       );
       expect(find.text('Visita registada'), findsOneWidget);
       await wizardTap(tester, find.text('Avaliar visita'));
-      tester.widget<StarRatingInput>(find.byType(StarRatingInput)).onChanged(0);
+      tester.widget<StarRatingInput>(find.byType(StarRatingInput)).onChanged(1);
       await tester.pump();
       await wizardTap(tester, find.text('Continuar'));
       await answerDetails(tester);
       await wizardTap(tester, find.text('Continuar'));
-      await wizardTap(tester, find.text('Guardar sem etiquetas'));
+      await wizardTap(tester, find.text('Guardar avaliação'));
       expect(state.visitsFor('5').single.id, visit.id);
-      expect(state.reviewForVisit(visit.id)!.rating, 0);
+      expect(state.reviewForVisit(visit.id)!.rating, 1);
       final original = state.reviewForVisit(visit.id)!;
       await wizardTap(tester, find.text('Editar avaliação'));
       tester.widget<StarRatingInput>(find.byType(StarRatingInput)).onChanged(4);
       await tester.pump();
       await wizardTap(tester, find.text('Continuar'));
       await wizardTap(tester, find.text('Continuar'));
-      await wizardTap(tester, find.text('Guardar sem etiquetas'));
+      await wizardTap(tester, find.text('Guardar avaliação'));
       expect(state.reviewForVisit(visit.id)!.id, original.id);
       expect(state.reviewForVisit(visit.id)!.rating, 4);
       await wizardTap(tester, find.text('Remover visita'));
@@ -177,37 +177,29 @@ void main() {
         );
         await mount(const BathroomFormPage());
         await tester.pumpAndSettle();
-        await tester.enterText(find.byType(TextFormField), 'Novo trono real');
-        await tester.scrollUntilVisible(
-          find.text('Surpreende-me'),
-          200,
-          scrollable: find.byType(Scrollable).first,
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Nome da casa de banho'),
+          'Novo trono real',
         );
-        await wizardTap(tester, find.text('Surpreende-me'));
-        await tester.drag(find.byType(ListView), const Offset(0, 1200));
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Emoji'),
+          '👩🏽‍💻',
+        );
+        await tester.ensureVisible(find.byTooltip('Outra cor aleatória'));
+        await wizardTap(tester, find.byTooltip('Outra cor aleatória'));
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Cor RGB'),
+          '12ABEF',
+        );
         await tester.pumpAndSettle();
         final preview = tester.widget<BathroomIdentity>(
           find.byType(BathroomIdentity),
         );
-        expect(
-          preview.bathroom.emoji,
-          isIn(['🚽', '👑', '📚', '🌿', '🔧', '🌈', '🏛️', '🧪']),
-        );
-        final randomized = preview.bathroom.emoji;
-        await tester.enterText(find.byType(TextFormField), 'Novo trono real');
-        await tester.pumpAndSettle();
-        expect(
-          tester
-              .widget<BathroomIdentity>(find.byType(BathroomIdentity))
-              .bathroom
-              .emoji,
-          randomized,
-        );
-        await wizardTap(tester, find.widgetWithText(ChoiceChip, '👑'));
-        await wizardTap(tester, find.widgetWithText(ChoiceChip, 'Rosa'));
+        expect(preview.bathroom.emoji, '👩🏽‍💻');
+        expect(preview.bathroom.accentRgb, 0x12abef);
         await wizardTap(tester, find.text('Criar casa de banho'));
-        expect(state.allBathrooms.last.emoji, '👑');
-        expect(state.allBathrooms.last.accent, 4);
+        expect(state.allBathrooms.last.emoji, '👩🏽‍💻');
+        expect(state.allBathrooms.last.accentRgb, 0x12abef);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
         await mount(const ExperienceDetailsPage(visitId: 'visit-0'));

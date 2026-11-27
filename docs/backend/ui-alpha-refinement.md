@@ -21,7 +21,7 @@ The owner supersedes the previous Explore review FAB, personal discovery ratings
 ## Resumption and evidence
 
 1. Explore/details/Settings: implemented and locally verified. Community-filter isolation regression covers private five stars versus public two stars and unrated exclusion. 28 focused and 222 full Flutter tests pass (five opt-in placeholders skipped); formatting, strict analysis, whitespace and Linux debug build pass. Two real Flutter light/dark capture tests pass; Explore/details captures inspected. Phone acceptance remains separate.
-2. Customization/wizard: pending.
+2. Customization/wizard: implemented. SQLite v10 and additive server 010/011 preserve palette indices, historical scores and legacy queue semantics. Five direct stars, labelled category choices, distinct exit/step back, visible comments, bounded stable suggestions and keyboard-aware tag dialog are verified. 218 full Flutter tests pass (five opt-in placeholders skipped), then 16 focused final wizard tests pass. Android debug build, formatter and strict analysis pass. Real two-account Flutter synchronization passes for compound emoji/RGB/current integer payloads; disposable A4 direct API tests verify entitlement denial, invalid RGB/emoji, invalid/valid integer inputs, atomic failure, receipt replay and exact historical edits/queues. Real light/dark 320/390dp captures at text scales 1/1.5 inspected. Initial picker lifecycle and synthetic older-schema fixture failures were corrected and rerun. Legacy commands intentionally remain compatible; current versioned submissions enforce the new input contract.
 3. Rankings/collection/profile/fixtures: pending.
 4. Global feedback: pending.
 

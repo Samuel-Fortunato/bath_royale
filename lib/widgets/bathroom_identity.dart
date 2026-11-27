@@ -17,7 +17,11 @@ class BathroomIdentity extends StatelessWidget {
   ];
   static ColorScheme colors(BuildContext context, Bathroom bathroom) =>
       ColorScheme.fromSeed(
-        seedColor: Color(seeds[bathroom.accent % seeds.length]),
+        seedColor: Color(
+          bathroom.accentRgb == null
+              ? seeds[bathroom.accent % seeds.length]
+              : 0xff000000 | bathroom.accentRgb!,
+        ),
         brightness: Theme.of(context).brightness,
       );
   @override

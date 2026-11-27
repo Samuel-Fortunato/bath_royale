@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/services.dart';
+import 'dart:math';
+import '../widgets/emoji_input.dart';
+import 'privacy.dart';
 import '../models/review.dart';
 import '../models/tag_presentation.dart';
 import '../models/visit.dart';
@@ -28,11 +30,6 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   int _step = 0;
   final _scroll = ScrollController();
   final _search = TextEditingController();
-  final _tagFocus = FocusNode();
-  final _categoryFocus = {
-    for (final label in ['Higiene', 'Conforto', 'Estética', 'Papel'])
-      label: FocusNode(),
-  };
   double? _rating;
   String? _visitId;
   bool _visitInitialized = false;
@@ -42,7 +39,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   final _emojiInput = TextEditingController(text: '🏷️');
   final _comment = TextEditingController();
   String? _tagError;
-  bool _creatingTag = false;
+  List<ReviewTagData>? _draftSuggestions;
   static final _suggestions = [
     '🪞 Espelho gigante',
     '🎵 Música ambiente',
@@ -50,6 +47,24 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     '🌅 Vista panorâmica',
     '🎨 Arte nas paredes',
     '🪝 Gancho para mochila',
+    '🤫 Silenciosa',
+    '🔒 Privacidade',
+    '♿ Acessível',
+    '🚰 Sem sabonete',
+    '🌬️ Bem ventilada',
+    '💡 Boa iluminação',
+    '🚪 Porta sem trinco',
+    '🧻 Papel macio',
+    '🫧 Sabonete disponível',
+    '💧 Chão molhado',
+    '👃 Cheiro duvidoso',
+    '🧼 Impecável',
+    '⏳ Fila demorada',
+    '👜 Sem apoio para malas',
+    '🪝 Cabide disponível',
+    '❄️ Fresquinha',
+    '🔥 Um forno',
+    '🛠️ Precisa de arranjos',
   ].map(ReviewTagData.legacy).toList();
   int? _hygiene, _comfort, _aesthetics, _paper;
   @override
@@ -80,10 +95,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     _comment.dispose();
     _search.dispose();
     _scroll.dispose();
-    _tagFocus.dispose();
-    for (final node in _categoryFocus.values) {
-      node.dispose();
-    }
+
     super.dispose();
   }
 
@@ -113,44 +125,94 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     aesthetics: 0,
   );
 
-  void _addTag() {
-    final tag = _tagInput.text.trim();
-    setState(() {
-      if (!ReviewTagData.validEmoji(_emojiInput.text.trim())) {
-        _tagError = 'Escolhe um único emoji válido.';
-      } else if (tag.contains('\u0000')) {
-        _tagError =
-            'A etiqueta contém um carácter nulo. Remove-o antes de adicionar.';
-      } else if (tag.isEmpty ||
-          tag.characters.length > 30 ||
-          tag.contains(RegExp(r'[\n\r,]'))) {
-        _tagError = 'Usa uma etiqueta por vez, até 30 caracteres.';
-      } else if (_tags.length >= 10) {
-        _tagError = 'Podes adicionar até 10 etiquetas.';
-      } else if (_tags.any(
-        (t) => TagPresentation.key(t) == TagPresentation.key(tag),
-      )) {
-        _tagError = 'Esta etiqueta já está selecionada.';
-      } else {
-        _tags.add(ReviewTagData(emoji: _emojiInput.text, label: tag));
-        _tagInput.clear();
-        _tagError = null;
-      }
-    });
-    if (_tagError != null) _tagFocus.requestFocus();
+  Future<void> _createTag() async {
+    final form = GlobalKey<FormState>();
+    _tagInput.clear();
+    _emojiInput.clear();
+    final added = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, refresh) => AlertDialog(
+          title: const Text('Criar etiqueta'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: form,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  EmojiInput(controller: _emojiInput),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _tagInput,
+                    autofocus: true,
+                    maxLength: 30,
+                    textInputAction: TextInputAction.done,
+                    decoration: InputDecoration(
+                      labelText: 'Nome da etiqueta',
+                      errorMaxLines: 3,
+                    ),
+                    validator: (v) {
+                      final value = (v ?? '').trim();
+                      if (value.isEmpty ||
+                          value.characters.length > 30 ||
+                          value.contains(RegExp(r'[\n\r,\x00]'))) {
+                        return 'Usa um nome até 30 caracteres.';
+                      }
+                      if (_tags.any(
+                        (t) =>
+                            TagPresentation.key(t) ==
+                            TagPresentation.key(value),
+                      )) {
+                        return 'Esta etiqueta já está selecionada.';
+                      }
+                      if (_tags.length >= 10) {
+                        return 'Podes adicionar até 10 etiquetas.';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (!form.currentState!.validate()) return;
+                setState(() {
+                  _tags.add(
+                    ReviewTagData(
+                      emoji: _emojiInput.text.trim(),
+                      label: _tagInput.text,
+                    ),
+                  );
+                  _tagError = null;
+                });
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text('Adicionar etiqueta'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (added == true) {
+      _tagInput.clear();
+      _emojiInput.clear();
+    } else {
+      _tagInput.clear();
+      _emojiInput.clear();
+    }
   }
 
   void _save() async {
     if (_rating == null ||
         [_hygiene, _comfort, _aesthetics, _paper].contains(null)) {
-      return;
-    }
-    if (_tagInput.text.trim().isNotEmpty) {
-      setState(() {
-        _creatingTag = true;
-        _tagError = 'Adiciona ou apaga a etiqueta antes de guardar.';
-      });
-      _tagFocus.requestFocus();
       return;
     }
     if (_comment.text.contains('\u0000')) {
@@ -196,6 +258,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
           comment: _comment.text,
         ),
         newVisit: visit,
+        modernRating: true,
       );
       await state.persistenceComplete;
       if (!mounted) return;
@@ -223,10 +286,6 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   bool _confirming = false;
   Future<void> _back() async {
     if (_confirming || _saving) return;
-    if (_step > 0) {
-      _go(_step - 1);
-      return;
-    }
     final original = widget.review;
     final dirty =
         _rating != original?.rating ||
@@ -235,7 +294,6 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
         _aesthetics != original?.aesthetics ||
         _paper != original?.paperAvailability ||
         _tagInput.text.isNotEmpty ||
-        (_creatingTag && _emojiInput.text != '🏷️') ||
         _comment.text.trim() != (original?.comment ?? '') ||
         _tags.join('\n') != (original?.tags ?? []).join('\n');
     _confirming = true;
@@ -278,138 +336,98 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
     ValueChanged<int> change,
   ) {
     final descriptions = [for (var i = 0; i <= max; i++) describe(_example(i))];
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: Text(label, style: theme.textTheme.titleMedium)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Semantics(
-                liveRegion: true,
-                child: Text(
-                  value == null
-                      ? 'Por responder'
-                      : descriptions[value].split(' ').skip(1).join(' '),
-                  textAlign: TextAlign.end,
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ),
-            ),
-          ],
-        ),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final cell = constraints.maxWidth / (max + 1);
-            return Column(
-              children: [
-                Row(
-                  children: [
-                    for (var i = 0; i <= max; i++)
-                      Expanded(
-                        child: Semantics(
-                          selected: value == i,
-                          child: Tooltip(
-                            message: descriptions[i],
-                            excludeFromSemantics: true,
-                            child: TextButton(
-                              key: ValueKey('$label-$i'),
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(48, 48),
-                                backgroundColor: value == i
-                                    ? theme.colorScheme.secondaryContainer
-                                    : null,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                side: value == i
-                                    ? BorderSide(
-                                        color: theme.colorScheme.primary,
-                                        width: 2,
-                                      )
-                                    : BorderSide.none,
-                              ),
-                              onPressed: () => setState(() => change(i)),
-                              child: Semantics(
-                                label: '$label: ${descriptions[i]}',
-                                child: ExcludeSemantics(
-                                  child: FittedBox(
-                                    child: Text(
-                                      descriptions[i].split(' ').first,
-                                      textScaler: TextScaler.noScaling,
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontFamilyFallback: [
-                                          'Noto Color Emoji',
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 4),
+          LayoutBuilder(
+            builder: (context, box) {
+              final large = MediaQuery.textScalerOf(context).scale(12) > 16;
+              Widget option(int i) => Semantics(
+                selected: value == i,
+                child: TextButton(
+                  key: ValueKey('$label-$i'),
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(48, 64),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 2,
+                      vertical: 6,
+                    ),
+                    foregroundColor: scheme.onSurface,
+                    backgroundColor: value == i
+                        ? scheme.primaryContainer
+                        : scheme.surfaceContainerLow,
+                    side: BorderSide(
+                      color: value == i
+                          ? scheme.primary
+                          : scheme.outlineVariant,
+                      width: value == i ? 2 : 1,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onPressed: () => setState(() => change(i)),
+                  child: Semantics(
+                    label: '$label: ${descriptions[i]}',
+                    child: ExcludeSemantics(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            descriptions[i].split(' ').first,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontFamilyFallback: ['Noto Color Emoji'],
                             ),
                           ),
-                        ),
-                      ),
-                  ],
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: cell / 2),
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      showValueIndicator: ShowValueIndicator.never,
-                      trackShape: const RectangularSliderTrackShape(),
-                      // Keep the full touch target and geometry before answering.
-                      thumbColor: value == null ? Colors.transparent : null,
-                      thumbShape: const RoundSliderThumbShape(
-                        enabledThumbRadius: 8,
-                        elevation: 0,
-                        pressedElevation: 0,
-                      ),
-                    ),
-                    child: MergeSemantics(
-                      child: Semantics(
-                        label: label,
-                        child: CallbackShortcuts(
-                          bindings: {
-                            const SingleActivator(
-                              LogicalKeyboardKey.home,
-                            ): () =>
-                                setState(() => change(0)),
-                            const SingleActivator(LogicalKeyboardKey.end): () =>
-                                setState(() => change(max)),
-                          },
-                          child: Slider(
-                            key: ValueKey('$label-slider'),
-                            focusNode: _categoryFocus[label],
-                            onChangeStart: (_) =>
-                                _categoryFocus[label]!.requestFocus(),
-                            padding: const EdgeInsets.symmetric(vertical: 20),
-                            value: (value ?? 0).toDouble(),
-                            min: 0,
-                            max: max.toDouble(),
-                            divisions: max,
-                            semanticFormatterCallback: (v) =>
-                                value == null && v == 0
-                                ? 'Por responder'
-                                : descriptions[v.round()],
-                            onChanged: (v) => setState(() => change(v.round())),
+                          Text(
+                            descriptions[i].split(' ').skip(1).join(' '),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              height: 1.15,
+                              letterSpacing: 0,
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-      ],
+              );
+              if (large) {
+                return Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    for (var i = 0; i <= max; i++)
+                      SizedBox(width: (box.maxWidth - 8) / 3, child: option(i)),
+                  ],
+                );
+              }
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i <= max; i++)
+                      Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(right: i == max ? 0 : 4),
+                          child: option(i),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -450,27 +468,9 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
           ),
         ),
         const SizedBox(height: 16),
-        Text(
-          _rating == null ? '— / 5' : '${ratingNumber(_rating!)} / 5',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.displaySmall,
-        ),
-        const SizedBox(height: 16),
         StarRatingInput(
           value: _rating,
           onChanged: (value) => setState(() => _rating = value),
-        ),
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(child: Text('Terrível')),
-            Expanded(child: Text('Perfeito', textAlign: TextAlign.end)),
-          ],
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          'Move o cursor para avaliar. No início, escolhes zero.',
-          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -478,189 +478,128 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
 
   Widget _tagStep(AppState state) {
     final known = <String, ReviewTagData>{
-      for (final tag in {
-        ..._suggestions,
-        for (final r in state.reviews) ...r.tags,
-      })
-        TagPresentation.key(tag): tag,
+      for (final t in _suggestions) TagPresentation.key(t): t,
+      for (final r in state.reviews.where(
+        (r) => r.authorId == state.currentUserId,
+      ))
+        for (final t in r.tags) TagPresentation.key(t): t,
+      if (state.community != null)
+        for (final r in state.community!.reviews)
+          for (final t in r.tags) TagPresentation.key(t): t,
     }.values.toList();
-    final query = _search.text.trim().toLowerCase();
-    final suggestions = known
+    _draftSuggestions ??= List.of(known)..shuffle(Random());
+    final query = TagPresentation.key(_search.text);
+    final suggestions = (query.isEmpty ? _draftSuggestions! : known)
         .where(
           (t) =>
               !_tags.any(
-                (selected) =>
-                    TagPresentation.key(selected) == TagPresentation.key(t),
+                (s) => TagPresentation.key(s) == TagPresentation.key(t),
               ) &&
-              TagPresentation.key(t).contains(TagPresentation.key(query)),
+              TagPresentation.key(t).contains(query),
         )
-        .take(query.isEmpty ? 6 : 12);
+        .take(query.isEmpty ? 6 : 12)
+        .toList();
+    Widget chip(ReviewTagData t, bool selected) => selected
+        ? InputChip(
+            avatar: Text(
+              t.emoji,
+              style: const TextStyle(fontFamilyFallback: ['Noto Color Emoji']),
+            ),
+            label: Text(t.label),
+            onDeleted: () => setState(() {
+              _tags.remove(t);
+              _tagError = null;
+            }),
+          )
+        : ActionChip(
+            avatar: Text(
+              t.emoji,
+              style: const TextStyle(fontFamilyFallback: ['Noto Color Emoji']),
+            ),
+            label: Text(t.label),
+            onPressed: () => setState(() {
+              if (_tags.length < 10) {
+                _tags.add(t);
+                _tagError = null;
+              } else {
+                _tagError = 'Podes adicionar até 10 etiquetas.';
+              }
+            }),
+          );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Etiquetas e comentário',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'As etiquetas são opcionais. Escolhe as que descrevem a tua experiência.',
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _search,
-          decoration: const InputDecoration(
-            labelText: 'Procurar etiquetas',
-            prefixIcon: Icon(Icons.search),
-          ),
-          onChanged: (_) => setState(() {}),
-        ),
-        if (_tags.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Text('Selecionadas (${_tags.length}/10)'),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              for (final tag in _tags)
-                InputChip(
-                  avatar: TagPresentation.decoration(tag) == null
-                      ? null
-                      : Text(
-                          TagPresentation.decoration(tag)!,
-                          style: const TextStyle(
-                            fontFamilyFallback: ['Noto Color Emoji'],
-                          ),
-                        ),
-                  label: Text(
-                    tag.label,
-                    style: const TextStyle(
-                      fontFamilyFallback: ['Noto Color Emoji'],
-                    ),
-                  ),
-                  deleteButtonTooltipMessage: 'Remover $tag',
-                  onDeleted: () => setState(() {
-                    _tags.remove(tag);
-                    _tagError = null;
-                  }),
-                ),
-            ],
-          ),
-        ],
-        const SizedBox(height: 16),
-        Text(query.isEmpty ? 'Sugestões' : 'Resultados (até 12)'),
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          children: [
-            for (final tag in suggestions)
-              ActionChip(
-                avatar: TagPresentation.decoration(tag) == null
-                    ? null
-                    : Text(
-                        TagPresentation.decoration(tag)!,
-                        style: const TextStyle(
-                          fontFamilyFallback: ['Noto Color Emoji'],
-                        ),
-                      ),
-                label: Text(
-                  tag.label,
-                  style: const TextStyle(
-                    fontFamilyFallback: ['Noto Color Emoji'],
-                  ),
-                ),
-                onPressed: () => setState(() {
-                  if (_tags.length < 10) {
-                    _tags.add(tag);
-                    _tagError = null;
-                  } else {
-                    _tagError = 'Podes adicionar até 10 etiquetas.';
-                  }
-                }),
-              ),
-          ],
-        ),
-        if (suggestions.isEmpty) const Text('Sem etiquetas encontradas.'),
-        if (widget.canCreateCustomTags)
-          TextButton.icon(
-            onPressed: () => setState(() => _creatingTag = !_creatingTag),
-            icon: const Icon(Icons.add),
-            label: const Text('Inventar uma etiqueta'),
-          ),
-        if (_creatingTag) ...[
-          Wrap(
-            spacing: 4,
-            children: [
-              for (final emoji in ['🏷️', '✨', '🌿', '👑', '🧻', '🎵'])
-                ChoiceChip(
-                  label: Text(
-                    emoji,
-                    style: const TextStyle(
-                      fontFamilyFallback: ['Noto Color Emoji'],
-                    ),
-                  ),
-                  selected: _emojiInput.text == emoji,
-                  onSelected: (_) => setState(() => _emojiInput.text = emoji),
-                ),
-            ],
-          ),
-          TextField(
-            controller: _emojiInput,
-            style: const TextStyle(fontFamilyFallback: ['Noto Color Emoji']),
-            decoration: const InputDecoration(
-              labelText: 'Emoji',
-              hintText: 'Usa o teclado de emojis',
-            ),
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Pré-visualização: ${_emojiInput.text} ${_tagInput.text}',
-            style: const TextStyle(fontFamilyFallback: ['Noto Color Emoji']),
-          ),
-          TextField(
-            controller: _tagInput,
-            focusNode: _tagFocus,
-            maxLength: 30,
-            decoration: InputDecoration(
-              errorText: _tagError,
-              errorMaxLines: 3,
-              labelText: 'A tua etiqueta',
-              hintText: 'Algo que só este trono tem…',
-            ),
-            onChanged: (_) => setState(() {}),
-            onSubmitted: (_) => _addTag(),
-          ),
-          Wrap(
-            spacing: 8,
-            children: [
-              TextButton(
-                onPressed: () => setState(() {
-                  _creatingTag = false;
-                  _tagInput.clear();
-                  _tagError = null;
-                }),
-                child: const Text('Cancelar etiqueta'),
-              ),
-              TextButton(
-                onPressed: _addTag,
-                child: const Text('Adicionar etiqueta'),
-              ),
-            ],
-          ),
-        ],
-        const SizedBox(height: 24),
         TextField(
           controller: _comment,
-          minLines: 3,
-          maxLines: 6,
+          minLines: 2,
+          maxLines: 4,
           maxLength: 500,
           decoration: const InputDecoration(
             labelText: 'Comentário (opcional)',
             hintText: 'Como foi a tua experiência?',
           ),
         ),
-        if (_tagError != null && !_creatingTag)
+        const SizedBox(height: 8),
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          children: [
+            Text(
+              'Etiquetas (${_tags.length}/10)',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            if (widget.canCreateCustomTags)
+              TextButton(
+                onPressed: _createTag,
+                child: const Text('+ Criar etiqueta'),
+              ),
+          ],
+        ),
+        if (_tags.isNotEmpty)
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 112),
+            child: SingleChildScrollView(
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 2,
+                children: [for (final t in _tags) chip(t, true)],
+              ),
+            ),
+          ),
+        TextField(
+          controller: _search,
+          onChanged: (_) => setState(() {}),
+          decoration: const InputDecoration(
+            labelText: 'Procurar etiquetas',
+            prefixIcon: Icon(Icons.search),
+            isDense: true,
+          ),
+        ),
+        Row(
+          children: [
+            Expanded(child: Text(query.isEmpty ? 'Sugestões' : 'Resultados')),
+            IconButton(
+              tooltip: 'Outras sugestões',
+              onPressed: () => setState(
+                () => _draftSuggestions = List.of(known)..shuffle(Random()),
+              ),
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
+        ),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 150),
+          child: SingleChildScrollView(
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 2,
+              children: [for (final t in suggestions) chip(t, false)],
+            ),
+          ),
+        ),
+        if (suggestions.isEmpty) const Text('Sem etiquetas encontradas.'),
+        if (_tagError != null)
           Semantics(
             liveRegion: true,
             child: Text(
@@ -706,7 +645,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                   child: Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -714,8 +653,10 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                               state.allBathrooms
                                   .firstWhere((b) => b.id == widget.bathroomId)
                                   .name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             Row(
                               children: [
                                 for (var i = 0; i < 3; i++)
@@ -765,13 +706,6 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
-                                    Text(
-                                      'Os pequenos detalhes',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.headlineSmall,
-                                    ),
-                                    const SizedBox(height: 20),
                                     _category(
                                       'Higiene',
                                       _hygiene,
@@ -805,11 +739,29 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                               : _tagStep(state),
                         ),
                       ),
-                      if (state.communityEnabled && widget.review == null)
+                      if (_step == 1 && !validStep)
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'A tua avaliação será pública e anónima: notas, etiquetas e comentário. Não incluas dados pessoais. A visita, a data exata e o email ficam privados.',
+                          child: Text('Escolhe uma opção em cada categoria.'),
+                        ),
+                      if (_step == 2 && state.communityEnabled)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            children: [
+                              const Expanded(
+                                child: Text('Avaliação pública e anónima.'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => const PrivacyPage(),
+                                  ),
+                                ),
+                                child: const Text('Privacidade'),
+                              ),
+                            ],
                           ),
                         ),
                       SafeArea(
@@ -839,8 +791,6 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                                   child: Text(
                                     _step < 2
                                         ? 'Continuar'
-                                        : _tags.isEmpty
-                                        ? 'Guardar sem etiquetas'
                                         : 'Guardar avaliação',
                                   ),
                                 ),
@@ -858,7 +808,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   }
 }
 
-/// Decorative fractional stars followed by an explicit adjustable slider.
+/// Five direct integer choices; historical fractions remain visible and untouched.
 class StarRatingInput extends StatelessWidget {
   const StarRatingInput({
     super.key,
@@ -867,122 +817,57 @@ class StarRatingInput extends StatelessWidget {
   });
   final double? value;
   final ValueChanged<double> onChanged;
-
-  void _set(double next) => onChanged((next.clamp(0, 5) * 10).round() / 10);
-
   @override
   Widget build(BuildContext context) => Semantics(
     label: 'Avaliação global',
-    slider: true,
     value: value == null ? 'Sem resposta' : '${ratingNumber(value!)} de 5',
-    increasedValue: ratingNumber(((value ?? 0) + .1).clamp(0, 5)),
-    decreasedValue: ratingNumber(((value ?? 0) - .1).clamp(0, 5)),
-    onIncrease: () => _set((value ?? 0) + .1),
-    onDecrease: () => _set((value ?? 0) - .1),
-    child: Focus(
-      onKeyEvent: (node, event) {
-        if (event is KeyUpEvent) return KeyEventResult.ignored;
-        final key = event.logicalKey;
-        if (key == LogicalKeyboardKey.home) {
-          _set(0);
-        } else if (key == LogicalKeyboardKey.end) {
-          _set(5);
-        } else if (key == LogicalKeyboardKey.arrowRight ||
-            key == LogicalKeyboardKey.arrowUp) {
-          _set((value ?? 0) + .1);
-        } else if (key == LogicalKeyboardKey.arrowLeft ||
-            key == LogicalKeyboardKey.arrowDown) {
-          _set((value ?? 0) - .1);
-        } else {
-          return KeyEventResult.ignored;
-        }
-        return KeyEventResult.handled;
-      },
-      child: Builder(
-        builder: (context) => LayoutBuilder(
-          builder: (context, constraints) {
-            return Column(
-              children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.transparent, width: 2),
-                  ),
-                  child: ExcludeSemantics(
-                    child: SizedBox(
-                      height: 64,
-                      child: Row(
+    child: Row(
+      children: [
+        for (var i = 1; i <= 5; i++)
+          Expanded(
+            child: Semantics(
+              selected: value == i,
+              child: IconButton(
+                key: ValueKey('global-star-$i'),
+                tooltip: '$i ${i == 1 ? 'estrela' : 'estrelas'}',
+                onPressed: () => onChanged(i.toDouble()),
+                icon: LayoutBuilder(
+                  builder: (context, box) {
+                    final size = box.maxWidth.clamp(24.0, 48.0);
+                    return SizedBox(
+                      width: size,
+                      height: size,
+                      child: Stack(
                         children: [
-                          for (var i = 0; i < 5; i++)
-                            Expanded(
-                              child: LayoutBuilder(
-                                builder: (context, box) {
-                                  final size = box.maxWidth.clamp(0.0, 56.0);
-                                  final fraction = ((value ?? 0) - i).clamp(
-                                    0.0,
-                                    1.0,
-                                  );
-                                  return Center(
-                                    child: SizedBox(
-                                      width: size,
-                                      height: size,
-                                      child: Stack(
-                                        children: [
-                                          Icon(
-                                            Icons.star_rounded,
-                                            size: size,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.outlineVariant,
-                                          ),
-                                          ClipRect(
-                                            child: Align(
-                                              alignment: Alignment.centerLeft,
-                                              widthFactor: fraction,
-                                              child: Icon(
-                                                Icons.star_rounded,
-                                                size: size,
-                                                color: Colors.amber,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
+                          Icon(
+                            Icons.star_border_rounded,
+                            size: size,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                          ClipRect(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: ((value ?? 0) - (i - 1))
+                                  .clamp(0, 1)
+                                  .toDouble(),
+                              child: Icon(
+                                Icons.star_rounded,
+                                size: size,
+                                color: Colors.amber,
                               ),
                             ),
+                          ),
                         ],
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
-                ExcludeSemantics(
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      showValueIndicator: ShowValueIndicator.never,
-                      thumbColor: value == null ? Colors.transparent : null,
-                    ),
-                    child: Slider(
-                      key: const ValueKey('global-rating-slider'),
-                      value: value ?? 0,
-                      min: 0,
-                      max: 5,
-                      divisions: 50,
-                      onChangeStart: (v) {
-                        Focus.of(context).requestFocus();
-                        _set(v);
-                      },
-                      onChanged: _set,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+              ),
+            ),
+          ),
+      ],
     ),
   );
 }

@@ -1,3 +1,7 @@
+# A4 additive identity migration
+
+SQLite v9→v10 adds nullable `bathrooms.accent_rgb`, retaining the legacy `accent` palette index. Postgres migrations 010/011 add the same RGB field, single-grapheme bathroom emoji validation, additive projection/payload support and versioned rating submission. Existing queued JSON is neither modified nor replayed under a new interpretation. Original command receipts remain exact and historical fractions/zero remain supported. New client `*ReviewV2` commands distinguish current integer input from compatibility traffic. See [A4 verification](backend/ui-alpha-refinement.md).
+
 # Local storage
 
 Current schema is **v9**. [A3.1](backend/community-simplification.md) adds cached official/community classifications and invalidates obsolete public review attribution/checkpoints only. Account-domain rows, original IDs, private history, legacy links, favourites, settings, outbox and consent survive v8 → v9 unchanged. Public data remains in its environment-scoped cache; pulls never overwrite private rows. Equal-revision public cache refreshes accept the new projection fields, while private revision/conflict guards remain strict. Normal workflows use shared identities; legacy private records are recoverable separately in Settings without publication or reassociation. Account synchronization is automatic after acceptance. Guest archives remain untouched. Earlier sections document historical foundation milestones.

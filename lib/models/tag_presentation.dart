@@ -105,7 +105,16 @@ class ReviewTagData {
     if (first == 0x23 || first == 0x2a || (first >= 0x30 && first <= 0x39)) {
       return points.last == 0x20e3;
     }
-    return (first >= 0x1f000 && first <= 0x1faff) ||
+    return (first >= 0x2194 && first <= 0x2199) ||
+        (first >= 0x21a9 && first <= 0x21aa) ||
+        (first >= 0x25aa && first <= 0x25ab) ||
+        first == 0x25b6 ||
+        first == 0x25c0 ||
+        (first >= 0x25fb && first <= 0x25fe) ||
+        (first >= 0x2934 && first <= 0x2935) ||
+        (first >= 0x2b05 && first <= 0x2b07) ||
+        (first >= 0x2b1b && first <= 0x2b1c) ||
+        (first >= 0x1f000 && first <= 0x1faff) ||
         (first >= 0x2600 && first <= 0x27bf) ||
         [
           0xa9,

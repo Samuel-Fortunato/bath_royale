@@ -112,6 +112,7 @@ class AccountProjection {
               'creator': 'catalogue',
               'emoji': p['emoji'],
               'accent': p['accent'],
+              'accent_rgb': p['accent_rgb'],
               'provenance': 'remote',
             });
           }
@@ -132,6 +133,7 @@ class AccountProjection {
             'creator': p['contributor_id'],
             'emoji': p['emoji'],
             'accent': p['accent'],
+            'accent_rgb': p['accent_rgb'],
             'provenance': 'remote',
           });
         } else if (type == 'visit') {

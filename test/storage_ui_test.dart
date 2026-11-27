@@ -857,7 +857,7 @@ void main() {
         }
         final field = reviewEditor
             ? find.widgetWithText(TextField, 'Comentário (opcional)')
-            : find.byType(TextFormField);
+            : find.widgetWithText(TextFormField, 'Nome da casa de banho');
         await tester.ensureVisible(field);
         await tester.enterText(field, 'Rascunho só de A');
         now += 60000;

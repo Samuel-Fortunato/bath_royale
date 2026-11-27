@@ -115,6 +115,8 @@ void main() {
       await sync(1);
       final shared = a.createBathroom(
         'Flutter community ${AppState.newEntityId()}',
+        emoji: '👩🏽‍💻',
+        accentRgb: 0x12abef,
       );
       // Nothing transfers before acceptance, including contributions.
       await syncs[0].synchronize();
@@ -124,6 +126,14 @@ void main() {
       await sync(0);
       await catalogue.refresh();
       expect(b.allBathrooms.any((r) => r.id == shared.id), true);
+      expect(
+        b.allBathrooms.singleWhere((r) => r.id == shared.id).accentRgb,
+        0x12abef,
+      );
+      expect(
+        b.allBathrooms.singleWhere((r) => r.id == shared.id).emoji,
+        '👩🏽‍💻',
+      );
       final visit = a.recordVisit(
         shared.id,
         visitedAt: DateTime.utc(2031, 2, 3, 4, 5, 6),
@@ -141,7 +151,7 @@ void main() {
         aesthetics: 4,
         comment: 'Só fica público após publicar',
       );
-      a.saveReview(review);
+      a.saveReview(review, modernRating: true);
       a.toggleFavorite(shared.id);
       await sync(0);
       await sync(1);

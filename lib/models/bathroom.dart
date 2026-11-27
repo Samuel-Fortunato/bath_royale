@@ -5,6 +5,8 @@ class Bathroom {
   final String createdBy;
   final String? classification;
 
+  /// Null preserves the legacy palette index without reinterpreting it as RGB.
+  final int? accentRgb;
   final String? _emoji;
   final int? _accent;
   String get emoji => _emoji ?? defaultEmoji(id, name);
@@ -43,6 +45,7 @@ class Bathroom {
     required this.name,
     required this.createdBy,
     this.classification,
+    this.accentRgb,
     String? emoji,
     int? accent,
   }) : _emoji = emoji,

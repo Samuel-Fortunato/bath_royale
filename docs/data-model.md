@@ -1,3 +1,9 @@
+# A4 input compatibility
+
+Bathrooms retain their existing palette `accent` (0–5) and gain nullable `accentRgb` / `accent_rgb` (0–16777215). Null always renders the original palette; RGB is never inferred from an index. The shared emoji validator accepts one extended emoji grapheme including compound sequences. SQLite v10 adds only the nullable column; all original rows, outboxes, scores and references remain unchanged.
+
+The wizard emits integer global choices 1–5 through versioned `*ReviewV2` commands. Compatibility commands remain accepted for durable pre-A4 queues and historical private records; they retain original visibility and precision. A V2 edit may keep its existing historical fractional/zero score exactly, but a changed score must be an integer 1–5. No automatic rounding, re-publication or domain rewrite occurs. Community means/ranking arithmetic retain decimals. Original discrete detailed scales remain unchanged. Bottom Back traverses steps; app/system Back exits with dirty confirmation.
+
 # Local data model
 
 Current account/community semantics are documented in [A3.1](backend/community-simplification.md). Normal workflows use one shared catalogue, classified official/community. New reviews use shared bathroom identities and are automatically public and anonymous after disclosure; historical private reviews retain their visibility. Public `CommunityReview` scores have independent per-review public IDs, no reusable author identity and no visit/date/email fields. Private `Review`/`Visit` rows retain ownership and original references; no fake visits represent public content. Legacy bathrooms and links remain intact outside normal workflows. Published-only community scores replace the earlier local approximation. Earlier prototype sections below remain historical.

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:bath_royale/models/bathroom.dart';
 import 'package:bath_royale/storage/local_store.dart';
 import 'package:bath_royale/state/app_state.dart';
@@ -5,6 +6,50 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {
+  test(
+    'v9 additive migration preserves legacy colours, historical scores and queued payloads',
+    () {
+      final db = sqlite3.openInMemory();
+      var store = LocalStore(db);
+      final state = AppState.restore(store);
+      final old = state.allBathrooms.first;
+      final original = state.reviews.first.rating;
+      final rows = jsonEncode(
+        db.select('SELECT * FROM reviews').map((r) => Map.of(r)).toList(),
+      );
+      db.execute('ALTER TABLE bathrooms DROP COLUMN accent_rgb');
+      db.userVersion = 9;
+      // Same connection, reopen logically without disposing the owned database.
+      store = LocalStore(db);
+      final data = store.load()!;
+      expect(data.bathrooms.first.accent, old.accent);
+      expect(data.bathrooms.first.accentRgb, isNull);
+      expect(data.bathrooms.first.emoji, old.emoji);
+      expect(data.reviews.first.rating, original);
+      expect(
+        jsonEncode(
+          db.select('SELECT * FROM reviews').map((r) => Map.of(r)).toList(),
+        ),
+        rows,
+      );
+      final changed = state.createBathroom(
+        'RGB',
+        emoji: '🏳️‍🌈',
+        accentRgb: 0x010203,
+      );
+      expect(
+        store
+            .load()!
+            .bathrooms
+            .singleWhere((b) => b.id == changed.id)
+            .accentRgb,
+        0x010203,
+      );
+      state.dispose();
+      store.close();
+    },
+  );
+
   test('v3 upgrades tags and comments once without resetting records', () {
     final db = sqlite3.openInMemory();
     db.execute(LocalStore.schemaV1);
@@ -39,7 +84,7 @@ void main() {
     final store = LocalStore(db);
     addTearDown(store.close);
     final data = store.load()!;
-    expect(db.userVersion, 9);
+    expect(db.userVersion, 10);
     expect(data.reviews.single.tags.first.emoji, '👩🏽‍💻');
     expect(data.reviews.single.tags.first.label, 'Tecnologia');
     expect(data.reviews.single.comment, isNull);
@@ -84,7 +129,7 @@ void main() {
     final store = LocalStore(db);
     addTearDown(store.close);
     final data = store.load()!;
-    expect(db.userVersion, 9);
+    expect(db.userVersion, 10);
     expect(data.bathrooms.first.emoji, '📚');
     expect(data.bathrooms.first.createdBy, 'original');
     expect(data.visits.map((v) => v.id), ['v', 'unreviewed']);

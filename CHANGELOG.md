@@ -2,6 +2,9 @@
 
 ## A4 (in progress)
 
+- Add unrestricted single-emoji and RGB bathroom customization without changing legacy appearances; additive SQLite/server migrations retain all data.
+- Replace review sliders with five direct stars and original labelled category choices. Preserve historical fractional/zero scores; simplify tags, comments and wizard navigation.
+
 - Discovery uses published community scores and characteristics, classification and tags for everyone; personal filters are separate. Remove duplicate review shortcut.
 - Simplify anonymous details, corrections, reviewed visits, Profile notices and Settings privacy/recovery navigation.
 

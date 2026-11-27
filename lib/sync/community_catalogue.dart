@@ -32,6 +32,7 @@ class CommunityCatalogue extends ChangeNotifier {
         classification: p['classification'] as String? ?? 'community',
         emoji: p['emoji'] as String,
         accent: p['accent'] as int,
+        accentRgb: p['accent_rgb'] as int?,
       ),
   ];
   List<CommunityReview> get reviews =>

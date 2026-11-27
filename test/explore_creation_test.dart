@@ -108,17 +108,28 @@ void main() {
       );
       await tester.tap(find.byTooltip('Criar casa de banho'));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Criar casa de banho'));
       await tester.tap(find.text('Criar casa de banho'));
       await tester.pumpAndSettle();
       expect(find.text('Dá um nome a este trono.'), findsOneWidget);
-      await tester.enterText(find.byType(TextFormField), 'dem - 3º piso');
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nome da casa de banho'),
+        'dem - 3º piso',
+      );
+      await tester.ensureVisible(find.text('Criar casa de banho'));
       await tester.tap(find.text('Criar casa de banho'));
       await tester.pumpAndSettle();
       expect(
         find.text('Já existe uma casa de banho com este nome.'),
         findsOneWidget,
       );
-      await tester.enterText(find.byType(TextFormField), 'Novo trono');
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nome da casa de banho'),
+        'Novo trono',
+      );
+      await tester.ensureVisible(find.byTooltip('Escolher 👑'));
+      await tester.tap(find.byTooltip('Escolher 👑'));
+      await tester.ensureVisible(find.text('Criar casa de banho'));
       await tester.tap(find.text('Criar casa de banho'));
       await tester.pumpAndSettle();
       expect(state.allBathrooms.length, 7);

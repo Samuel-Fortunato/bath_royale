@@ -35,7 +35,7 @@ class LocalStore {
         throw StateError('Database integrity check failed');
       }
       final version = database.userVersion;
-      if (version > 9) {
+      if (version > 10) {
         throw StateError('Database was created by a newer application');
       }
       // SQLite's documented table-rebuild procedure keeps child references intact.
@@ -165,6 +165,12 @@ class LocalStore {
           }
           database.userVersion = 9;
         }
+        if (version < 10) {
+          database.execute(
+            'ALTER TABLE bathrooms ADD COLUMN accent_rgb INTEGER CHECK(accent_rgb BETWEEN 0 AND 16777215)',
+          );
+          database.userVersion = 10;
+        }
         if (database.select('SELECT scope FROM namespace').single['scope'] !=
             this.namespace.key) {
           throw StateError('Database namespace mismatch');
@@ -230,6 +236,7 @@ CREATE TABLE favourites (user TEXT NOT NULL CHECK(length(user)>0), bathroom TEXT
                     as String?,
             emoji: r['emoji'] as String,
             accent: r['accent'] as int,
+            accentRgb: r['accent_rgb'] as int?,
           ),
       ],
       visits: [
@@ -297,25 +304,30 @@ CREATE TABLE favourites (user TEXT NOT NULL CHECK(length(user)>0), bathroom TEXT
   });
 
   void insertBathroom(Bathroom b, {required Provenance provenance}) {
-    database.execute('INSERT INTO bathrooms VALUES(?,?,?,?,?,?,?)', [
-      b.id,
-      b.name,
-      b.name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase(),
-      b.createdBy,
-      b.emoji,
-      b.accent,
-      provenance.value,
-    ]);
+    database.execute(
+      'INSERT INTO bathrooms(id,name,normalized_name,creator,emoji,accent,provenance,accent_rgb) VALUES(?,?,?,?,?,?,?,?)',
+      [
+        b.id,
+        b.name,
+        b.name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase(),
+        b.createdBy,
+        b.emoji,
+        b.accent,
+        provenance.value,
+        b.accentRgb,
+      ],
+    );
   }
 
   void updateBathroom(Bathroom b) {
     database.execute(
-      'UPDATE bathrooms SET name=?,normalized_name=?,emoji=?,accent=? WHERE id=? AND creator=?',
+      'UPDATE bathrooms SET name=?,normalized_name=?,emoji=?,accent=?,accent_rgb=? WHERE id=? AND creator=?',
       [
         b.name,
         b.name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase(),
         b.emoji,
         b.accent,
+        b.accentRgb,
         b.id,
         b.createdBy,
       ],
