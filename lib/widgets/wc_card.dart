@@ -36,9 +36,14 @@ class WcCard extends StatelessWidget {
                   BathroomIdentity(bathroom: entry.bathroom),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      entry.bathroom.name,
-                      style: theme.textTheme.titleMedium,
+                    child: Tooltip(
+                      message: entry.bathroom.name,
+                      child: Text(
+                        entry.bathroom.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium,
+                      ),
                     ),
                   ),
                   if (toggleFavorite != null)

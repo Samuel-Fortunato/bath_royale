@@ -1,3 +1,4 @@
+import '../widgets/alpha_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math';
@@ -614,6 +615,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    FeedbackLocation.reviewStep = _step;
     if (!_visitInitialized) {
       _visitId = widget.visitId;
       _visitInitialized = true;
@@ -644,55 +646,58 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                   constraints: const BoxConstraints(maxWidth: 640),
                   child: Column(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              state.allBathrooms
-                                  .firstWhere((b) => b.id == widget.bathroomId)
-                                  .name,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                for (var i = 0; i < 3; i++)
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 3,
-                                      ),
-                                      child: Semantics(
-                                        label: 'Passo ${i + 1} de 3',
-                                        selected: i == _step,
-                                        child: Column(
-                                          children: [
-                                            LinearProgressIndicator(
-                                              value: i <= _step ? 1 : 0,
-                                            ),
-                                            const SizedBox(height: 6),
-                                            FittedBox(
-                                              child: Text(
-                                                [
-                                                  'Global',
-                                                  'Detalhes',
-                                                  'Etiquetas',
-                                                ][i],
+                      if (MediaQuery.viewInsetsOf(context).bottom == 0)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                state.allBathrooms
+                                    .firstWhere(
+                                      (b) => b.id == widget.bathroomId,
+                                    )
+                                    .name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  for (var i = 0; i < 3; i++)
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 3,
+                                        ),
+                                        child: Semantics(
+                                          label: 'Passo ${i + 1} de 3',
+                                          selected: i == _step,
+                                          child: Column(
+                                            children: [
+                                              LinearProgressIndicator(
+                                                value: i <= _step ? 1 : 0,
                                               ),
-                                            ),
-                                          ],
+                                              const SizedBox(height: 6),
+                                              FittedBox(
+                                                child: Text(
+                                                  [
+                                                    'Global',
+                                                    'Detalhes',
+                                                    'Etiquetas',
+                                                  ][i],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
                       Expanded(
                         child: SingleChildScrollView(
                           controller: _scroll,
@@ -744,18 +749,23 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                           padding: EdgeInsets.symmetric(horizontal: 16),
                           child: Text('Escolhe uma opção em cada categoria.'),
                         ),
-                      if (_step == 2 && state.communityEnabled)
+                      if (_step == 2 &&
+                          state.communityEnabled &&
+                          widget.review == null)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Row(
+                          child: Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              const Expanded(
-                                child: Text('Avaliação pública e anónima.'),
-                              ),
+                              const Text('Avaliação pública e anónima.'),
                               TextButton(
                                 onPressed: () => Navigator.push(
                                   context,
                                   MaterialPageRoute<void>(
+                                    settings: const RouteSettings(
+                                      name: 'privacy',
+                                    ),
                                     builder: (_) => const PrivacyPage(),
                                   ),
                                 ),
@@ -768,34 +778,58 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                         top: false,
                         child: Padding(
                           padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              if (_step > 0) ...[
-                                TextButton(
-                                  onPressed: () => _go(_step - 1),
-                                  child: const Text('Voltar'),
+                          child: LayoutBuilder(
+                            builder: (context, box) {
+                              final split =
+                                  _step > 0 &&
+                                  box.maxWidth /
+                                          MediaQuery.textScalerOf(
+                                            context,
+                                          ).scale(1) <
+                                      260;
+                              final feedback = AlphaFeedbackHost.isEnabledIn(
+                                context,
+                              );
+                              final back = TextButton(
+                                onPressed: () => _go(_step - 1),
+                                child: const Text('Voltar'),
+                              );
+                              final primary = FilledButton(
+                                onPressed: !validStep || _saving
+                                    ? null
+                                    : () {
+                                        if (_step < 2) {
+                                          _go(_step + 1);
+                                        } else {
+                                          _save();
+                                        }
+                                      },
+                                child: Text(
+                                  _step < 2 ? 'Continuar' : 'Guardar avaliação',
                                 ),
-                                const SizedBox(width: 12),
-                              ],
-                              Expanded(
-                                child: FilledButton(
-                                  onPressed: !validStep || _saving
-                                      ? null
-                                      : () {
-                                          if (_step < 2) {
-                                            _go(_step + 1);
-                                          } else {
-                                            _save();
-                                          }
-                                        },
-                                  child: Text(
-                                    _step < 2
-                                        ? 'Continuar'
-                                        : 'Guardar avaliação',
-                                  ),
-                                ),
-                              ),
-                            ],
+                              );
+                              final row = Row(
+                                children: [
+                                  if (feedback && AlphaFeedbackConfig.onLeft)
+                                    const SizedBox(width: 64),
+                                  if (_step > 0 && !split) ...[
+                                    back,
+                                    const SizedBox(width: 12),
+                                  ],
+                                  Expanded(child: primary),
+                                  if (feedback && !AlphaFeedbackConfig.onLeft)
+                                    const SizedBox(width: 64),
+                                ],
+                              );
+                              return split
+                                  ? Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [back, row],
+                                    )
+                                  : row;
+                            },
                           ),
                         ),
                       ),

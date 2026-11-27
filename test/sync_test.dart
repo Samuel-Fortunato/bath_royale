@@ -146,6 +146,7 @@ void main() {
         old.database.execute('DROP TABLE $table');
       }
       old.database.execute('ALTER TABLE bathrooms DROP COLUMN accent_rgb');
+      old.database.execute('ALTER TABLE settings DROP COLUMN feedback_draft');
       old.database.userVersion = 5;
       app.dispose();
       old.close();
@@ -167,7 +168,7 @@ void main() {
           before[table],
         );
       }
-      expect(upgraded.database.userVersion, 10);
+      expect(upgraded.database.userVersion, 11);
       expect(upgraded.database.select('SELECT * FROM outbox'), isEmpty);
     },
   );

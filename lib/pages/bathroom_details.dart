@@ -49,6 +49,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       Navigator.of(context).push(
         MaterialPageRoute<void>(
+          settings: const RouteSettings(name: 'review'),
           builder: (_) => ChangeNotifierProvider.value(
             value: state,
             child: ReviewFormPage(
@@ -118,11 +119,6 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Visita registada com sucesso.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
                     'Como foi a experiência?',
                     textAlign: TextAlign.center,
                   ),
@@ -154,12 +150,8 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              review.authorId == state.currentUserId
-                  ? 'Tu'
-                  : 'Explorador ${review.authorId}',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            if (review.authorId == state.currentUserId)
+              Text('Tu', style: Theme.of(context).textTheme.titleMedium),
             Text('${review.emojiRating()} ${ratingNumber(review.rating)} / 5'),
             Text('Criada: ${reviewDate(review.createdAt)}'),
             if (review.updatedAt != review.createdAt)
@@ -183,6 +175,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
                       onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute<void>(
+                          settings: const RouteSettings(name: 'experience'),
                           builder: (_) => ChangeNotifierProvider.value(
                             value: state,
                             child: ExperienceDetailsPage(
@@ -215,6 +208,7 @@ class _BathroomDetailsPageState extends State<BathroomDetailsPage> {
     void openExperience(String visitId) => Navigator.push(
       context,
       MaterialPageRoute<void>(
+        settings: const RouteSettings(name: 'experience'),
         builder: (_) => ChangeNotifierProvider.value(
           value: state,
           child: ExperienceDetailsPage(visitId: visitId),

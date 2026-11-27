@@ -250,3 +250,10 @@ Concise physical acceptance:
 5. Disconnect only fixture forwarding (`adb reverse --remove tcp:55504`), restart, browse the cache and submit a fictional review offline. Reconnect (`adb reverse tcp:55504 tcp:55504`), foreground the app or pull to refresh, and verify one eventual submission. Check account switching and secure restoration without clearing data.
 
 Owner touchscreen/keyboard/offline/Keystore acceptance is pending. Future power-up rules and production privacy/registration/hosting decisions remain open. A4 visual redesign and A5 remain deferred.
+
+
+## A4 development update and acceptance
+
+The final development release is `0.1.0-dev-a4.1023` / code 1023, using the same package, original preview certificate, fixture namespace and first-install date. `tool/install_private_alpha.py --development` now enables private-alpha feedback explicitly and includes the actual app version in the technical context. Continue using the existing private configuration directory and gateway; do not regenerate TLS material, uninstall or clear data. The gateway now allows only the existing routes plus the three named feedback RPCs.
+
+[Current A4 behavior, complete verification and short phone acceptance steps](backend/ui-alpha-refinement.md#physical-acceptance) supersede earlier review-FAB/slider/palette-only directions. Feedback floats above bottom navigation without a new empty strip; forms reserve horizontal space beside their primary action. Screenshots and shake are not implemented. Administrator feedback is under Settings → Feedback da alfa. Keep configured APKs private and assess password reauthentication before distributing the alpha.

@@ -1,3 +1,4 @@
+import '../widgets/alpha_feedback.dart';
 import 'private_synchronization.dart';
 import 'community_controls.dart';
 import '../auth/production_auth.dart';
@@ -275,12 +276,37 @@ class SettingsPage extends StatelessWidget {
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute<void>(
+                          settings: const RouteSettings(name: 'authentication'),
                           builder: (_) => AuthenticationPage(
                             canTransition: !state.hasUncommittedWork,
                           ),
                         ),
                       ),
                     ),
+                  ),
+                if (state.synchronization case final sync?)
+                  ListenableBuilder(
+                    listenable: sync,
+                    builder: (context, _) =>
+                        sync.error != null ||
+                            sync.store.problems.isNotEmpty ||
+                            sync.store.pullBlocked
+                        ? ListTile(
+                            leading: const Icon(Icons.cloud_off_outlined),
+                            title: const Text('Há dados por atualizar'),
+                            trailing: TextButton(
+                              onPressed: () => sync.retry(),
+                              child: const Text('Tentar novamente'),
+                            ),
+                          )
+                        : sync.store.pendingCount > 0 && !sync.running
+                        ? ListTile(
+                            leading: const Icon(Icons.cloud_upload_outlined),
+                            title: Text(
+                              '${sync.store.pendingCount} alterações por enviar',
+                            ),
+                          )
+                        : const SizedBox.shrink(),
                   ),
                 if (state.synchronization != null)
                   ListTile(
@@ -289,8 +315,24 @@ class SettingsPage extends StatelessWidget {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute<void>(
+                        settings: const RouteSettings(name: 'diagnostics'),
                         builder: (_) => PrivateSynchronizationPage(
                           sync: state.synchronization!,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (state.isModerator)
+                  ListTile(
+                    leading: const Icon(Icons.feedback_outlined),
+                    title: const Text('Feedback da alfa'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        settings: const RouteSettings(name: 'feedback_admin'),
+                        builder: (_) => ChangeNotifierProvider.value(
+                          value: state,
+                          child: const AlphaFeedbackAdminPage(),
                         ),
                       ),
                     ),
@@ -300,6 +342,7 @@ class SettingsPage extends StatelessWidget {
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute<void>(
+                        settings: const RouteSettings(name: 'moderation'),
                         builder: (_) => ChangeNotifierProvider.value(
                           value: state,
                           child: const CommunityModerationPage(),
@@ -333,6 +376,7 @@ class SettingsPage extends StatelessWidget {
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute<void>(
+                      settings: const RouteSettings(name: 'privacy'),
                       builder: (_) => const PrivacyPage(),
                     ),
                   ),

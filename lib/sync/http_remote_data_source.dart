@@ -85,6 +85,39 @@ class HttpRemoteDataSource implements RemoteDataSource {
     }
   }
 
+  /// Narrow anonymous write capability: no account session or history is sent.
+  Future<void> submitFeedback(Map<String, Object?> payload) async {
+    final result = await _rpc('submit_alpha_feedback', payload, null);
+    if (result['submitted'] != true) {
+      throw const RemoteFailure(RemoteFailureKind.transport);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> feedbackReports(
+    SessionIdentity session,
+    int page,
+  ) async {
+    _scope(session.namespace);
+    final result = await _rpc('alpha_feedback_reports', {
+      'page': page,
+    }, session);
+    return (result['reports'] as List)
+        .map((r) => Map<String, dynamic>.from(r as Map))
+        .toList();
+  }
+
+  Future<void> setFeedbackStatus(
+    SessionIdentity session,
+    String id,
+    String status,
+  ) async {
+    _scope(session.namespace);
+    await _rpc('set_alpha_feedback_status', {
+      'report_id': id,
+      'new_status': status,
+    }, session);
+  }
+
   Future<List<Map<String, dynamic>>> moderationReports(
     SessionIdentity session,
   ) async {

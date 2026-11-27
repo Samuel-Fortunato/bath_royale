@@ -992,7 +992,7 @@ void main() {
         find.textContaining('O histórico privado anterior não é publicado'),
         findsOneWidget,
       );
-      expect(find.text('Como tratamos os teus dados'), findsOneWidget);
+      expect(find.text('Política de privacidade'), findsOneWidget);
       await tester.scrollUntilVisible(find.text('Aceitar e continuar'), 200);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Aceitar e continuar'));

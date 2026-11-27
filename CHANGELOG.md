@@ -1,15 +1,13 @@
 # Changelog
 
-## A4 (in progress)
+## A4 — UI refinement and private alpha feedback
 
-- Compact long-name rankings and Profile; collapse Collection progress during scrolling with a decorative discovery emoji.
-- Extend isolated fictional fixtures idempotently with varied tags, comments, names and historical/current scores, preserving test activity.
-
-- Add unrestricted single-emoji and RGB bathroom customization without changing legacy appearances; additive SQLite/server migrations retain all data.
-- Replace review sliders with five direct stars and original labelled category choices. Preserve historical fractional/zero scores; simplify tags, comments and wizard navigation.
-
-- Discovery uses published community scores and characteristics, classification and tags for everyone; personal filters are separate. Remove duplicate review shortcut.
-- Simplify anonymous details, corrections, reviewed visits, Profile notices and Settings privacy/recovery navigation.
+- Use published community filters for anonymous discovery, separate personal filters and compact cards; simplify details, visits, corrections and Settings/privacy.
+- Add explicit arbitrary emoji and RGB customization with additive migrations, preserving old appearances and queued/history data.
+- Replace sliders with direct stars and original labelled criteria; retain exact historical scores, improve tags/comments, keyboard layout and wizard exit behavior.
+- Compact rankings/Profile and collapse Collection progress; extend isolated fictional fixtures idempotently with varied tags, comments and scores.
+- Add configurable floating text feedback above navigation without an empty strip, durable exact retries, minimal metadata, bounded anonymous submission and private administrator review/resolution. Defer screenshots and shake.
+- Verify client/server/privacy/migration/synchronization/fixture regressions and Android/Linux releases; update the local development APK in place with its existing identity/data. Keep password reauthentication assessment as a pre-distribution gate.
 
 ## Unreleased
 

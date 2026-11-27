@@ -82,6 +82,19 @@ void main() {
         ),
         true,
       );
+      final feedbackId = AppState.newEntityId();
+      final feedback = {
+        'report_id': feedbackId,
+        'retry_key': AppState.newEntityId(),
+        'category': 'other',
+        'description':
+            'Verificação automática A4 — exemplo fictício de feedback.',
+        'app_version': '0.1.0-test-a4',
+        'platform_version': 'Test',
+        'screen_id': 'explore',
+      };
+      await publicRemote.submitFeedback(feedback);
+      await publicRemote.submitFeedback(feedback); // lost acknowledgement retry
       for (var index = 0; index < accounts.length; index++) {
         final vault = MemoryVault();
         final auth = ProductionAuth(
@@ -134,6 +147,24 @@ void main() {
           true,
         );
         expect(state.isModerator, index == 0);
+        if (index == 0) {
+          final reports = await remote.feedbackReports(auth.current!, 0);
+          expect(reports.where((r) => r['id'] == feedbackId).length, 1);
+          await remote.setFeedbackStatus(auth.current!, feedbackId, 'reviewed');
+          await remote.setFeedbackStatus(auth.current!, feedbackId, 'resolved');
+          expect(
+            (await remote.feedbackReports(
+              auth.current!,
+              0,
+            )).singleWhere((r) => r['id'] == feedbackId)['status'],
+            'resolved',
+          );
+        } else {
+          await expectLater(
+            remote.feedbackReports(auth.current!, 0),
+            throwsA(isA<RemoteFailure>()),
+          );
+        }
         expect(state.canCreateBathroom, index < 2);
         state.dispose();
         local.close();

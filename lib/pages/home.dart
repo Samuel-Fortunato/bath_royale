@@ -1,3 +1,4 @@
+import '../widgets/alpha_feedback.dart';
 import 'authentication.dart';
 import 'bathroom_form.dart';
 import 'collection.dart';
@@ -43,6 +44,9 @@ class _HomePageState extends State<HomePage> {
             Icons.person,
           ];
     final index = tabIndex.clamp(0, tabs.length - 1);
+    FeedbackLocation.home = (state.readOnly
+        ? ['explore', 'rankings', 'authentication']
+        : ['explore', 'collection', 'rankings', 'profile'])[index];
     return Scaffold(
       appBar: AppBar(
         title: Text(labels[index]),
@@ -54,6 +58,7 @@ class _HomePageState extends State<HomePage> {
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute<void>(
+                  settings: const RouteSettings(name: 'settings'),
                   builder: (_) => ChangeNotifierProvider.value(
                     value: state,
                     child: const SettingsPage(),
@@ -70,6 +75,7 @@ class _HomePageState extends State<HomePage> {
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute<void>(
+                  settings: const RouteSettings(name: 'bathroom_form'),
                   builder: (_) => ChangeNotifierProvider.value(
                     value: state,
                     child: const BathroomFormPage(),

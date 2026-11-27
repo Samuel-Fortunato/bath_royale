@@ -787,6 +787,7 @@ class AppState extends ChangeNotifier {
         isNew: index < 0,
         communitySubmission: communityEnabled && index < 0,
         modernRating: modernRating,
+        preserveRating: index >= 0 && _reviews[index].rating == review.rating,
       ),
       () {
         if (index < 0) {

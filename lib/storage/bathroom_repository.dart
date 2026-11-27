@@ -96,6 +96,7 @@ class BathroomRepository {
     required bool isNew,
     bool communitySubmission = false,
     bool modernRating = false,
+    bool preserveRating = false,
   }) => store.transaction(() {
     _owner(r.authorId);
     if (newVisit != null) {
@@ -125,6 +126,7 @@ class BathroomRepository {
           (modernRating ? 'V2' : ''),
       {
         'review': row,
+        if (modernRating && !isNew) 'preserveRating': preserveRating,
         if (newVisit != null) 'visit': _row('visits', newVisit.id),
       },
       eligible: _eligible(row),

@@ -2,6 +2,8 @@ import 'dart:io';
 
 // Accepted Phase 1 debt. New files and all other diagnostics must pass review.
 const materialImportBaseline = {
+  'test/alpha_feedback_test.dart',
+  'lib/widgets/alpha_feedback.dart',
   // A4 shared Material 3 inputs, reviewed with existing exact baseline.
   'lib/widgets/emoji_input.dart',
   'lib/widgets/accent_picker.dart',

@@ -139,6 +139,7 @@ class ExperienceDetailsPage extends StatelessWidget {
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute<void>(
+                      settings: const RouteSettings(name: 'review'),
                       builder: (_) => ChangeNotifierProvider.value(
                         value: state,
                         child: ReviewFormPage(

@@ -130,7 +130,174 @@ def verify_inputs():
         != "0",
         "existing identities preserved",
     )
+    command = review_command("4.123456789123456789", "createVisitReview")
+    result = c.submit(command, a)
+    r = command["payload"]["review"]
+    changed = dict(r, rating=4.123456789123457, comment="Unrelated client-double edit")
+    update = c.command(
+        "review",
+        r["id"],
+        "updateReviewV2",
+        dict(review=changed, preserveRating=True),
+        result["revision"],
+    )
+    c.submit(update, a)
+    c.check(
+        poc.sql("select rating::text from public.reviews where id='" + r["id"] + "'")
+        == "4.123456789123456789",
+        "unrelated edit preserves original server numeric precision",
+    )
     print("PASS: A4 additive identity, entitlement, integer-input and historical queue/edit checks")
+
+
+def verify_feedback():
+    # Retained disposable runs may have intentionally filled the hourly quota.
+    poc.sql(
+        "update app_private.alpha_feedback set submitted_at=clock_timestamp()-interval '2 days'"
+    )
+    a, admin = c.account(), c.account()
+    poc.sql("insert into app_private.moderators values('" + admin["user"]["id"] + "')")
+    body = dict(
+        report_id=str(uuid.uuid4()),
+        retry_key=str(uuid.uuid4()),
+        category="problem",
+        description="O botão ficou escondido.",
+        app_version="0.1.0-dev-a4.1023",
+        platform_version="Android 16 (SDK 36)",
+        screen_id="review_tags",
+    )
+    result = c.api("rpc/submit_alpha_feedback", body)
+    c.check(result == {"submitted": True}, "anonymous feedback receives no read capability")
+    c.check(
+        c.api("rpc/submit_alpha_feedback", body) == result, "anonymous lost-ack retry idempotency"
+    )
+    for session in (None, a):
+        c.denied("rpc/alpha_feedback_reports", {"page": 0}, session)
+        c.denied(
+            "rpc/set_alpha_feedback_status",
+            {"report_id": body["report_id"], "new_status": "resolved"},
+            session,
+        )
+        c.denied("alpha_feedback", None, session, method="GET")
+    for fields in [
+        dict(category="invalid"),
+        dict(description="x"),
+        dict(description="x" * 2001),
+        dict(app_version="secret@example.com"),
+        dict(platform_version="x" * 97),
+        dict(screen_id="/bathroom/private-identifier"),
+        dict(attachment="unexpected"),
+        dict(retry_key=str(uuid.uuid4())),
+        dict(description="Changed after lost acknowledgement"),
+    ]:
+        invalid = dict(body, **fields)
+        if (
+            "retry_key" not in fields
+            and fields.get("description") != "Changed after lost acknowledgement"
+        ):
+            invalid["report_id"] = str(uuid.uuid4())
+        c.denied("rpc/submit_alpha_feedback", invalid)
+    reports = c.api("rpc/alpha_feedback_reports", {"page": 0}, admin)["reports"]
+    row = next(r for r in reports if r["id"] == body["report_id"])
+    c.check(
+        set(row)
+        == {
+            "id",
+            "category",
+            "description",
+            "app_version",
+            "platform_version",
+            "screen_id",
+            "status",
+            "submitted_at",
+        },
+        "admin projection excludes retry secret and all account data",
+    )
+    c.check(row["status"] == "new", "feedback initial state")
+    for status in ("reviewed", "resolved"):
+        c.api(
+            "rpc/set_alpha_feedback_status",
+            {"report_id": body["report_id"], "new_status": status},
+            admin,
+        )
+        c.check(
+            next(
+                r
+                for r in c.api("rpc/alpha_feedback_reports", {"page": 0}, admin)["reports"]
+                if r["id"] == body["report_id"]
+            )["status"]
+            == status,
+            "admin state persisted",
+        )
+    c.denied(
+        "rpc/set_alpha_feedback_status",
+        {"report_id": body["report_id"], "new_status": "hidden"},
+        admin,
+    )
+    c.denied("rpc/alpha_feedback_reports", {"page": -1}, admin)
+    # Exercise quota enforcement for rotating client IDs and accounts. Retained
+    # fixtures are not deleted; only new disposable test rows are backdated.
+    poc.sql(
+        "update app_private.alpha_feedback set submitted_at=clock_timestamp()-interval '2 days'"
+    )
+    for index in range(30):
+        c.api(
+            "rpc/submit_alpha_feedback",
+            dict(body, report_id=str(uuid.uuid4()), retry_key=str(uuid.uuid4())),
+        )
+    status, failure = poc.request(
+        poc.REST_PORT,
+        "/rpc/submit_alpha_feedback",
+        "POST",
+        dict(body, report_id=str(uuid.uuid4()), retry_key=str(uuid.uuid4())),
+        a["access_token"],
+    )
+    c.check(
+        status != 200 and failure.get("message") == "Feedback limit reached; retry later",
+        "global quota resists account/client ID rotation",
+    )
+    c.check(
+        c.api("rpc/submit_alpha_feedback", body) == result, "quota never blocks exact receipt retry"
+    )
+    poc.sql(
+        "update app_private.alpha_feedback set submitted_at=clock_timestamp()-interval '2 days'"
+    )
+    # Enforce daily and total retained storage limits independently of the hourly cap.
+    quota_insert = "insert into app_private.alpha_feedback(id,retry_hash,category,description,app_version,platform_version,screen_id,submitted_at) select gen_random_uuid(),decode('00','hex'),'other','Disposable quota fixture','0.1.0-quota-test','Test','other',"
+    try:
+        poc.sql(quota_insert + "clock_timestamp()-interval '2 hours' from generate_series(1,100)")
+        status, failure = poc.request(
+            poc.REST_PORT,
+            "/rpc/submit_alpha_feedback",
+            "POST",
+            dict(body, report_id=str(uuid.uuid4()), retry_key=str(uuid.uuid4())),
+        )
+        c.check(
+            status != 200 and failure.get("message") == "Feedback limit reached; retry later",
+            "daily quota enforced",
+        )
+        poc.sql(
+            "update app_private.alpha_feedback set submitted_at=clock_timestamp()-interval '2 days'"
+        )
+        poc.sql(
+            quota_insert
+            + "clock_timestamp()-interval '2 days' from generate_series(1,greatest(0,5000-(select count(*) from app_private.alpha_feedback)))"
+        )
+        status, failure = poc.request(
+            poc.REST_PORT,
+            "/rpc/submit_alpha_feedback",
+            "POST",
+            dict(body, report_id=str(uuid.uuid4()), retry_key=str(uuid.uuid4())),
+        )
+        c.check(
+            status != 200 and failure.get("message") == "Feedback limit reached; retry later",
+            "retained storage cap enforced",
+        )
+    finally:
+        poc.sql("delete from app_private.alpha_feedback where app_version='0.1.0-quota-test'")
+    print(
+        "PASS: A4 anonymous feedback validation, idempotency, quotas, privacy and administrator access"
+    )
 
 
 def main():
@@ -139,6 +306,7 @@ def main():
     poc.start()
     try:
         verify_inputs()
+        verify_feedback()
     finally:
         poc.compose("stop")
 

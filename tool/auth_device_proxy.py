@@ -47,7 +47,7 @@ class Gateway(BaseHTTPRequestHandler):
 
     def proxy(self):
         auth_route = self.path.startswith('/auth/v1/')
-        sync_route = self.path in ('/rest/v1/rpc/sync_submit', '/rest/v1/rpc/sync_pull', '/rest/v1/rpc/moderation_reports', '/rest/v1/rpc/moderate_content', '/rest/v1/rpc/grant_bathroom_creation')
+        sync_route = self.path in ('/rest/v1/rpc/sync_submit', '/rest/v1/rpc/sync_pull', '/rest/v1/rpc/moderation_reports', '/rest/v1/rpc/moderate_content', '/rest/v1/rpc/grant_bathroom_creation', '/rest/v1/rpc/submit_alpha_feedback', '/rest/v1/rpc/alpha_feedback_reports', '/rest/v1/rpc/set_alpha_feedback_status')
         if not (auth_route or sync_route):
             self.send_error(404)
             return

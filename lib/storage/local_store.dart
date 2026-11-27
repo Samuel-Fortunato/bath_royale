@@ -35,7 +35,7 @@ class LocalStore {
         throw StateError('Database integrity check failed');
       }
       final version = database.userVersion;
-      if (version > 10) {
+      if (version > 11) {
         throw StateError('Database was created by a newer application');
       }
       // SQLite's documented table-rebuild procedure keeps child references intact.
@@ -170,6 +170,12 @@ class LocalStore {
             'ALTER TABLE bathrooms ADD COLUMN accent_rgb INTEGER CHECK(accent_rgb BETWEEN 0 AND 16777215)',
           );
           database.userVersion = 10;
+        }
+        if (version < 11) {
+          database.execute(
+            'ALTER TABLE settings ADD COLUMN feedback_draft TEXT',
+          );
+          database.userVersion = 11;
         }
         if (database.select('SELECT scope FROM namespace').single['scope'] !=
             this.namespace.key) {

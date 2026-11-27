@@ -1,3 +1,4 @@
+import '../widgets/alpha_feedback.dart';
 import '../widgets/emoji_input.dart';
 import '../widgets/accent_picker.dart';
 import '../models/bathroom.dart';
@@ -49,6 +50,7 @@ class _BathroomFormPageState extends State<BathroomFormPage> {
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
+        settings: const RouteSettings(name: 'bathroom'),
         builder: (_) => ChangeNotifierProvider.value(
           value: state,
           child: BathroomDetailsPage(bathroomId: bathroom.id),
@@ -65,70 +67,94 @@ class _BathroomFormPageState extends State<BathroomFormPage> {
         constraints: const BoxConstraints(maxWidth: 720),
         child: Form(
           key: _form,
-          child: ListView(
-            padding: const EdgeInsets.all(24),
+          child: Column(
             children: [
-              const Text('Descobriste um novo trono? 🚽'),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _name,
-                autofocus: true,
-                maxLength: 100,
-                decoration: const InputDecoration(
-                  labelText: 'Nome da casa de banho',
-                  helperText:
-                      'Indica o local e uma referência fácil de encontrar.',
-                  helperMaxLines: 3,
-                  errorMaxLines: 3,
-                ),
-                validator: (value) =>
-                    context.read<AppState>().validateBathroomName(value ?? ''),
-                onFieldSubmitted: (_) => _save(),
-              ),
-              const SizedBox(height: 16),
-              const SizedBox(height: 24),
-              Center(
-                child: BathroomIdentity(
-                  bathroom: Bathroom(
-                    id: 'preview',
-                    name: '',
-                    createdBy: '',
-                    emoji: _emoji.text.isEmpty ? '❔' : _emoji.text.trim(),
-                    accentRgb: _accentRgb,
-                  ),
-                  size: 64,
-                ),
-              ),
-              EmojiInput(controller: _emoji, onChanged: (_) => setState(() {})),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (final emoji in Bathroom.emojis)
-                    IconButton(
-                      tooltip: 'Escolher $emoji',
-                      onPressed: () => setState(() => _emoji.text = emoji),
-                      icon: Text(
-                        emoji,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontFamilyFallback: ['Noto Color Emoji'],
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(24),
+                  children: [
+                    const Text('Descobriste um novo trono? 🚽'),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _name,
+                      autofocus: true,
+                      maxLength: 100,
+                      decoration: const InputDecoration(
+                        labelText: 'Nome da casa de banho',
+                        helperText:
+                            'Indica o local e uma referência fácil de encontrar.',
+                        helperMaxLines: 3,
+                        errorMaxLines: 3,
+                      ),
+                      validator: (value) => context
+                          .read<AppState>()
+                          .validateBathroomName(value ?? ''),
+                      onFieldSubmitted: (_) => _save(),
+                    ),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: BathroomIdentity(
+                        bathroom: Bathroom(
+                          id: 'preview',
+                          name: '',
+                          createdBy: '',
+                          emoji: _emoji.text.isEmpty ? '❔' : _emoji.text.trim(),
+                          accentRgb: _accentRgb,
                         ),
+                        size: 64,
                       ),
                     ),
-                ],
+                    EmojiInput(
+                      controller: _emoji,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        for (final emoji in Bathroom.emojis)
+                          IconButton(
+                            tooltip: 'Escolher $emoji',
+                            onPressed: () =>
+                                setState(() => _emoji.text = emoji),
+                            icon: Text(
+                              emoji,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontFamilyFallback: ['Noto Color Emoji'],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    AccentPicker(
+                      value: _accentRgb,
+                      onChanged: (v) => setState(() => _accentRgb = v),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
-              AccentPicker(
-                value: _accentRgb,
-                onChanged: (v) => setState(() => _accentRgb = v),
-              ),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: _save,
-                child: const Text('Criar casa de banho'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      if (AlphaFeedbackHost.isEnabledIn(context) &&
+                          AlphaFeedbackConfig.onLeft)
+                        const SizedBox(width: 64),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: _save,
+                          child: const Text('Criar casa de banho'),
+                        ),
+                      ),
+                      if (AlphaFeedbackHost.isEnabledIn(context) &&
+                          !AlphaFeedbackConfig.onLeft)
+                        const SizedBox(width: 64),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

@@ -9,6 +9,7 @@ enum BathroomFilterID {
   instagramable,
   clean,
   paper,
+  noPaper,
   official,
   community,
   favourite,
@@ -73,8 +74,15 @@ final List<BathroomFilter> bathroomFilters = [
   ),
   BathroomFilter(
     id: BathroomFilterID.paper,
-    label: '🧻 Com papel',
+    label: '🧻 Papel suficiente',
+    exclusiveGroup: 'paper',
     test: (b) => (b.mean((r) => r.paperAvailability) ?? -1) >= 2,
+  ),
+  BathroomFilter(
+    id: BathroomFilterID.noPaper,
+    label: '❌ Sem papel',
+    exclusiveGroup: 'paper',
+    test: (b) => (b.mean((r) => r.paperAvailability) ?? -1) == 0,
   ),
   BathroomFilter(
     id: BathroomFilterID.official,

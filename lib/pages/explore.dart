@@ -118,6 +118,7 @@ class _ExplorePageState extends State<ExplorePage> {
                         BathroomFilterID.confy,
                         BathroomFilterID.instagramable,
                         BathroomFilterID.paper,
+                        BathroomFilterID.noPaper,
                       ],
                       'Tronos': [
                         BathroomFilterID.official,
@@ -404,6 +405,7 @@ class _ExplorePageState extends State<ExplorePage> {
                           ),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
+                        settings: const RouteSettings(name: 'bathroom'),
                         builder: (_) => ChangeNotifierProvider.value(
                           value: appState,
                           child: BathroomDetailsPage(

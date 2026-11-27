@@ -187,6 +187,11 @@ void main() {
         );
         await tester.ensureVisible(find.byTooltip('Outra cor aleatória'));
         await wizardTap(tester, find.byTooltip('Outra cor aleatória'));
+        await tester.scrollUntilVisible(
+          find.widgetWithText(TextFormField, 'Cor RGB'),
+          150,
+          scrollable: find.byType(Scrollable).first,
+        );
         await tester.enterText(
           find.widgetWithText(TextFormField, 'Cor RGB'),
           '12ABEF',

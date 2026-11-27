@@ -58,23 +58,27 @@ See [A3 architecture, reproducible milestones and verification](docs/backend/com
 - [x] Verify idempotent isolated fictional accounts/catalogue/activity, private credential reference, and a separately compiled local-development selector absent from distributable builds. Never overwrite owner accounts.
 - [x] Consolidate previous/current owner feedback in [the A4 backlog](docs/bath-royale-design/ui-design.md#a31-functional-simplification-and-a4-backlog). Comprehensive visual redesign remains deferred.
 - [x] Complete regression/API/fixture/isolation/build verification and update the connected phone without clearing data to the explicitly authorized development build. See [resumable A3.1 evidence](docs/backend/community-simplification.md).
-- [ ] Owner physical A3.1 acceptance: touchscreen/keyboard, account switching, anonymous submission/edit/deletion, offline restart/reconnection, Settings/recovery and Keystore restoration. Git delivery/current CI are recorded in the task report.
+- [x] Owner physically reviewed A3.1 usability and supplied the A4 feedback implemented below. This is not acceptance of every offline/device/security case; final checks remain listed under A4.
 
 ### Phase A4 — Global UI/UX refinement and alpha feedback collection
 
 Owner-authorized after physical A3.1 review. [Consolidated decisions, superseded specifications and verification](docs/backend/ui-alpha-refinement.md).
 
-- [ ] M1: Explore community filters/anonymous discovery, details/history and concise Settings with protected recovery.
-- [ ] M2: Explicit arbitrary emoji/RGB customization, additive migrations and compact direct-selection review wizard, historical compatibility and tags/comments.
-- [ ] M3: Compact rankings, collapsing collection, profile and idempotent varied isolated fixtures.
-- [ ] M4: Configurable global text feedback, private administration, anonymous abuse limits and safe retry.
-- [ ] Final rendered/device/regression acceptance; preserve all data and signing identity. Screenshots/shake deferred; assess password reauthentication before distribution. No A5 or managed deployment.
+- [x] M1: Explore community filters/anonymous discovery, details/history and concise Settings with protected recovery.
+- [x] M2: Explicit arbitrary emoji/RGB customization, additive migrations and compact direct-selection review wizard, historical compatibility and tags/comments.
+- [x] M3: Compact rankings, collapsing collection, profile and idempotent varied isolated fixtures.
+- [x] M4: Configurable global text feedback, private administration, anonymous abuse limits and safe retry.
+- [x] Verify rendered Flutter screens, migration/protocol/privacy/fixture/client regressions and Android/Linux releases; update the development APK in place with existing signing identity/data. Owner correction replaces the feedback dock with a floating overlay, without a blank strip; responsive forms reserve horizontal space for it.
+- [ ] Owner physical acceptance of final A4, real offline/reconnection/Keystore and second-device behavior. Screenshots/shake deferred. No A5 or managed deployment.
+- [ ] Before alpha distribution, assess and decide explicit reauthentication/current-password verification for password changes; current visual flow is unchanged.
+
+Verified A4 locally on 2026-11-27: **235 Flutter tests pass** (five opt-in placeholders skipped), plus real-font phone/layout captures, strict analysis, formatting and whitespace. Thirty backend unit and thirteen tooling tests pass; backend Ruff and actionlint pass. Disposable A4 API/input/privacy/quota checks, 60 authorization assertions, 1,093 Unicode cases, 465 protocol assertions, eight real Flutter sync tests, 62 community API assertions, real two-account emoji/RGB/review sync and complete private export/restoration pass. The five-account HTTPS development suite verifies retained activity and anonymous feedback/admin access. Unconfigured Android/Linux and configured development releases build; fixture payload isolation is checked on actual APKs. The final development APK is installed with the original certificate/package/code and unchanged first-install timestamp. See the A4 evidence for exact scope, earlier corrected failures, owner feedback correction and acceptance steps. Hosted CI is reported separately after push; no remote success is inferred from local builds.
 
 ### Private alpha release gates and subsequent scope
 
 - [ ] Restrict registration **on the server** before distributing a remotely connected private alpha. Approve the invite/allowlist mechanism and test direct API bypass attempts. APK secrecy and client controls are not access control. The current local listener is USB/loopback only; no managed-project change is authorized.
 - [x] Approve and implement bounded A2 private account synchronization below. Guest association, shared catalogue and public identity remain deferred; A2 supersedes only the private-sync portion of historical Phase 2.3C.
-- [ ] Resolve outstanding owner UI/UX feedback: Explore's **+** is unclear; make its purpose/discoverability explicit. Empty states confuse missing catalogue, fresh account, filters, collection and offline availability. Fictional examples need clearer presentation distinct from genuine shared content, without copying them into accounts. Record proposed changes for review; do not claim phone acceptance.
+- [x] Address accumulated Explore + / empty-state / filter / fictional-content feedback through A4. Remove the review FAB and distinguish personal discovery from published community scores. Physical acceptance of the final correction remains open above.
 - [ ] Before real users or production data, replace experimental reset permissions with non-destructive migrations and verify privacy, deletion, recovery, production email verification/delivery, hosting and backup requirements.
 
 ## Phase 0 — Development environment (completed)

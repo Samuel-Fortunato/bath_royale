@@ -1,5 +1,7 @@
 # A3.1 — Community experience simplification
 
+A4 supersedes the review FAB, personal discovery filters, wizard/identity controls and ordinary synchronization navigation. See [the current A4 decisions, fixture extension and verification](ui-alpha-refinement.md). Dataset counts and UI descriptions below record the original A3.1 baseline.
+
 Owner-authorized on 2026-11-27, following accepted A3 functional tests. This supersedes A3 private/shared association, public usernames and manual publication. Flutter, Dart, Provider, Material 3, SQLite and the existing Postgres/Auth/PostgREST stack remain. No managed deployment, configured APK publication, paid services or A4/A5 work.
 
 ## Verified milestones and resumption

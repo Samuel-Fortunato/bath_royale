@@ -12,11 +12,12 @@ class PrivateSynchronizationCard extends StatelessWidget {
     builder: (context, _) => Card(
       child: ListTile(
         leading: const Icon(Icons.cloud_sync_outlined),
-        title: const Text('Estado dos dados'),
+        title: const Text('Diagnóstico e recuperação'),
         subtitle: Text(sync.status),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
+            settings: const RouteSettings(name: 'diagnostics'),
             builder: (_) => PrivateSynchronizationPage(sync: sync),
           ),
         ),
@@ -185,7 +186,7 @@ class PrivateSynchronizationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Estado dos dados')),
+    appBar: AppBar(title: const Text('Diagnóstico e recuperação')),
     body: SafeArea(
       child: Center(
         child: ConstrainedBox(
@@ -372,9 +373,12 @@ class _AccountStorageAcceptanceState extends State<AccountStorageAcceptance> {
               TextButton(
                 onPressed: () => Navigator.push(
                   context,
-                  MaterialPageRoute<void>(builder: (_) => const PrivacyPage()),
+                  MaterialPageRoute<void>(
+                    settings: const RouteSettings(name: 'privacy'),
+                    builder: (_) => const PrivacyPage(),
+                  ),
                 ),
-                child: const Text('Como tratamos os teus dados'),
+                child: const Text('Política de privacidade'),
               ),
               if (error != null) Text(error!),
               const SizedBox(height: 16),

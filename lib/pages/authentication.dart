@@ -74,6 +74,7 @@ class WelcomePage extends StatelessWidget {
       context.read<ProductionAuth>().clearMessage();
       Navigator.of(context).push(
         MaterialPageRoute<void>(
+          settings: const RouteSettings(name: 'authentication'),
           builder: (_) => AuthenticationPage(
             initialFlow: flow,
             canTransition: canTransition,
@@ -210,6 +211,7 @@ class _AuthenticationPanelState extends State<AuthenticationPanel> {
     context.read<ProductionAuth>().clearMessage();
     Navigator.of(context).push(
       MaterialPageRoute<void>(
+        settings: const RouteSettings(name: 'authentication'),
         builder: (_) => AuthenticationPage(
           initialFlow: next,
           canTransition: widget.canTransition,

@@ -1,8 +1,24 @@
-# Bath Royale — Phase 1.6 UI/UX handoff
+# Bath Royale — UI/UX decisions and historical handoff
 
 The authorized [A4 decisions and resumable milestones](../backend/ui-alpha-refinement.md) supersede all conflicting historical controls, navigation, precision and identity decisions below. Current product decisions and prior feedback are in [A3.1 and the A4 backlog](#a31-functional-simplification-and-a4-backlog). They supersede conflicting historical navigation, creation, identity and publication directions below. The earlier sessions remain the visual/interaction reference; A3.1 does not begin the comprehensive A4 redesign.
 
 Status: design direction agreed in conversation, including the owner-approved Session 4C refinements below. Reference: `ui-reference.html` (standalone visual prototype; illustrative data, not production code). This specification takes precedence over prototype details. Preserve existing working behavior and persistent data. Do not implement backend, permissions, power-ups or XP. Session 4A explicitly extends the local schema for persistent bathroom identities.
+
+## A4 — Owner-reviewed refinement
+
+The [A4 implementation, exact compatibility rules, feedback privacy and verification](../backend/ui-alpha-refinement.md) consolidate the accumulated backlog and physical A3.1 feedback. They are authorized implementation decisions, not pending proposals. Original humorous category descriptions remain unchanged.
+
+| Superseded direction | Current A4 behavior |
+| --- | --- |
+| A3.1 Explore review FAB; personal discovery rating filters | Select bathrooms directly; anonymous published-community filters, separate optional personal flags |
+| 4A curated identities / random emoji / palette-only accents | Explicit arbitrary single emoji; arbitrary RGB with separate random colour; old palette retained |
+| 4C category slider and selected caption | Every discrete option shows its emoji and original caption and is directly tappable |
+| 4D decimal slider / passive stars / global descriptions | Five direct integer stars for new input; historical scores retained exactly |
+| 4A app/system Back traverses steps | App/system Back exits with dirty confirmation; bottom Back traverses steps |
+| Ordinary synchronization page and repeated notices | Conditional status plus authenticated diagnostics/recovery; explicit privacy policy |
+| Initial A4 feedback dock under navigation | Floating action above navigation and beside form actions; no extra bottom strip, per owner correction |
+
+Screenshots/shake are deferred; text feedback and protected administration are implemented. Physical acceptance of the corrected final UI is separate from automated verification. A5 and reward mechanics remain out of scope.
 
 ## Shared design language
 
@@ -125,4 +141,4 @@ A4 consolidates the earlier Explore + / empty-state feedback and current owner o
 - **Identity, profile and Settings:** simplify headings, icons, grouping and visual hierarchy; identify the private signed-in email clearly. Keep account/security/logout, detailed sync/recovery and team-only tools out of the main experience. Reduce lengthy notices while linking detailed provisional privacy information.
 - **Anonymous navigation:** review Explore / Rankings / Account, sign-in entry and account-required actions. Do not reintroduce a writable guest identity or empty personal statistics.
 
-A4 proposals require their own design work and acceptance. A3.1 does not redesign palettes, the review wizard, rankings, collection or the overall visual system. Power-up acquisition/consumption, achievements/XP and A5 are outside this milestone. A development-only idempotent fictional backend and account selector support future design acceptance; neither may enter distributable builds or managed environments.
+These historical A4 proposals are superseded by the authorized A4 decisions above; in particular, the review FAB is removed entirely. A3.1 does not redesign palettes, the review wizard, rankings, collection or the overall visual system. Power-up acquisition/consumption, achievements/XP and A5 are outside this milestone. A development-only idempotent fictional backend and account selector support future design acceptance; neither may enter distributable builds or managed environments.

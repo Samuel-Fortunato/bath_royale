@@ -56,7 +56,7 @@ def main():
     if not match:
         parser.error('Existing installation required; refusing a fresh installation')
     code = match[1]
-    name = f'0.1.0-dev-a31.{code}' if args.development else f'0.1.0-alpha-a31.{code}'
+    name = f'0.1.0-dev-a4.{code}' if args.development else f'0.1.0-alpha-a4.{code}'
     run(sys.executable, 'tool/verify_preview.py', 'key', args.keystore)
     paths = run('adb', 'shell', 'pm', 'path', PACKAGE, capture=True)
     base = next((p.removeprefix('package:').strip() for p in paths.splitlines()
@@ -75,7 +75,7 @@ def main():
     os.environ['PREVIEW_KEYSTORE'] = str(Path(args.keystore).resolve())
     run('flutter', 'pub', 'get', '--enforce-lockfile')
     run('flutter', 'build', 'apk', '--release', '--no-pub', '--target',
-        ('tool/local_development.dart' if args.development else 'tool/auth_device_preview.dart'), f'--dart-define-from-file={defines}',
+        ('tool/local_development.dart' if args.development else 'tool/auth_device_preview.dart'), f'--dart-define-from-file={defines}', '--dart-define=BATH_ALPHA_FEEDBACK=true', f'--dart-define=BATH_APP_VERSION={name}',
         '--build-number', code, '--build-name', name)
     apk = 'build/app/outputs/flutter-apk/app-release.apk'
     run(sys.executable, 'tool/verify_preview.py', 'apk', apk, code, name)

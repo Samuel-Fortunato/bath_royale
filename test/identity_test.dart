@@ -18,6 +18,7 @@ void main() {
         db.select('SELECT * FROM reviews').map((r) => Map.of(r)).toList(),
       );
       db.execute('ALTER TABLE bathrooms DROP COLUMN accent_rgb');
+      db.execute('ALTER TABLE settings DROP COLUMN feedback_draft');
       db.userVersion = 9;
       // Same connection, reopen logically without disposing the owned database.
       store = LocalStore(db);
@@ -84,7 +85,7 @@ void main() {
     final store = LocalStore(db);
     addTearDown(store.close);
     final data = store.load()!;
-    expect(db.userVersion, 10);
+    expect(db.userVersion, 11);
     expect(data.reviews.single.tags.first.emoji, '👩🏽‍💻');
     expect(data.reviews.single.tags.first.label, 'Tecnologia');
     expect(data.reviews.single.comment, isNull);
@@ -129,7 +130,7 @@ void main() {
     final store = LocalStore(db);
     addTearDown(store.close);
     final data = store.load()!;
-    expect(db.userVersion, 10);
+    expect(db.userVersion, 11);
     expect(data.bathrooms.first.emoji, '📚');
     expect(data.bathrooms.first.createdBy, 'original');
     expect(data.visits.map((v) => v.id), ['v', 'unreviewed']);

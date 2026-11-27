@@ -9,6 +9,7 @@ void openCollectedBathroom(BuildContext context, AppState state, String id) {
   Navigator.push(
     context,
     MaterialPageRoute<void>(
+      settings: const RouteSettings(name: 'bathroom'),
       builder: (_) => ChangeNotifierProvider.value(
         value: state,
         child: BathroomDetailsPage(bathroomId: id),
@@ -409,6 +410,7 @@ class VisitDiary extends StatelessWidget {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute<void>(
+                  settings: const RouteSettings(name: 'experience'),
                   builder: (_) => ChangeNotifierProvider.value(
                     value: state,
                     child: ExperienceDetailsPage(visitId: visit.id),

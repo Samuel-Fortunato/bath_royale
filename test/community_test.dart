@@ -18,6 +18,7 @@ import 'package:bath_royale/sync/namespace.dart';
 import 'package:bath_royale/sync/private_sync_controller.dart';
 import 'package:bath_royale/pages/home.dart';
 import 'package:bath_royale/pages/profile.dart';
+import 'package:bath_royale/pages/review_form.dart';
 
 void main() {
   final n = DataNamespace.account('a31-test', 'alice');
@@ -55,7 +56,11 @@ void main() {
           'hygiene': 2,
           'comfort': 3,
           'aesthetics': 1,
-          'tags': <Object>[],
+          'tags': [
+            {'emoji': '🧻', 'label': 'Papel macio'},
+            {'emoji': '🤫', 'label': 'Silenciosa'},
+            {'emoji': '💡', 'label': 'Boa iluminação'},
+          ],
           'comment': 'Experiência anónima',
         },
       ),
@@ -238,10 +243,11 @@ void main() {
       old.dispose();
       disk.database.execute('DROP TABLE catalogue_classifications');
       disk.database.execute('ALTER TABLE bathrooms DROP COLUMN accent_rgb');
+      disk.database.execute('ALTER TABLE settings DROP COLUMN feedback_draft');
       disk.database.userVersion = 8;
       disk.close();
       disk = LocalStore(sqlite3.open(path), namespace: n);
-      expect(disk.database.userVersion, 10);
+      expect(disk.database.userVersion, 11);
       expect(disk.load()!.visits.length, 1);
       expect(SyncStore(disk).hasConsent, true);
       expect(
@@ -319,6 +325,25 @@ void main() {
       );
     },
   );
+  testWidgets('editing existing history never promises new public submission', (
+    tester,
+  ) async {
+    final old = review('shared');
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: state,
+        child: MaterialApp(
+          home: ReviewFormPage(bathroomId: 'shared', review: old),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Avaliação pública e anónima.'), findsNothing);
+    expect(find.text('Guardar avaliação'), findsOneWidget);
+  });
   testWidgets(
     'signed-out navigation contains only Explore, Rankings and account entry',
     (tester) async {
@@ -356,6 +381,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Avaliação anónima'), findsNothing);
       expect(find.text('Experiência anónima'), findsOneWidget);
+      for (final label in ['Papel macio', 'Silenciosa', 'Boa iluminação']) {
+        expect(find.textContaining(label), findsOneWidget);
+      }
       expect(find.textContaining('@'), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
