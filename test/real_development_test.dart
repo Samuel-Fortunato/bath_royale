@@ -63,12 +63,25 @@ void main() {
       addTearDown(catalogue.dispose);
       await catalogue.refresh();
       expect(catalogue.error, isNull);
-      expect(catalogue.bathrooms.length, 8);
+      expect(catalogue.bathrooms.length, greaterThanOrEqualTo(12));
       expect(
         catalogue.bathrooms.where((b) => b.classification == 'official').length,
-        4,
+        greaterThanOrEqualTo(6),
       );
-      expect(catalogue.reviews.length, 17);
+      expect(catalogue.reviews.length, greaterThanOrEqualTo(37));
+      expect(catalogue.reviews.any((r) => r.tags.length >= 3), true);
+      expect(catalogue.reviews.any((r) => r.tags.isEmpty), true);
+      expect(catalogue.reviews.any((r) => r.rating == 0), true);
+      expect(
+        catalogue.reviews.any((r) => r.rating != r.rating.roundToDouble()),
+        true,
+      );
+      expect(
+        catalogue.bathrooms.any(
+          (b) => !catalogue.reviews.any((r) => r.bathroomId == b.id),
+        ),
+        true,
+      );
       for (var index = 0; index < accounts.length; index++) {
         final vault = MemoryVault();
         final auth = ProductionAuth(
@@ -108,8 +121,14 @@ void main() {
         state.materializeCatalogue();
         AccountProjection(SyncStore(local)).apply();
         state.reloadAccountData();
-        expect(state.visibleVisits.length, [3, 4, 12, 2, 0][index]);
-        expect(state.visibleReviews.length, [3, 3, 9, 2, 0][index]);
+        expect(
+          state.visibleVisits.length,
+          greaterThanOrEqualTo([9, 10, 18, 8, 0][index]),
+        );
+        expect(
+          state.visibleReviews.length,
+          greaterThanOrEqualTo([8, 8, 14, 7, 0][index]),
+        );
         expect(
           state.visits.every((v) => v.userId == state.currentUserId),
           true,

@@ -165,11 +165,11 @@ void main() {
         await tester.tap(find.text(RankingMetric.values[i].label));
         await tester.pumpAndSettle();
         expect(find.text(expected[i]), findsOneWidget);
-        expect(find.text('2 avaliações'), findsOneWidget);
+        expect(find.text('2 aval.'), findsOneWidget);
       }
       await tester.tap(find.text('Comunidade'));
       await tester.pumpAndSettle();
-      expect(find.text('3 avaliações'), findsOneWidget);
+      expect(find.text('3 aval.'), findsOneWidget);
     },
   );
 

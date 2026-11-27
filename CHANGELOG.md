@@ -2,6 +2,9 @@
 
 ## A4 (in progress)
 
+- Compact long-name rankings and Profile; collapse Collection progress during scrolling with a decorative discovery emoji.
+- Extend isolated fictional fixtures idempotently with varied tags, comments, names and historical/current scores, preserving test activity.
+
 - Add unrestricted single-emoji and RGB bathroom customization without changing legacy appearances; additive SQLite/server migrations retain all data.
 - Replace review sliders with five direct stars and original labelled category choices. Preserve historical fractional/zero scores; simplify tags, comments and wizard navigation.
 

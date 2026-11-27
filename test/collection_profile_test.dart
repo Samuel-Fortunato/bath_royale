@@ -103,7 +103,7 @@ void main() {
       state.toggleFavorite('1');
       await mount(tester, state, const Scaffold(body: CollectionPage()));
       expect(find.text('1 / 100'), findsOneWidget);
-      expect(find.text('101'), findsOneWidget);
+      expect(find.textContaining('101 visitas'), findsWidgets);
       expect(find.text('✓ Descoberta'), findsOneWidget);
       expect(find.text('○ Por descobrir'), findsWidgets);
       expect(find.textContaining('Trono 99'), findsNothing);
@@ -121,6 +121,8 @@ void main() {
           .position
           .pixels;
       expect(position, greaterThan(0));
+      expect(find.text('Tronos descobertos'), findsNothing);
+      expect(find.text('Diário'), findsOneWidget);
       await tap(tester, find.text('Diário'));
       expect(find.text('02/07/2026'), findsOneWidget);
       expect(find.text('01:39 · 0,0 / 5 ★'), findsOneWidget);
@@ -177,7 +179,7 @@ void main() {
       addTearDown(state.dispose);
       state.toggleFavorite('1');
       await mount(tester, state, const Scaffold(body: ProfilePage()));
-      expect(find.text('101'), findsOneWidget);
+      expect(find.textContaining('101 visitas'), findsWidgets);
       expect(find.byType(Wrap), findsOneWidget);
       expect(find.textContaining('Trono 0'), findsNWidgets(2));
       expect(find.text('Histórico de atividade'), findsNothing);
@@ -215,7 +217,23 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    final state = AppState();
+    final source = AppState();
+    final state = AppState(
+      bathrooms: [
+        for (final b in source.allBathrooms)
+          Bathroom(
+            id: b.id,
+            name:
+                '${b.name} · Biblioteca Centenária das Histórias Impossíveis, corredor das mil portas',
+            createdBy: b.createdBy,
+            emoji: b.emoji,
+            accent: b.accent,
+          ),
+      ],
+      reviews: source.reviews,
+      visits: source.visits,
+    );
+    source.dispose();
     addTearDown(state.dispose);
     for (final dark in [false, true]) {
       await mount(
@@ -228,6 +246,14 @@ void main() {
       for (var i = 1; i <= 3; i++) {
         expect(find.byKey(ValueKey('podium-$i')), findsOneWidget);
       }
+      expect(
+        tester.getSize(find.byKey(const ValueKey('podium-1'))).height,
+        tester.getSize(find.byKey(const ValueKey('podium-2'))).height,
+      );
+      expect(
+        tester.getSize(find.byKey(const ValueKey('podium-2'))).height,
+        tester.getSize(find.byKey(const ValueKey('podium-3'))).height,
+      );
       await capture(tester, 'sample-podium-$dark');
       await tap(tester, find.text('Melhores'));
       expect(find.byType(RankingPodium), findsNothing);
@@ -242,12 +268,9 @@ void main() {
       expect(find.text('Definições'), findsNothing);
       expect(find.text('🧭'), findsNothing);
       expect(find.text('O teu trono habitual'), findsOneWidget);
-      expect(find.text('O teu favorito nas avaliações'), findsOneWidget);
-      expect(find.textContaining('Média das tuas'), findsOneWidget);
-      for (final label in [
-        'O teu trono habitual',
-        'O teu favorito nas avaliações',
-      ]) {
+      expect(find.text('Mais bem avaliado'), findsOneWidget);
+      expect(find.textContaining('★'), findsWidgets);
+      for (final label in ['O teu trono habitual', 'Mais bem avaliado']) {
         await tap(tester, find.text(label));
         expect(find.byType(BathroomDetailsPage), findsOneWidget);
         await tester.pageBack();

@@ -20,6 +20,14 @@ BATHROOMS = (
     ("Oficina do Parafuso Perdido", "🔧", "contribution"),
     ("Pavilhão da Ciência Faz-de-Conta", "🧪", "curated"),
     ("Quiosque da Rotunda Inexistente", "🚽", "contribution"),
+    ("Biblioteca Centenária das Histórias Impossíveis · corredor das mil portas", "🏰", "curated"),
+    (
+        "Terminal Intergaláctico · instalações da sala de partidas e chegadas",
+        "🧑🏽‍🚀",
+        "contribution",
+    ),
+    ("Pátio das Laranjeiras · junto à fonte dos desejos", "🍊", "curated"),
+    ("Galeria da Porta Misteriosa · sem avaliações", "🚪", "contribution"),
 )
 COMMENTS = (
     "Tudo limpo, papel à vontade e uma porta que fecha. Pequenos luxos da vida.",
@@ -232,6 +240,78 @@ def seed(password_file, output_dir, device_config=None):
                 dict(user=actor, bathroom=bathroom, value=True),
                 "favourite:" + name + ":" + str(index),
             )
+    # A4 extension uses independent deterministic IDs. Original A3.1 payloads and
+    # receipts must stay byte-equivalent so reseeding never overwrites test activity.
+    tag_pool = (
+        {"emoji": "🫧", "label": "Sabonete disponível"},
+        {"emoji": "🚪", "label": "Porta sem trinco"},
+        {"emoji": "🧻", "label": "Papel macio"},
+        {"emoji": "🌬️", "label": "Bem ventilada"},
+        {"emoji": "💡", "label": "Boa iluminação"},
+        {"emoji": "♿", "label": "Acessível"},
+        {"emoji": "💧", "label": "Chão molhado"},
+        {"emoji": "👃", "label": "Cheiro duvidoso"},
+        {"emoji": "🪝", "label": "Cabide disponível"},
+        {"emoji": "🤫", "label": "Silenciosa"},
+        {"emoji": "👩🏽‍💻", "label": "Pausa tecnológica"},
+    )
+    targets = (0, 1, 2, 3, 4, 5, 8, 9, 10)
+    for user_index, name in enumerate(NAMES[:-1]):
+        actor = sessions[name]["user"]["id"]
+        for index in range(6):
+            label = "a4:" + name + ":" + str(index)
+            bathroom = identity("bathroom:" + str(targets[(index + user_index * 2) % len(targets)]))
+            stamp = 1795200000000000 + (user_index * 20 + index) * 3600000000
+            visit = dict(
+                id=identity("visit:" + label),
+                bathroom=bathroom,
+                user=actor,
+                at=stamp,
+                provenance="user_created",
+            )
+            if index == 5:
+                submit(name, "visit", visit["id"], "createVisit", visit, "visit:" + label)
+                continue
+            count = (index + user_index) % 5
+            tags = [
+                tag_pool[(index * 2 + offset + user_index) % len(tag_pool)]
+                for offset in range(count)
+            ]
+            review = dict(
+                id=identity("review:" + label),
+                visit=visit["id"],
+                bathroom=bathroom,
+                author=actor,
+                created=stamp,
+                updated=stamp,
+                rating=0 if user_index == 0 and index == 0 else (1, 5, 3, 4, 2)[index],
+                paper=(index + user_index) % 3,
+                hygiene=(index * 2 + user_index) % 5,
+                comfort=(index + user_index) % 5,
+                aesthetics=(4 - index + user_index) % 5,
+                tags=json.dumps(tags, ensure_ascii=False),
+                comment=None if count == 0 else COMMENTS[(index + user_index) % len(COMMENTS)],
+                provenance="user_created",
+            )
+            submit(
+                name,
+                "review",
+                review["id"],
+                "createCommunityVisitReview"
+                if review["rating"] == 0
+                else "createCommunityVisitReviewV2",
+                dict(visit=visit, review=review),
+                "review:" + label,
+            )
+        bathroom = identity("bathroom:8")
+        submit(
+            name,
+            "favourite",
+            bathroom,
+            "setFavourite",
+            dict(user=actor, bathroom=bathroom, value=True),
+            "favourite:a4:" + name,
+        )
     accounts = [dict(email=name + "@example.com", password=password) for name in NAMES]
     secure_file(
         output_dir / "test-accounts.txt",

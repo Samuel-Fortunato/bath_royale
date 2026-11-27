@@ -109,92 +109,110 @@ class CollectionPage extends StatelessWidget {
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 960),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 16,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 56,
-                              height: 56,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  SizedBox.expand(
-                                    child: CircularProgressIndicator(
-                                      value: entries.isEmpty
-                                          ? 0
-                                          : discovered / entries.length,
-                                      strokeWidth: 6,
-                                      backgroundColor: Theme.of(
-                                        context,
-                                      ).colorScheme.surfaceContainerHighest,
-                                    ),
-                                  ),
-                                  const Text(
-                                    '🧭',
-                                    style: TextStyle(
-                                      fontSize: 26,
-                                      fontFamilyFallback: ['Noto Color Emoji'],
-                                    ),
-                                  ),
-                                ],
+          child: NestedScrollView(
+            headerSliverBuilder: (context, scrolled) => [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          ExcludeSemantics(
+                            child: Text(
+                              discoveryEmoji(discovered),
+                              style: const TextStyle(
+                                fontSize: 40,
+                                fontFamilyFallback: ['Noto Color Emoji'],
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                '$discovered / ${entries.length}',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineMedium,
-                              ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '$discovered / ${entries.length}',
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.headlineSmall,
+                                ),
+                                const Text('Tronos descobertos'),
+                                const SizedBox(height: 6),
+                                LinearProgressIndicator(
+                                  value: entries.isEmpty
+                                      ? 0
+                                      : discovered / entries.length,
+                                  semanticsLabel:
+                                      '$discovered de ${entries.length} tronos descobertos',
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        const Text('Tronos descobertos'),
-                        const SizedBox(height: 12),
-                        LinearProgressIndicator(
-                          value: entries.isEmpty
-                              ? 0
-                              : discovered / entries.length,
-                          semanticsLabel:
-                              'Exploração do catálogo local: $discovered de ${entries.length} tronos descobertos',
-                        ),
-                        const SizedBox(height: 16),
-                        const LocalStatistics(),
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${state.visibleVisits.where((v) => v.userId == state.currentUserId).length} visitas · ${state.visibleReviews.where((r) => r.authorId == state.currentUserId).length} avaliações · ${entries.where((e) => e.activity.isFavorite).length} favoritos',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const TabBar(
-                tabs: [
-                  Tab(text: 'Tronos'),
-                  Tab(text: 'Diário'),
-                ],
-              ),
-              const Expanded(
-                child: TabBarView(
-                  children: [CollectibleCatalogue(), VisitDiary()],
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _CollectionTabs(
+                  Theme.of(context).colorScheme.surface,
                 ),
               ),
             ],
+            body: const TabBarView(
+              children: [CollectibleCatalogue(), VisitDiary()],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Decoration only: no reward, entitlement or persisted progression state.
+String discoveryEmoji(int count) => count == 0
+    ? '🥚'
+    : count < 5
+    ? '🐣'
+    : count < 10
+    ? '🧭'
+    : count < 25
+    ? '👑'
+    : '🏰';
+
+class _CollectionTabs extends SliverPersistentHeaderDelegate {
+  final Color surface;
+  _CollectionTabs(this.surface);
+  @override
+  double get minExtent => 48;
+  @override
+  double get maxExtent => 48;
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => ColoredBox(
+    color: surface,
+    child: const TabBar(
+      tabs: [
+        Tab(text: 'Tronos'),
+        Tab(text: 'Diário'),
+      ],
+    ),
+  );
+  @override
+  bool shouldRebuild(_CollectionTabs old) => old.surface != surface;
 }
 
 class CollectibleCatalogue extends StatelessWidget {

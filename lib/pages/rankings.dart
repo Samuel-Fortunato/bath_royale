@@ -140,14 +140,6 @@ class _RankingsPageState extends State<RankingsPage> {
                   ],
                 ),
               ),
-              if (_personal)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  child: Text(
-                    'Inclui todas as tuas avaliações por trono. No Explorar, vês a tua experiência avaliada mais recente.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
               Expanded(
                 child: rows.isEmpty
                     ? const Center(
@@ -260,61 +252,97 @@ class RankingPodium extends StatelessWidget {
             MediaQuery.textScalerOf(context).scale(14) > 18;
         Widget place(int index) {
           final row = rows[index];
-          final medal = [Colors.amber, Colors.blueGrey, Colors.brown][index];
           final scheme = ColorScheme.fromSeed(
-            seedColor: medal,
+            seedColor: [Colors.amber, Colors.blueGrey, Colors.brown][index],
             brightness: Theme.of(context).brightness,
+          );
+          final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+          final name = Tooltip(
+            message: row.bathroom.name,
+            child: Semantics(
+              label: row.bathroom.name,
+              child: ExcludeSemantics(
+                child: Text(
+                  row.bathroom.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: stacked ? TextAlign.start : TextAlign.center,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+            ),
+          );
+          final score = Text(
+            '${row.score.toStringAsFixed(1).replaceAll('.', ',')} / ${metric.maximum}',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: ratingGold(context)),
           );
           return Card(
             key: ValueKey('podium-${index + 1}'),
             color: scheme.secondaryContainer.withValues(
-              alpha: index == 0 ? .7 : .35,
+              alpha: index == 0 ? .65 : .3,
             ),
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () =>
                   openCollectedBathroom(context, state, row.bathroom.id),
               child: Padding(
-                padding: EdgeInsets.all(index == 0 ? 16 : 12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      ['🥇', '🥈', '🥉'][index],
-                      style: TextStyle(
-                        fontSize: index == 0 ? 32 : 24,
-                        fontFamilyFallback: const ['Noto Color Emoji'],
+                padding: const EdgeInsets.all(10),
+                child: stacked
+                    ? Row(
+                        children: [
+                          Text(
+                            ['🥇', '🥈', '🥉'][index],
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontFamilyFallback: ['Noto Color Emoji'],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(child: name),
+                          const SizedBox(width: 8),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              score,
+                              Text(
+                                '${row.count} aval.',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            ['🥇', '🥈', '🥉'][index],
+                            semanticsLabel: '${index + 1}º lugar',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontFamilyFallback: ['Noto Color Emoji'],
+                            ),
+                          ),
+                          BathroomIdentity(bathroom: row.bathroom, size: 40),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 42 * textScale,
+                            child: Align(
+                              alignment: Alignment.center,
+                              child: name,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          score,
+                          Text(
+                            '${row.count} aval.',
+                            semanticsLabel: '${row.count} avaliações',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
                       ),
-                    ),
-                    Text(
-                      '${index + 1}º lugar',
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    BathroomIdentity(
-                      bathroom: row.bathroom,
-                      size: index == 0 ? 64 : 48,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      row.bathroom.name,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${row.score.toStringAsFixed(1).replaceAll('.', ',')} / ${metric.maximum}',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: ratingGold(context),
-                      ),
-                    ),
-                    Text(
-                      '${row.count} ${row.count == 1 ? 'avaliação' : 'avaliações'}',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
               ),
             ),
           );
@@ -328,14 +356,11 @@ class RankingPodium extends StatelessWidget {
         }
         final order = [if (rows.length > 1) 1, 0, if (rows.length > 2) 2];
         return Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (final i in order)
               Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(top: i == 0 ? 0 : 28),
-                  child: place(i),
-                ),
+                child: Padding(padding: EdgeInsets.zero, child: place(i)),
               ),
           ],
         );

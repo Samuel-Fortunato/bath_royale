@@ -39,7 +39,12 @@ class ProfilePage extends StatelessWidget {
             const SizedBox(height: 8),
             Text(title, style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 4),
-            Text(bathroom.name, style: Theme.of(context).textTheme.titleSmall),
+            Text(
+              bathroom.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
             const SizedBox(height: 4),
             Text(detail, style: Theme.of(context).textTheme.bodySmall),
           ],
@@ -92,7 +97,7 @@ class ProfilePage extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           children: [
             Card(
               child: Padding(
@@ -103,7 +108,7 @@ class ProfilePage extends StatelessWidget {
                     Row(
                       children: [
                         const CircleAvatar(
-                          radius: 30,
+                          radius: 22,
                           child: Icon(Icons.person_outline, size: 30),
                         ),
                         const SizedBox(width: 12),
@@ -126,13 +131,13 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const Divider(height: 28),
+                    const Divider(height: 16),
                     const LocalStatistics(includeDiscoveries: true),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             LayoutBuilder(
               builder: (context, constraints) {
                 final sideBySide =
@@ -152,8 +157,8 @@ class ProfilePage extends StatelessWidget {
                       context,
                       state,
                       rated.first.bathroom,
-                      'O teu favorito nas avaliações',
-                      '${rated.first.score.toStringAsFixed(1).replaceAll('.', ',')} / 5\nMédia das tuas ${rated.first.count} avaliações',
+                      'Mais bem avaliado',
+                      '★ ${rated.first.score.toStringAsFixed(1).replaceAll('.', ',')} · ${rated.first.count} avaliações',
                     ),
                 ];
                 return sideBySide
@@ -176,7 +181,7 @@ class ProfilePage extends StatelessWidget {
                   'A próxima visita pode revelar o teu trono habitual.',
                 ),
               ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             ListTile(
               leading: Icon(
                 Icons.favorite,
