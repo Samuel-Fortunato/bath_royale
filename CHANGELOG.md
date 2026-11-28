@@ -1,5 +1,11 @@
 # Changelog
 
+## A7.3 — Supervised backup preservation
+
+- Add a versioned application-owned live backup supervisor with complete current/Auth SHARE locks, exact schema validation, explicit PID/xid/granted-lock liveness checks, cross-computer advisory exclusion and bounded worker/connection cleanup.
+- Reuse native cloud transfer exports and preservation format; seal creation time/unique ID so manager inventory cannot relabel old archives as new. Preserve all existing compatibility, snapshot, row/schema/RLS/ACL/FK checks and historical bundle readability.
+- Add real disposable PostgreSQL writer-blocking, lock-loss, contention and timeout regressions, plus a complete isolated Auth source fixture with exact read-only pinned dump-tool closure mounts. No managed contents, schema, credentials or release publication changes.
+
 ## A7.2 — Hosted rootless runtime compatibility
 
 - Wait for the final PostgreSQL server inside the new disposable container before migrating; the entrypoint's temporary socket server is not readiness.

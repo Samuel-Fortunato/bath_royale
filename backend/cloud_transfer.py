@@ -12,6 +12,8 @@ import re
 import stat
 import subprocess
 import sys
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -214,12 +216,14 @@ def filtered_script(script):
     return "\n".join(line for line in script.splitlines() if not line.startswith("export PG"))
 
 
-def export_bundle(args):
+def export_bundle(args, *, remote=None, dump_runner=None, consistency=None):
+    created_at = datetime.now(timezone.utc).isoformat()
+    backup_id = uuid.uuid4().hex
     directory = args.bundle
     outside_checkout(directory)
     private_path(directory.parent, directory=True)
     require(not directory.exists() and not directory.is_symlink(), "Bundle already exists")
-    remote = managed(args.source_state, args.project)
+    remote = managed(args.source_state, args.project) if remote is None else remote
     scope = migration.TABLES
     if getattr(args, "legacy_core", False):
         scope = LEGACY_CORE
@@ -239,6 +243,7 @@ def export_bundle(args):
             {r["name"] for r in actual} == {t for t in scope if not t.startswith("auth.")},
             "Legacy export requires exactly the core application tables",
         )
+    remote.env["PGOPTIONS"] = "-c lock_timeout=20000 -c statement_timeout=120000"
     directory.mkdir(mode=0o700)
     before = (
         migration.snapshot(remote, scope) if scope == LEGACY_CORE else migration.snapshot(remote)
@@ -268,14 +273,18 @@ def export_bundle(args):
             )
         )
         poc.secure_write(directory / (name + "-command.sh"), script)
-        result = subprocess.run(
-            ["bash", "-e", "-o", "pipefail"],
-            input=script,
-            env=remote.env,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
+        if dump_runner is not None:
+            result = dump_runner(script, remote)
+        else:
+            result = subprocess.run(
+                ["bash", "-e", "-o", "pipefail"],
+                input=script,
+                env=remote.env,
+                text=True,
+                capture_output=True,
+                check=False,
+                timeout=120,
+            )
         require(result.returncode == 0, "Filtered export failed; diagnostics suppressed")
         poc.secure_write(directory / (name + ".sql"), result.stdout)
     require(migration.snapshot(remote, scope) == before, "Source changed during export")
@@ -283,6 +292,8 @@ def export_bundle(args):
         directory / "components.json",
         {
             "project": args.project,
+            "created_at": created_at,
+            "backup_id": backup_id,
             "cli": "2.111.0",
             "pg_dump": "17.12",
             "flake_lock_sha256": hashlib.sha256((poc.ROOT / "flake.lock").read_bytes()).hexdigest(),
@@ -290,7 +301,7 @@ def export_bundle(args):
                 (poc.ROOT / "backend/compose.yml").read_bytes()
             ).hexdigest(),
             "scope": scope,
-            "consistency": "operator-quiesced; not a maintenance lock",
+            "consistency": consistency or "operator-quiesced; not a maintenance lock",
         },
     )
     seal(directory)
@@ -807,7 +818,16 @@ def main():
             "verify": verify_bundle,
             "cleanup": cleanup_destination,
         }[args.operation](args)
-    except RuntimeError, OSError, ValueError, KeyError, TypeError, IndexError, AttributeError:
+    except (
+        RuntimeError,
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+        IndexError,
+        AttributeError,
+        subprocess.TimeoutExpired,
+    ):
         # SQL exceptions and paths may contain data/secrets: no traceback or raw diagnostics.
         print(
             "FAIL: transfer guard/operation failed; private state retained; no automatic cleanup",

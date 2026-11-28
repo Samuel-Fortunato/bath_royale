@@ -234,3 +234,52 @@ instances and never prunes unrelated resources. Keep necessary minimal recovery
 receipts before removing a new target's temporary plaintext control files. No
 original backup, existing development environment or retained restore target is
 authorized for deletion by this documentation.
+
+
+## Supervised daily backups (A7.3)
+
+`backend/backup_session.py --environment managed --state-directory /private/state`
+is the application-owned version-1 supervisor used by the independent manager.
+It owns a live psql connection, fixed project/verify-full TLS guards and a
+cross-computer session advisory lock (74042073) until finish/EOF. Its line-delimited
+JSON protocol responds with `{version: 1, target}` and accepts `export` with a fresh
+private `bundle` path, `check`, and `finish`. It never reads credential values from
+JSON requests or argv. Development requires the exact isolated no-network A7.2
+container selector; it cannot choose retained PoC or managed targets implicitly.
+
+The export transaction takes the complete current preservation/Auth session SHARE
+locks, checks exact migration hashes, and verifies unchanged backend PID/xid and
+actual granted locks before, throughout and after the native export worker.
+Lock/statement/idle/worker limits are 20/25/180/150 seconds; each dump has a
+120-second statement/operation limit. Heartbeats every second during export and
+five seconds outside export detect connection/ownership loss; failure terminates
+the worker group and rolls back. EOF/termination releases the advisory lock.
+`--quiesced` remains only a manual acknowledgment on the original export command;
+the supervisor establishes its own verified quiescence. This remains multiple
+native snapshots under writer locks, not a shared-snapshot claim. There is no
+managed data mutation, privilege change, fixture reset or schema migration.
+
+The supervisor reuses `cloud_transfer.export_bundle`, preserving the same CLI
+filters, snapshots, full scope and sealed bundle. Components add UTC creation time
+and a unique backup ID; legacy manifests remain readable without resealing. The
+manager binds these to the encrypted archive name/date and publishes only complete
+archive/checksum/manifest sets after authenticated decryption plus a mandatory new
+isolated restore/verify. Application SQL, compatibility, schema/row/RLS/effective
+ACL/FK checks remain here. The manager owns encryption, inventory, safe copy-only
+MEGA previews/readback, plan-only retention and disabled user-timer preparation;
+its private handbook is the operational authority for configuration/approvals.
+Every daily backup still requires fresh isolated restoration. None of scheduling,
+cloud synchronization, destructive pruning or real managed export is enabled by
+application development.
+
+`backend/backup_rehearsal.py` provides a complete disposable Auth source around the
+existing no-network administration fixture. It initializes only a fresh source's
+Auth schema over isolated loopback, stops Auth, and mounts only the exact pinned
+pg_dump runtime closure read-only (never the whole host or credential directories).
+The database image has its own Nix store, which must remain visible. Both Auth and
+DB containers plus temporary credential files are removed by their exact created
+IDs; retained instances are never selected. The independent manager's
+`tests/check_backups.py` runs its actual CLI through native encrypted export and
+repeated full isolated restoration using disposable SOPS resources. Public backend
+unit tests independently prove writer blocking, advisory exclusion, backend loss,
+lock contention, bounded export termination and rollback on fresh Unix sockets.

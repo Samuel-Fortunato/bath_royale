@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import secrets
+import shutil
 import subprocess
 import tempfile
 import time
@@ -305,8 +306,26 @@ def verify(db):
     }
 
 
+def backup_mount(enabled):
+    if not enabled:
+        return []
+    executable = Path(shutil.which("pg_dump")).resolve()
+    package = executable.parents[1]
+    check(
+        package.parent.name == "store" and package.parent.parent.name == "nix",
+        "pinned Nix dump tool store",
+    )
+    closure = run(["nix", "path-info", "--recursive", str(package)]).splitlines()
+    check(
+        bool(closure) and all(Path(p).parent == package.parent for p in closure),
+        "exact Nix closure",
+    )
+    # The Supabase image has its OWN Nix store: never hide it with a whole-store mount.
+    return [arg for path in closure for arg in ("--volume", path + ":" + path + ":ro")]
+
+
 @contextlib.contextmanager
-def disposable():
+def disposable(*, backup_tooling=False):
     container = "broyale-admin-" + uuid.uuid4().hex[:16] + "-db"
     image = "docker.io/supabase/postgres@sha256:5a4314708484bec672de2c09653a5c01fb1c84a998564ac231b0325e2238ed5b"
     created = None
@@ -327,6 +346,7 @@ def disposable():
                     "io.broyale.admin.disposable=" + container,
                     "--network",
                     "none",
+                    *backup_mount(backup_tooling),
                     "--env-file",
                     str(path),
                     "--tmpfs",

@@ -14,6 +14,14 @@ Before public launch, replace the personal contact across app, privacy, docs and
 
 ## Daily backup
 
+The independent private manager now automates this same approved procedure through
+its A7.3 backup commands and the application-owned [supervised interface](cloud-transfer-tooling.md#supervised-daily-backups-a73).
+The native manual steps below remain valid and describe the preservation policy.
+The manager restores every new daily archive in a fresh isolated target before
+publishing it; this requirement is unchanged. Its timer/cloud-copy proposals
+remain disabled pending owner review/designation; pruning is dry-run only. No
+actual recurring schedule or external-copy acceptance is claimed by this code.
+
 Use the pinned `nix develop .#backend` shell (`age`, Supabase CLI and PostgreSQL tools). Keep credentials and plaintext work in owner-only directories outside Git; use `umask 077`. Set `BACKUP_RECIPIENT` to the approved public recipient and `BACKUP_IDENTITY` to the protected identity file outside Git. Keep their operator-specific configuration outside this repository. Never print, commit or include the private identity in an archive.
 
 Choose fresh paths for each run. Quiesce application and Auth writers for the complete export: `--quiesced` alone does not stop them. The A5.3 operator uses a separate verified-TLS transaction with SHARE locks on the preserved application tables and Auth identity/session tables, a 20-second lock timeout and a bounded idle timeout. Wait for locks before exporting; abort if they cannot be obtained. Release using ROLLBACK in a finally block. Do not change access grants merely to take a backup. Inventory again if the schema changes. Native exports use multiple snapshots, so the lock must remain alive throughout export and before/after comparisons.
