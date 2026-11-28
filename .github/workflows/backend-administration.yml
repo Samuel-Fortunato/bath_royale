@@ -19,7 +19,14 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y podman uidmap
           # Disposable hosted runner only; never configure the owner's host.
-          sudo usermod --add-subuids 200000-265535 --add-subgids 200000-265535 "$(id -un)"
+          for mapping in subuid subgid; do
+            if awk -F: -v account="$(id -un)" '$1 == account { found=1 } END { exit !found }' "/etc/$mapping"; then
+              continue
+            fi
+            range_start=$(awk -F: 'BEGIN { end=100000 } $2+$3>end { end=$2+$3 } END { print end }' "/etc/$mapping")
+            if [ "$mapping" = subuid ]; then option=--add-subuids; else option=--add-subgids; fi
+            sudo usermod "$option" "$range_start-$((range_start+65535))" "$(id -un)"
+          done
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - name: Verify rootless runtime before creating any bootstrap secret
         run: |

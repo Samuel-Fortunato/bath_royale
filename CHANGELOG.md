@@ -1,5 +1,9 @@
 # Changelog
 
+## A7.2 — Hosted rootless runtime compatibility
+
+- Check the credential-free OCI runtime before bootstrap, preserve existing runner subordinate UID/GID ranges and allocate only missing non-overlapping ranges. No owner-host configuration changes.
+
 ## A7.2 — Application-owned database administration
 
 - Add a versioned explicit-target operator JSON protocol for DB/schema aggregates, catalogue/accounts/capabilities, review-tag inspection, anonymous feedback and content reports; retain public/private separation and credential-free projections.
