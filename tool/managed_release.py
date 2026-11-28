@@ -137,6 +137,12 @@ def public_config(value):
     )
 
 
+def write_private(path, data):
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(fd, "wb") as stream:
+        stream.write(data)
+
+
 def verify_record(directory):
     directory = safe_directory(directory)
     record = json.loads(private_file(directory / "release.json").read_text())
@@ -152,9 +158,10 @@ def verify_record(directory):
         )
     apk = private_file(directory / "bath-royale.apk")
     expected = checksum(apk) + "  ./bath-royale.apk\n"
-    if (directory / "SHA256SUMS").read_text() != expected or checksum(apk) != record[
-        "sha256"
-    ]:
+    if (
+        private_file(directory / "SHA256SUMS").read_text() != expected
+        or checksum(apk) != record["sha256"]
+    ):
         raise ValueError("Checksum APK divergente; não instalar nem publicar.")
     with contextlib.redirect_stdout(io.StringIO()):
         verify_apk(
@@ -199,6 +206,13 @@ def build_locked(request):
         if record["source"] != state["source"] or record["channel"] != channel:
             raise ValueError("Pedido já vinculado a outra origem/canal.")
         return record
+    if any(
+        (directory / name).exists() or (directory / name).is_symlink()
+        for name in ("bath-royale.apk", "SHA256SUMS", "notes.md", "release.json")
+    ):
+        raise ValueError(
+            "Existem ficheiros de uma tentativa incompleta. Conserva-os para revisão antes de repetir o mesmo pedido numa pasta vazia; nada foi substituído."
+        )
     allocation = (
         Ledger(request["repo"]).allocate(
             request["request"],
@@ -266,15 +280,22 @@ def build_locked(request):
     ):
         raise ValueError("Origem alterada durante a compilação; artefacto recusado.")
     apk = directory / "bath-royale.apk"
-    shutil.copyfile(ROOT / "build/app/outputs/flutter-apk/app-release.apk", apk)
-    apk.chmod(0o600)
+    descriptor = os.open(
+        apk, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600
+    )
+    with (
+        os.fdopen(descriptor, "wb") as target,
+        (ROOT / "build/app/outputs/flutter-apk/app-release.apk").open(
+            "rb"
+        ) as source_apk,
+    ):
+        shutil.copyfileobj(source_apk, target)
     with contextlib.redirect_stdout(io.StringIO()):
         verify_apk(
             str(apk), str(info["version_code"]), info["version_name"], info["package"]
         )
     notes = (ROOT / "docs/releases/alpha-notes.md").read_bytes()
-    (directory / "notes.md").write_bytes(notes)
-    (directory / "notes.md").chmod(0o600)
+    write_private(directory / "notes.md", notes)
     record = dict(
         info,
         **state,
@@ -284,10 +305,10 @@ def build_locked(request):
         config_hash=digest(config),
         notes_hash=checksum(directory / "notes.md"),
     )
-    (directory / "SHA256SUMS").write_text(record["sha256"] + "  ./bath-royale.apk\n")
-    (directory / "SHA256SUMS").chmod(0o600)
-    (directory / "release.json").write_text(json.dumps(record, indent=2))
-    (directory / "release.json").chmod(0o600)
+    write_private(
+        directory / "SHA256SUMS", (record["sha256"] + "  ./bath-royale.apk\n").encode()
+    )
+    write_private(directory / "release.json", json.dumps(record, indent=2).encode())
     return record
 
 

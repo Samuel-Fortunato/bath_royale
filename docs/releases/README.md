@@ -116,7 +116,7 @@ to free exclusion. A live lease remains blocking. This never resumes publication
 removes a tag/release, changes secrets or claims an incomplete release succeeded.
 If an unrecorded gate is true with no lease, reconciliation still disables it.
 
-A failed build consumes its allocation: fix source/configuration and allocate a
+An incomplete artifact directory is never overwritten, including symlink destinations. Preserve/review its exact files before explicitly moving that failed attempt aside and retrying the same request into its empty canonical directory. Exclusive 0600 file creation also refuses a destination appearing during the operation. A failed build consumes its allocation: fix source/configuration and allocate a
 new candidate, or retry the same request only for an identical source/version.
 Failed CI is inspected via selected run/job; only safe validation workflows can be
 rerun. Conflicting tags or incomplete published assets require individual review;

@@ -461,6 +461,36 @@ class ReleaseServiceTests(unittest.TestCase):
             self.assertTrue(observed)
             self.assertFalse(observed[0].exists())
 
+    def test_incomplete_artifacts_and_symlinks_are_never_overwritten(self):
+        for symlink in (False, True):
+            with tempfile.TemporaryDirectory() as temp:
+                base = Path(temp)
+                target = base / "candidate"
+                target.mkdir(mode=0o700)
+                victim = base / "preserved"
+                victim.write_bytes(b"disposable-original")
+                apk = target / "bath-royale.apk"
+                if symlink:
+                    apk.symlink_to(victim)
+                else:
+                    apk.write_bytes(b"failed-artifact")
+                with (
+                    patch.object(service, "source", return_value={"source": "a" * 40}),
+                    patch.object(service, "Ledger") as ledger,
+                ):
+                    with self.assertRaisesRegex(ValueError, "nada foi substituído"):
+                        service.build_locked(
+                            {"channel": "candidate", "directory": str(target)}
+                        )
+                    ledger.assert_not_called()
+                self.assertEqual(victim.read_bytes(), b"disposable-original")
+                self.assertEqual(
+                    apk.read_bytes(),
+                    b"disposable-original" if symlink else b"failed-artifact",
+                )
+                with self.assertRaises(FileExistsError):
+                    service.write_private(apk, b"replacement")
+
     def test_public_update_verifies_after_install_without_destructive_flags(self):
         record = {
             "channel": "alpha",

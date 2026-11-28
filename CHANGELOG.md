@@ -3,6 +3,7 @@
 ## Unreleased — A7.4 release interfaces
 
 - Derive build/runtime versions from pubspec through a tested channel/version protocol; separate development Android package from managed updates.
+- Refuse overwriting partial build artifacts or symlinks; preserve failed evidence and create canonical files exclusively with owner-only permissions.
 - Add shared append-only managed build allocation, exact-source/CI/approval publication leases, interrupted-gate reconciliation and original-signature update guards.
 - Keep Android CI validation-only and retain draft-first immutable publication with alpha titles and GitHub Latest behavior. No public release or signing identity changed.
 
