@@ -109,3 +109,15 @@ reference/unknown-cascade rejection, tombstones, actual lock contention/concurre
 writers, stale/rebound plans, permissions and feedback/report privacy. No managed
 mutation or APK publication is involved. The private manager has a separate
 end-to-end CLI rehearsal using this fixture; public tests never depend on it.
+
+
+Verified A7.2 source handover: [backend CI 46103194094](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/46103194094)
+passed for `3cb899d` (48 tests, lint/format, rootless runtime preflight and isolated
+concurrent-mutation rehearsal). The interface implementation is `7775e40`; later
+fixture/CI fixes preserve existing subordinate ID ranges and wait for final server
+startup. No migration, managed mutation or release publication was used in acceptance.
+
+[Android validation 46103194081](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/46103194081)
+also passed for `3cb899d`, with prerelease skipped; Latest remained alpha-1046 and
+publication approval remained false. A7.2 is complete; later phases require their
+own scope.

@@ -12,6 +12,8 @@
 - Guard permanent community removal against all known domain/sync dependencies and unexpected cascading foreign keys; preserve official identities and synchronization tombstones. No automatic account erasure/recovery/banning or historical tag rewriting.
 - Add offline protocol regressions, a fresh isolated rootless database/concurrent-writer rehearsal and independent backend hosted CI. No schema migration, Flutter change, managed mutation or APK publication.
 
+Verification: 48 backend/17 tool tests and isolated concurrent/domain rehearsals pass; [backend CI 46103194094](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/46103194094) and [Android validation 46103194081](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/46103194081) pass for `3cb899d`. No migration, managed mutation or APK publication.
+
 ## A7.1.1 — Protected restoration verification
 
 - Add read-only inner-manifest verification for encrypted restoration evidence.
