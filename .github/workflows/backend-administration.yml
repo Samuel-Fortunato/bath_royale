@@ -21,6 +21,10 @@ jobs:
           # Disposable hosted runner only; never configure the owner's host.
           sudo usermod --add-subuids 200000-265535 --add-subgids 200000-265535 "$(id -un)"
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Verify rootless runtime before creating any bootstrap secret
+        run: |
+          nix develop .#backend --no-write-lock-file --command podman info --format '{{.Host.Security.Rootless}}'
+          nix develop .#backend --no-write-lock-file --command podman run --rm --network none --entrypoint /bin/true docker.io/supabase/postgres@sha256:5a4314708484bec672de2c09653a5c01fb1c84a998564ac231b0325e2238ed5b
       - name: Lint and test application-owned administration
         run: |
           nix develop .#backend --no-write-lock-file --command ruff check backend
