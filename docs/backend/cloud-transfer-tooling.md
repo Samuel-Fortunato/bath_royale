@@ -190,3 +190,26 @@ The new transactional ACL block initially exposed a PL/pgSQL variable/query-alia
 collision in the synthetic SQL test; it was corrected and the full backend suite
 passed afterward. No managed rehearsal, fixture reset, remote database mutation,
 existing environment startup/deletion or Phase 2.2 work was used for validation.
+
+## Explicit private resource inputs
+
+`python backend/cloud.py --state-directory /path/to/private-state` accepts an
+owner-owned 0700 directory containing the existing 0600 `connection.json`,
+`api.json` and public `root.crt`. Symlinked roots/ancestors and paths inside the
+application checkout are refused. Omitting the argument preserves the legacy
+state path. Project binding and `verify-full` remain mandatory. Do not put
+credentials in arguments, shell history or shared environment configuration.
+The preflight performs reads only; do not run rehearsal/fixture tools on managed state.
+
+`cloud_transfer.py export --source-state` already accepts an explicit private
+source; keep its existing preservation and quiescence checks. Existing Podman
+instances keep their current state and volume credentials; `XDG_STATE_HOME` is
+for explicitly selected new instances, not a live-state move.
+
+`python tool/verify_preview.py key /path/to/key --password-file /path/to/password`
+accepts a current-owner 0600 password file without symlinked ancestors; the
+keystore has the same protection requirement. Omitting the password file keeps
+the existing public debug-password compatibility, using a temporary private file
+instead of argv. Certificate validation and existing release invocations remain
+unchanged. Keep temporary plaintext outside synchronization and remove it after
+use; machine storage/swap assessment remains necessary.

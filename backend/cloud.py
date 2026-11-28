@@ -1,5 +1,6 @@
 """Managed rehearsal preflight. Credentials and SQL diagnostics never reach stdout."""
 
+import argparse
 import json
 import os
 import stat
@@ -107,14 +108,37 @@ def parse_auth_settings(result):
     return {key: result[key] for key in ("disable_signup", "mailer_autoconfirm")}
 
 
-def preflight():
-    connection = private_json(STATE / "connection.json", ["database_url"])
-    api = private_json(STATE / "api.json", ["url", "publishable_key"])
+def state_directory(path):
+    """Accept an explicit private state root without redirecting legacy consumers."""
+    path = Path(path).absolute()
+    require(
+        not any(p.is_symlink() for p in (path, *path.parents)),
+        "A pasta de estado não permite ligações simbólicas.",
+    )
+    info = path.stat()
+    require(
+        stat.S_ISDIR(info.st_mode)
+        and info.st_uid == os.getuid()
+        and stat.S_IMODE(info.st_mode) == 0o700,
+        "A pasta de estado exige o proprietário atual e modo 0700.",
+    )
+    checkout = Path(__file__).resolve().parents[1]
+    require(
+        not path.resolve().is_relative_to(checkout),
+        "O estado tem de estar fora do repositório da aplicação.",
+    )
+    return path
+
+
+def preflight(state=None):
+    state = state_directory(STATE if state is None else state)
+    connection = private_json(state / "connection.json", ["database_url"])
+    api = private_json(state / "api.json", ["url", "publishable_key"])
     require(api["url"].rstrip("/") == URL, "Unexpected API project; abort")
     settings = auth_settings(api)
     print("Auth signup enabled:", settings["disable_signup"] is False)
     print("Auth email autoconfirm:", settings["mailer_autoconfirm"] is True)
-    env = connection_env(connection, api, STATE / "root.crt")
+    env = connection_env(connection, api, state / "root.crt")
     # Output deliberately restricted to versions and counts, never row content.
     print("PostgreSQL:", sql(env, "show server_version"))
     print("Auth users:", sql(env, "select count(*) from auth.users"))
@@ -136,7 +160,14 @@ def preflight():
 
 if __name__ == "__main__":
     try:
-        preflight()
+        parser = argparse.ArgumentParser(description=__doc__)
+        parser.add_argument(
+            "--state-directory",
+            type=Path,
+            default=STATE,
+            help="Pasta privada de ligação/API/CA (mantém o caminho anterior por omissão).",
+        )
+        preflight(parser.parse_args().state_directory)
     except RuntimeError as error:
         print("FAIL: " + str(error), file=sys.stderr)
         sys.exit(1)

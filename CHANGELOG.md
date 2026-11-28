@@ -1,5 +1,10 @@
 # Changelog
 
+## A7.1.1 — Explicit operational resource paths
+
+- Add optional `backend/cloud.py --state-directory` with current-owner, 0700, symlink and checkout guards; preserve the existing default, project binding and verified TLS.
+- Verify the existing signing identity with an optional validated `--password-file`, keeping password values out of subprocess arguments and retaining release-workflow compatibility. No resource relocation or managed database change.
+
 ## A7.1 — Independent management foundation
 
 - Establish the independent private `bath_royale_manager` with the six-command Python foundation, pinned Nix package, 26 passing tests, independent successful CI and a single owner inventory/migration/recovery handbook. Existing credentials remain in place pending explicit migration approval.
