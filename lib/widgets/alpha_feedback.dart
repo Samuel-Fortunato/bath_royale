@@ -245,7 +245,7 @@ class _AlphaFeedbackHostState extends State<AlphaFeedbackHost> {
     return {
       'app_version': const String.fromEnvironment(
         'BATH_APP_VERSION',
-        defaultValue: '0.1.0',
+        defaultValue: 'desconhecida',
       ),
       'platform_version':
           '${Platform.operatingSystem} ${version.substring(0, version.length.clamp(0, 70))}',
@@ -292,7 +292,7 @@ class _AlphaFeedbackHostState extends State<AlphaFeedbackHost> {
           send: sender,
           persist: persist,
           contextFields: {
-            'app_version': info['app_version'] ?? '0.1.0',
+            'app_version': info['app_version'] ?? 'desconhecida',
             'platform_version':
                 info['platform_version'] ?? Platform.operatingSystem,
             'screen_id': screen,

@@ -1,5 +1,7 @@
 """Build only an owner-approved, public-configuration alpha; never publishes."""
 
+from app_version import metadata
+
 import argparse
 import base64
 import json
@@ -51,7 +53,7 @@ def main():
     config = configuration(
         os.environ["SUPABASE_URL"], os.environ["SUPABASE_PUBLISHABLE_KEY"]
     )
-    config["BATH_APP_VERSION"] = f"0.1.1-alpha.{args.number}"
+    config["BATH_APP_VERSION"] = metadata("alpha", args.number)["version_name"]
     with tempfile.TemporaryDirectory(prefix="bath-alpha-public-") as directory:
         path = Path(directory) / "defines.json"
         path.write_text(json.dumps(config))
@@ -72,7 +74,11 @@ def main():
             ],
             check=True,
         )
-    with zipfile.ZipFile("build/app/outputs/flutter-apk/app-release.apk") as archive:
+    verify_distribution_payload("build/app/outputs/flutter-apk/app-release.apk")
+
+
+def verify_distribution_payload(path):
+    with zipfile.ZipFile(path) as archive:
         for name in archive.namelist():
             if name.endswith(("/libapp.so", ".json", ".dart")):
                 data = archive.read(name)

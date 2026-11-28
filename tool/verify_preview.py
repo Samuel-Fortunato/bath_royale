@@ -70,11 +70,10 @@ def verify_key(path, password_file=None):
     )
 
 
-def verify_badging(badging, number, name):
+def verify_badging(badging, number, name, package="com.example.bath_royale"):
     require(
         badging.startswith(
-            f"package: name='com.example.bath_royale' versionCode='{number}' "
-            f"versionName='{name}' "
+            f"package: name='{package}' versionCode='{number}' versionName='{name}' "
         ),
         "Package/version mismatch",
     )
@@ -87,7 +86,7 @@ def verify_badging(badging, number, name):
     )
 
 
-def verify_apk(path, number, name):
+def verify_apk(path, number, name, package="com.example.bath_royale"):
     tools = Path(os.environ["ANDROID_HOME"]) / "build-tools/36.0.0"
     signing = subprocess.check_output(
         [str(tools / "apksigner"), "verify", "--print-certs", path], text=True
@@ -102,7 +101,7 @@ def verify_apk(path, number, name):
     badging = subprocess.check_output(
         [str(tools / "aapt"), "dump", "badging", path], text=True
     )
-    verify_badging(badging, number, name)
+    verify_badging(badging, number, name, package)
     with zipfile.ZipFile(path) as apk:
         names = set(apk.namelist())
         for architecture in ARCHITECTURES:

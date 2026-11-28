@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — A7.4 release interfaces
+
+- Derive build/runtime versions from pubspec through a tested channel/version protocol; separate development Android package from managed updates.
+- Add shared append-only managed build allocation, exact-source/CI/approval publication leases, interrupted-gate reconciliation and original-signature update guards.
+- Keep Android CI validation-only and retain draft-first immutable publication with alpha titles and GitHub Latest behavior. No public release or signing identity changed.
+
 ## A7.3.1 — Verified client TLS through the session pooler
 
 - Validate the actual client-to-pooler TLS connection under mandatory `verify-full` and exact project/database/session identity, instead of confusing PostgreSQL's backend-hop `pg_stat_ssl` flag with client TLS.
