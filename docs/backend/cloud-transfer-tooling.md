@@ -283,3 +283,15 @@ IDs; retained instances are never selected. The independent manager's
 repeated full isolated restoration using disposable SOPS resources. Public backend
 unit tests independently prove writer blocking, advisory exclusion, backend loss,
 lock contention, bounded export termination and rollback on fresh Unix sockets.
+
+
+A7.3 application implementation is `2c4983bae1b8e7a60b9405fbae2aafd2e2252eec`.
+[Backend CI 46108644845](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/46108644845)
+passed: 52 backend tests, lint/format, credential-free rootless preflight and the
+fresh domain/concurrent-writer rehearsal.
+[Android validation 46108644767](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/46108644767)
+also passed; upload and prerelease publication were skipped. No application
+release was published. The manager's independent complete backup/repeated-restore
+rehearsal pins these exact application source bytes; its verified results and
+owner activation/recovery-evidence requirements live in the private handbook.
+This documentation-only handover does not change the tested application interface.

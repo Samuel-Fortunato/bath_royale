@@ -2,6 +2,8 @@
 
 ## A7.3 — Supervised backup preservation
 
+Verified application source `2c4983b`: [backend CI 46108644845](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/46108644845) passes 52 tests and the isolated rehearsal. Android validation passes with publication skipped; the private owner handbook records manager integration and remaining owner approvals.
+
 - Add a versioned application-owned live backup supervisor with complete current/Auth SHARE locks, exact schema validation, explicit PID/xid/granted-lock liveness checks, cross-computer advisory exclusion and bounded worker/connection cleanup.
 - Reuse native cloud transfer exports and preservation format; seal creation time/unique ID so manager inventory cannot relabel old archives as new. Preserve all existing compatibility, snapshot, row/schema/RLS/ACL/FK checks and historical bundle readability.
 - Add real disposable PostgreSQL writer-blocking, lock-loss, contention and timeout regressions, plus a complete isolated Auth source fixture with exact read-only pinned dump-tool closure mounts. No managed contents, schema, credentials or release publication changes.
