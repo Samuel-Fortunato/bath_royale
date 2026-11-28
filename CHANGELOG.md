@@ -1,5 +1,12 @@
 # Changelog
 
+## A7.2 — Application-owned database administration
+
+- Add a versioned explicit-target operator JSON protocol for DB/schema aggregates, catalogue/accounts/capabilities, review-tag inspection, anonymous feedback and content reports; retain public/private separation and credential-free projections.
+- Reuse catalogue import checks and moderator/creator/feedback RPCs with transaction-bound previews, freshness/dependency validation and ordinary synchronization capture. Preserve separately moderated visibility in the official import baseline and reimports.
+- Guard permanent community removal against all known domain/sync dependencies and unexpected cascading foreign keys; preserve official identities and synchronization tombstones. No automatic account erasure/recovery/banning or historical tag rewriting.
+- Add offline protocol regressions, a fresh isolated rootless database/concurrent-writer rehearsal and independent backend hosted CI. No schema migration, Flutter change, managed mutation or APK publication.
+
 ## A7.1.1 — Protected restoration verification
 
 - Add read-only inner-manifest verification for encrypted restoration evidence.

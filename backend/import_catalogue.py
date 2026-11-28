@@ -95,6 +95,9 @@ LOCK TABLE app_private.official_catalogue IN SHARE ROW EXCLUSIVE MODE;
 CREATE TEMP TABLE catalogue_input ON COMMIT DROP AS
 SELECT key,id::uuid bathroom_id,content FROM jsonb_to_recordset({payload}::jsonb)
  AS x(key text,id text,content jsonb);
+-- Visibility is an independent reviewed moderation state, preserved on reimport.
+UPDATE catalogue_input i SET content=jsonb_set(i.content,'{{hidden}}',r.applied_content->'hidden')
+FROM app_private.official_catalogue r WHERE r.key=i.key;
 DO $validate$
 DECLARE item record; baseline app_private.official_catalogue; existing_row public.bathrooms;
 BEGIN

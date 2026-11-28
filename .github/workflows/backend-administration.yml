@@ -1,0 +1,30 @@
+name: Backend administration
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086
+      - name: Prepare disposable rootless container tooling
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y podman uidmap
+          # Disposable hosted runner only; never configure the owner's host.
+          sudo usermod --add-subuids 200000-265535 --add-subgids 200000-265535 "$(id -un)"
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Lint and test application-owned administration
+        run: |
+          nix develop .#backend --no-write-lock-file --command ruff check backend
+          nix develop .#backend --no-write-lock-file --command ruff format --check backend
+          nix develop .#backend --no-write-lock-file --command env PYTHONPATH=backend python -m unittest discover -s backend/tests -v
+      - name: Exercise mutations only in a new isolated database
+        run: nix develop .#backend --no-write-lock-file --command python backend/administration_rehearsal.py
