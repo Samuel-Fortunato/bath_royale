@@ -2,6 +2,7 @@
 
 ## A7.2 — Hosted rootless runtime compatibility
 
+- Wait for the final PostgreSQL server inside the new disposable container before migrating; the entrypoint's temporary socket server is not readiness.
 - Check the credential-free OCI runtime before bootstrap, preserve existing runner subordinate UID/GID ranges and allocate only missing non-overlapping ranges. No owner-host configuration changes.
 
 ## A7.2 — Application-owned database administration

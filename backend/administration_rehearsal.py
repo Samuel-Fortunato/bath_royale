@@ -354,11 +354,34 @@ def disposable():
             deadline = time.monotonic() + 120
             while True:
                 try:
-                    db.sql("SELECT 1;")
-                    break
+                    # The entrypoint briefly serves a temporary Unix-socket DB.
+                    # Final TCP readiness inside this no-network container proves
+                    # initialization finished, matching the existing PoC lifecycle.
+                    ready = subprocess.run(
+                        [
+                            "podman",
+                            "exec",
+                            container,
+                            "pg_isready",
+                            "-h",
+                            "127.0.0.1",
+                            "-p",
+                            "5432",
+                            "-U",
+                            "supabase_admin",
+                        ],
+                        env=db.env,
+                        capture_output=True,
+                        timeout=10,
+                        check=False,
+                    )
+                    if ready.returncode == 0:
+                        db.sql("SELECT 1;")
+                        break
                 except admin.AdminError:
-                    check(time.monotonic() < deadline, "database readiness")
-                    time.sleep(1)
+                    pass
+                check(time.monotonic() < deadline, "database readiness")
+                time.sleep(1)
             # Native Auth normally adds banned_until on first startup. This SQL-only
             # fixture adds that compatibility column; no Auth credentials are created.
             db.sql("ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS banned_until timestamptz;")
