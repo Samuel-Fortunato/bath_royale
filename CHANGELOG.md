@@ -1,5 +1,10 @@
 # Changelog
 
+## A7.3.1 — Verified client TLS through the session pooler
+
+- Validate the actual client-to-pooler TLS connection under mandatory `verify-full` and exact project/database/session identity, instead of confusing PostgreSQL's backend-hop `pg_stat_ssl` flag with client TLS.
+- Fix the read-only supervisor rejection exposed by approved private backup acceptance; retain all consistency locks, liveness, timeouts and preservation behavior. Add positive/negative client TLS regression tests; no managed data/schema or release changes.
+
 ## A7.3 — Supervised backup preservation
 
 Verified application source `2c4983b`: [backend CI 46108644845](https://github.com/Samuel-Fortunato/bath_royale/actions/runs/46108644845) passes 52 tests and the isolated rehearsal. Android validation passes with publication skipped; the private owner handbook records manager integration and remaining owner approvals.

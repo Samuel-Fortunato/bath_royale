@@ -295,3 +295,20 @@ release was published. The manager's independent complete backup/repeated-restor
 rehearsal pins these exact application source bytes; its verified results and
 owner activation/recovery-evidence requirements live in the private handbook.
 This documentation-only handover does not change the tested application interface.
+
+
+## A7.3.1 client TLS observation
+
+The live backup supervisor validates the client-to-Supavisor/session-pooler hop:
+fixed reviewed project/user/host/CA, mandatory libpq `verify-full`, exact PostgreSQL
+database/session identity and psql's actual negotiated TLS 1.2/1.3 connection
+information in a fixed C locale. `pg_stat_ssl` at PostgreSQL describes the
+pooler's separate backend connection; it does not attest the client's verified
+TLS to the pooler. Requiring the backend-hop flag incorrectly rejected a verified
+client connection during the separately approved private operational acceptance.
+The attempt stopped before export/publication. The corrected observation keeps
+all endpoint, certificate, identity, PID/xid/lock, timeout and preservation guards.
+Synthetic tests reject missing/old TLS, wrong identity and unverified libpq modes.
+No managed records/schema are changed, and no credential is printed by this check.
+The manager owns resumable copy/retention, Legion-only Home Manager integration and
+private operational/recovery receipts; the native preservation format stays here.

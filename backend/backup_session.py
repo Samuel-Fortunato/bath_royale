@@ -9,6 +9,7 @@ import argparse
 import contextlib
 import json
 import os
+import re
 import selectors
 import shutil
 import signal
@@ -29,7 +30,7 @@ class Session:
     def __init__(self, db):
         self.process = subprocess.Popen(
             db.command,
-            env=db.env,
+            env={**db.env, "LC_ALL": "C"},
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
@@ -94,6 +95,30 @@ def ownership(session, *, transaction=False):
             )
             + ");"
         )
+    )
+
+
+def verified_client(session, environment):
+    """Verify the CLIENT-to-session-pooler hop, not the pooler's backend hop.
+
+    connection_env already fixes exact project/user/host/CA and verify-full.
+    pg_stat_ssl describes Supavisor's separate database connection and cannot
+    attest the TLS used by this libpq client. psql runs in C locale for conninfo.
+    """
+    admin.require(
+        environment.get("PGSSLMODE") == "verify-full" and bool(environment.get("PGSSLROOTCERT")),
+        "A ligação exige verify-full e a CA do projeto.",
+    )
+    admin.require(
+        session.query("SELECT current_database()='postgres' AND session_user='postgres';") == "t",
+        "A sessão não comprovou a base de dados/utilizador esperados.",
+    )
+    info = session.query(r"\conninfo")
+    admin.require(
+        re.search(
+            r"^SSL connection \(protocol: TLSv1\.[23], cipher: [A-Za-z0-9_-]+,", info, re.MULTILINE
+        ),
+        "A sessão cliente não comprovou TLS 1.2/1.3 negociado com o pooler.",
     )
 
 
@@ -220,14 +245,7 @@ def main():
         )
         admin.require(acquired == "t", "Já existe uma operação de backup neste projeto.")
         if args.environment == "managed":
-            admin.require(
-                session.query(
-                    "SELECT current_database()='postgres' AND session_user='postgres' AND "
-                    "(SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid());"
-                )
-                == "t",
-                "A sessão não comprovou a base de dados/utilizador/TLS esperados.",
-            )
+            verified_client(session, db.env)
         owner = ownership(session)
         admin.require(owner["advisory"], "Falta o bloqueio entre computadores.")
         print(json.dumps({"version": 1, "target": db.target}), flush=True)

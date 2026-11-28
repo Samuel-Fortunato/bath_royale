@@ -140,3 +140,46 @@ class BackupSessionTests(unittest.TestCase):
         # A failed consistency session is never reconnected or silently reused.
         with self.assertRaises((RuntimeError, OSError)):
             self.session.query("SELECT 1;")
+
+
+class ClientTLSChecks(unittest.TestCase):
+    def test_pooler_backend_ssl_does_not_substitute_client_tls_proof(self):
+        from unittest.mock import Mock
+
+        session = Mock()
+        session.query.side_effect = [
+            "t",
+            'You are connected to database "postgres".\nSSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, compression: off)',
+        ]
+        backup.verified_client(
+            session, {"PGSSLMODE": "verify-full", "PGSSLROOTCERT": "/disposable/public-ca.crt"}
+        )
+        self.assertEqual(session.query.call_count, 2)
+        self.assertNotIn("pg_stat_ssl", str(session.query.call_args_list))
+
+    def test_unverified_mode_wrong_identity_and_missing_or_old_tls_fail_closed(self):
+        from unittest.mock import Mock
+
+        for env, identity, info in [
+            (
+                {"PGSSLMODE": "require", "PGSSLROOTCERT": "/ca"},
+                "t",
+                "SSL connection (protocol: TLSv1.3, cipher: TEST,",
+            ),
+            (
+                {"PGSSLMODE": "verify-full", "PGSSLROOTCERT": "/ca"},
+                "f",
+                "SSL connection (protocol: TLSv1.3, cipher: TEST,",
+            ),
+            ({"PGSSLMODE": "verify-full", "PGSSLROOTCERT": "/ca"}, "t", "no SSL"),
+            (
+                {"PGSSLMODE": "verify-full", "PGSSLROOTCERT": "/ca"},
+                "t",
+                "SSL connection (protocol: TLSv1.0, cipher: TEST,",
+            ),
+        ]:
+            with self.subTest(env=env, identity=identity, info=info):
+                session = Mock()
+                session.query.side_effect = [identity, info]
+                with self.assertRaises(RuntimeError):
+                    backup.verified_client(session, env)
