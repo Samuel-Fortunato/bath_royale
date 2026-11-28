@@ -606,6 +606,32 @@ def restore_bundle(args):
 
 
 def verify_bundle(args):
+    if getattr(args, "evidence", False):
+        require(
+            not args.destination and not args.runtime,
+            "Evidência não permite destino ou escritas runtime.",
+        )
+        outside_checkout(args.bundle)
+        private_path(args.bundle, directory=True)
+        manifests = sorted(args.bundle.rglob("manifest.json"))
+        require(bool(manifests), "Não foram encontrados manifestos internos.")
+        for manifest in manifests:
+            load_bundle(
+                manifest.parent,
+                required={
+                    "transfer.json",
+                    "roles-restore.sql",
+                    "data-restore.sql",
+                    "acl-reconcile.sql",
+                    "compatibility.json",
+                    "target-inventory.json",
+                    "after.json",
+                },
+            )
+        print(
+            "PASS: manifestos internos da evidência de restauro verificados sem acesso à base de dados"
+        )
+        return
     bundle = load_bundle(args.bundle)
     if args.destination:
         target = destination(args.destination)
@@ -694,6 +720,40 @@ def verify_bundle(args):
         print("PASS: offline bundle permissions, completeness, sizes and checksums")
 
 
+def cleanup_destination(args):
+    """Remove only an explicitly acknowledged, receipt-bound disposable restore target."""
+    require(args.disposable, "A limpeza exige confirmação explícita de destino descartável.")
+    bundle = load_bundle(args.bundle)
+    target = destination(args.destination)
+    private_path(target.STATE, directory=True)
+    require(
+        not any(p.is_symlink() for p in target.STATE.parents), "Ligações simbólicas não permitidas."
+    )
+    private_path(target.STATE / "transfer.json")
+    receipt = json.loads((target.STATE / "transfer.json").read_bytes())
+    require(
+        receipt["destination"] == args.destination
+        and receipt["bundle_sha256"]
+        == hashlib.sha256((args.bundle / "manifest.json").read_bytes()).hexdigest()
+        and bool(bundle),
+        "O recibo não corresponde ao destino e bundle selecionados.",
+    )
+    target.compose("down", "-v")
+    for kind in (
+        ["ps", "-a", "--format", "{{.Names}}"],
+        ["volume", "ls", "--format", "{{.Name}}"],
+        ["network", "ls", "--format", "{{.Name}}"],
+    ):
+        names = target.run(["podman", *kind]).splitlines()
+        require(
+            not any(n == target.PROJECT or n.startswith(target.PROJECT + "-") for n in names),
+            "Persistem recursos do destino descartável; rever privadamente.",
+        )
+    print(
+        "PASS: recursos do destino descartável removidos; origens e outras instâncias preservadas"
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="operation", required=True)
@@ -720,20 +780,33 @@ def main():
     )
     verify.add_argument("--destination")
     verify.add_argument(
+        "--evidence",
+        action="store_true",
+        help="Verificar apenas manifestos internos de evidência de restauro",
+    )
+    verify.add_argument(
         "--runtime",
         action="store_true",
         help="Opt in to local login/session writes and stop/start after preservation",
     )
     verify.add_argument("--accounts", type=Path)
     verify.add_argument("--source-sessions", type=Path)
-    for command in (export, restore, verify):
+    cleanup = sub.add_parser(
+        "cleanup", help="Limpar apenas um destino descartável com recibo correspondente"
+    )
+    cleanup.add_argument("--destination", required=True)
+    cleanup.add_argument("--disposable", action="store_true", required=True)
+    for command in (export, restore, verify, cleanup):
         command.add_argument("--bundle", type=Path, required=True)
     args = parser.parse_args()
     os.umask(0o077)
     try:
-        {"export": export_bundle, "restore": restore_bundle, "verify": verify_bundle}[
-            args.operation
-        ](args)
+        {
+            "export": export_bundle,
+            "restore": restore_bundle,
+            "verify": verify_bundle,
+            "cleanup": cleanup_destination,
+        }[args.operation](args)
     except RuntimeError, OSError, ValueError, KeyError, TypeError, IndexError, AttributeError:
         # SQL exceptions and paths may contain data/secrets: no traceback or raw diagnostics.
         print(

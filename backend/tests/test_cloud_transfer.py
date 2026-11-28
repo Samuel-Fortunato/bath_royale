@@ -489,5 +489,71 @@ class PreservationTests(unittest.TestCase):
             self.assertTrue((target.STATE / "transfer.json").exists())
 
 
+class CleanupTests(unittest.TestCase):
+    def test_cleanup_requires_matching_disposable_receipt_and_checks_absence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            (state / "manifest.json").write_text("disposable manifest")
+            (state / "manifest.json").chmod(0o600)
+            args = SimpleNamespace(disposable=True, destination="disposable-unit", bundle=state)
+            receipt = {
+                "destination": args.destination,
+                "bundle_sha256": hashlib.sha256((state / "manifest.json").read_bytes()).hexdigest(),
+            }
+            (state / "transfer.json").write_text(json.dumps(receipt))
+            (state / "transfer.json").chmod(0o600)
+            target = SimpleNamespace(
+                STATE=state,
+                PROJECT="bath-royale-migration-disposable-unit",
+                compose=Mock(),
+                run=Mock(return_value=""),
+            )
+            with (
+                patch.object(transfer, "load_bundle", return_value={"verified": True}),
+                patch.object(transfer, "destination", return_value=target),
+            ):
+                transfer.cleanup_destination(args)
+                target.compose.assert_called_once_with("down", "-v")
+                self.assertEqual(target.run.call_count, 3)
+                args.disposable = False
+                target.compose.reset_mock()
+                with self.assertRaises(RuntimeError):
+                    transfer.cleanup_destination(args)
+                target.compose.assert_not_called()
+                args.disposable = True
+                receipt["bundle_sha256"] = "wrong"
+                (state / "transfer.json").write_text(json.dumps(receipt))
+                with self.assertRaises(RuntimeError):
+                    transfer.cleanup_destination(args)
+                target.compose.assert_not_called()
+                receipt["bundle_sha256"] = hashlib.sha256(
+                    (state / "manifest.json").read_bytes()
+                ).hexdigest()
+                (state / "transfer.json").write_text(json.dumps(receipt))
+                target.run.return_value = target.PROJECT + "-db"
+                with self.assertRaises(RuntimeError):
+                    transfer.cleanup_destination(args)
+
+
+class EvidenceTests(unittest.TestCase):
+    def test_evidence_checks_existing_manifests_without_destination_or_network(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            inner = root / "restore"
+            inner.mkdir(mode=0o700)
+            (inner / "manifest.json").write_text("disposable manifest")
+            args = SimpleNamespace(bundle=root, destination=None, runtime=False, evidence=True)
+            with (
+                patch.object(transfer, "load_bundle", return_value={}) as load,
+                patch.object(transfer, "destination", side_effect=AssertionError("network")),
+            ):
+                transfer.verify_bundle(args)
+                load.assert_called_once()
+                self.assertEqual(load.call_args.args[0], inner)
+                args.destination = "refused"
+                with self.assertRaises(RuntimeError):
+                    transfer.verify_bundle(args)
+
+
 if __name__ == "__main__":
     unittest.main()

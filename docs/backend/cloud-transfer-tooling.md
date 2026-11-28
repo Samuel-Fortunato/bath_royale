@@ -213,3 +213,24 @@ the existing public debug-password compatibility, using a temporary private file
 instead of argv. Certificate validation and existing release invocations remain
 unchanged. Keep temporary plaintext outside synchronization and remove it after
 use; machine storage/swap assessment remains necessary.
+
+
+## Restoration evidence and disposable cleanup
+
+`cloud_transfer.py verify --bundle /private/extracted-evidence --evidence` checks
+only existing inner sealed restoration-state manifests with the same private
+file/size/SHA-256 validator. It makes no database or container call, and cannot
+combine this mode with a destination or runtime tests. Loose historical evidence
+files remain protected by their enclosing authenticated archive; this mode does
+not invent manifests for them or claim a database restore from evidence alone.
+
+After a successful or interrupted **new disposable** restore, use
+`cloud_transfer.py cleanup --bundle /private/sealed-bundle --destination NAME --disposable`
+with the same explicit `XDG_STATE_HOME`. Cleanup requires a private state directory
+and a transfer receipt bound to both the exact destination and bundle manifest.
+It reuses the existing exact-project Compose cleanup, then verifies absence of
+that project's containers, volumes and network. It cannot select ordinary PoC
+instances and never prunes unrelated resources. Keep necessary minimal recovery
+receipts before removing a new target's temporary plaintext control files. No
+original backup, existing development environment or retained restore target is
+authorized for deletion by this documentation.

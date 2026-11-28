@@ -1,5 +1,10 @@
 # Changelog
 
+## A7.1.1 — Protected restoration verification
+
+- Add read-only inner-manifest verification for encrypted restoration evidence.
+- Add explicit, receipt-bound disposable destination cleanup using the existing exact-project lifecycle, with absence checks and offline regressions. Preserve ordinary instances and legacy resources; no managed writes or publication.
+
 ## A7.1.1 — Explicit operational resource paths
 
 - Add optional `backend/cloud.py --state-directory` with current-owner, 0700, symlink and checkout guards; preserve the existing default, project binding and verified TLS.
